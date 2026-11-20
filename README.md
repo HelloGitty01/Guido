@@ -1,4 +1,6 @@
-# Guido – simulatore di guida
+# Guido
+
+Simulatore di guida di Hopthop Studio, © 2026.
 
 Simulatore di guida nel browser (Three.js). Si apre da GitHub Pages: `https://hellogitty01.github.io/Guido/`.
 
