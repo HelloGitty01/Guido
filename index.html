@@ -11,6 +11,7 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#eee}
   canvas{display:block;touch-action:none}
   #tbtn{position:fixed;top:10px;right:10px;display:none;gap:8px;z-index:3}
+  @media (pointer:coarse){#pauseBtn{left:12px!important;top:58px!important}#carBtn{left:104px!important;top:58px!important}#radioBtn{left:242px!important;top:58px!important}}
   #tbtn button{background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:8px 13px;font-size:14px}
   #stick{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border:2px solid rgba(255,255,255,.35);border-radius:50%;display:none;pointer-events:none;z-index:2}
   #knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.45)}
@@ -2737,7 +2738,7 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   // --- pulizia del 3D fotografico attorno all'auto ---
   // 1) quota vera del suolo: raggi verticali ogni 8 m, si prende la superficie più bassa (sotto le chiome c'è il terreno)
   // 2) sopra la carreggiata si taglia tutto oltre 4,5 m (chiome, teloni); 3) ovunque si tolgono le parti verdi oltre 2,5 m (alberi)
-  const GG=72,GSP=8,gdata=new Uint8Array(GG*GG*4),gtex=new THREE.DataTexture(gdata,GG,GG,THREE.RGBAFormat);gtex.magFilter=gtex.minFilter=THREE.LinearFilter;gtex.needsUpdate=true;
+  const GG=48,GSP=12,gdata=new Uint8Array(GG*GG*4),gtex=new THREE.DataTexture(gdata,GG,GG,THREE.RGBAFormat);gtex.magFilter=gtex.minFilter=THREE.LinearFilter;gtex.needsUpdate=true;
   const MS=768,MPX=0.6,mcv=document.createElement('canvas');mcv.width=mcv.height=MS;const mctx=mcv.getContext('2d');
   const mtex=new THREE.CanvasTexture(mcv);mtex.minFilter=mtex.magFilter=THREE.NearestFilter;mtex.generateMipmaps=false;mtex.flipY=false;
   const U={uMask:{value:mtex},uBox:{value:new THREE.Vector4(0,0,1,0)},uGround:{value:gtex},uGBox:{value:new THREE.Vector4(0,0,1,0)},uGRef:{value:0}};let mC=null,mT=0,job=null,gC=null;
@@ -2746,9 +2747,11 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
       mctx.lineWidth=(R.w+(R.c>=9?1:3))/MPX;mctx.beginPath();for(let i=0;i<R.N;i++){const x=(R.X[i]-x0)/MPX,z=(R.Z[i]-z0)/MPX;i?mctx.lineTo(x,z):mctx.moveTo(x,z);}mctx.stroke();});
     mtex.needsUpdate=true;U.uBox.value.set(x0,z0,MS*MPX,1);mC=[cx,cz];}
   function groundStep(){if(!job){if(gC&&Math.hypot(pl.x-gC[0],pl.z-gC[1])<110)return;if(!hits(Math.floor(pl.x/GSZ),Math.floor(pl.z/GSZ)).length)return;
-      job={cx:pl.x,cz:pl.z,k:0,v:new Float32Array(GG*GG).fill(NaN)};}
+      job={cx:pl.x,cz:pl.z,k:0,v:new Float32Array(GG*GG).fill(NaN)};
+      // in attesa delle misure: suolo piatto alla quota dell'auto, così i tagli funzionano da subito
+      if(!gC){for(let k=0;k<GG*GG;k++){gdata[k*4]=128;gdata[k*4+3]=255;}gtex.needsUpdate=true;const L0=hits(Math.floor(pl.x/GSZ),Math.floor(pl.z/GSZ));U.uGBox.value.set(pl.x-GG*GSP/2,pl.z-GG*GSP/2,GG*GSP,1);U.uGRef.value=L0[L0.length-1];}}
     const x0=job.cx-GG*GSP/2,z0=job.cz-GG*GSP/2;let n=0;
-    while(job.k<GG*GG&&n<45){const a=job.k%GG,b=(job.k/GG)|0,L=hits(Math.round((x0+(a+0.5)*GSP)/GSZ),Math.round((z0+(b+0.5)*GSP)/GSZ));if(L.length)job.v[job.k]=L[L.length-1];job.k++;n++;}
+    while(job.k<GG*GG&&n<(MOBILE?30:60)){const a=job.k%GG,b=(job.k/GG)|0,L=hits(Math.round((x0+(a+0.5)*GSP)/GSZ),Math.round((z0+(b+0.5)*GSP)/GSZ));if(L.length)job.v[job.k]=L[L.length-1];job.k++;n++;}
     if(job.k<GG*GG)return;
     // minimo locale 3x3 (così i tetti non contano come suolo) e buchi riempiti
     const V=job.v,M=new Float32Array(GG*GG);let ref=NaN,acc=0,cnt=0;for(let b=0;b<GG;b++)for(let a=0;a<GG;a++){let m=Infinity;for(let p=-1;p<=1;p++)for(let q=-1;q<=1;q++){const aa=a+p,bb=b+q;if(aa<0||bb<0||aa>=GG||bb>=GG)continue;const v=V[bb*GG+aa];if(v<m)m=v;}M[b*GG+a]=m;if(m<Infinity){acc+=m;cnt++;}}
@@ -2761,7 +2764,7 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
         if(uGBox.w>0.5&&gu.x>0.0&&gu.y>0.0&&gu.x<1.0&&gu.y<1.0){hgt=vWP.y-(uGRef+texture2D(uGround,gu).r*127.5-64.0);
           vec2 mu=(vWP.xz-uBox.xy)/uBox.z;if(uBox.w>0.5&&mu.x>0.0&&mu.y>0.0&&mu.x<1.0&&mu.y<1.0){vec4 mk=texture2D(uMask,mu);if(mk.r>0.9&&mk.a>0.99&&hgt>4.5)discard;}}`)
         .replace('#include <map_fragment>',`#include <map_fragment>
-        if(hgt>2.5){vec3 c=diffuseColor.rgb;if(c.g>c.r*1.08&&c.g>=c.b&&c.g-c.r>0.004&&c.g<0.6)discard;}`);};
+        if(hgt>2.5){vec3 c=diffuseColor.rgb;if(c.g>c.r*1.03&&c.g>c.b*1.08&&c.g-c.r>0.002&&c.g<0.6)discard;}`);};
     m.customProgramCacheKey=()=>'g3dmask2';return m;}
   const ANI=renderer.capabilities.getMaxAnisotropy();
   tiles.addEventListener('load-model',({scene:s})=>{s.traverse(o=>{if(o.isMesh){const m=o.material;if(m.map){m.map.anisotropy=ANI;m.map.needsUpdate=true;}o.material=maskMat(new THREE.MeshBasicMaterial({map:m.map||null,color:m.map?0xffffff:(m.color||0xffffff),side:m.side}));o.material.toneMapped=false;m.dispose&&m.dispose();o.castShadow=false;o.receiveShadow=false;}});dirty=1;});
