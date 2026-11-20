@@ -81,6 +81,7 @@
 <canvas id="mini" width="200" height="200" style="position:fixed;right:12px;top:56px;width:170px;height:170px;border-radius:50%;border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none;z-index:2"></canvas>
 <div id="pauseOv">Pausa</div>
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
+<button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
 <div id="navBox" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(10,30,60,.82);color:#fff;padding:8px 16px;border-radius:12px;font-size:17px;display:none;pointer-events:none;z-index:3"></div>
 <button id="endBtn" style="position:fixed;left:12px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">Fine corsa</button>
 <div id="sum"><div class="box"><h2 id="sumT">Riepilogo</h2><table id="sumTab"></table><button id="sumAgain">Rifai</button><button id="sumMenu">Menu</button></div></div>
@@ -1538,11 +1539,11 @@ function setHorn(on){if(on&&!horn)hornPush();if(!AC)return;if(on&&!horn){const g
 const keys={};
 // ================= COMANDI RIMAPPABILI (tastiera e gamepad) =================
 const CTRL_DEF={keys:{thr:['KeyA','ArrowUp'],brk:['KeyZ','ArrowDown'],left:['Comma','ArrowLeft'],right:['Period','ArrowRight'],hb:['Space',''],horn:['KeyH',''],
-    gD:['KeyD',''],gR:['KeyR',''],gN:['KeyN',''],lights:['KeyL',''],view:['KeyC',''],blL:['KeyQ',''],blR:['KeyE',''],haz:['KeyX',''],pause:['KeyP',''],end:['KeyF',''],unflip:['Enter','']},
+    gD:['KeyD',''],gR:['KeyR',''],gN:['KeyN',''],lights:['KeyL',''],view:['KeyC',''],blL:['KeyQ',''],blR:['KeyE',''],haz:['KeyX',''],pause:['KeyP',''],end:['KeyF',''],unflip:['Enter',''],car:['KeyV','']},
   pad:{steer:{a:0,s:1},pedal:{mode:'one',a:'auto',s:-1},thrA:{a:-1,rest:0,full:1},brkA:{a:-1,rest:0,full:1},
-    btn:{gear:7,horn:6,view:0,lights:3,haz:2,blL:14,blR:15,hb:1,unflip:1}}};
+    btn:{gear:7,horn:6,view:0,lights:3,haz:2,blL:14,blR:15,hb:1,unflip:1,car:-1}}};
 const CTRL_LBL={thr:'Acceleratore',brk:'Freno',left:'Sterzo a sinistra',right:'Sterzo a destra',hb:'Freno a mano',horn:'Clacson',gD:'Marcia D',gR:'Retromarcia R',gN:'Folle N',
-  lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D→N→R'};
+  lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D→N→R',car:'Cambia auto'};
 let CTRL=JSON.parse(JSON.stringify(CTRL_DEF));
 try{const sv=JSON.parse(localStorage.getItem('sim_ctrl')||'null');if(sv){Object.assign(CTRL.keys,sv.keys||{});if(sv.pad){Object.assign(CTRL.pad,sv.pad);CTRL.pad.btn=Object.assign({},CTRL_DEF.pad.btn,sv.pad.btn||{});}}}catch(e){}
 function saveCtrl(){try{localStorage.setItem('sim_ctrl',JSON.stringify(CTRL));}catch(e){}}
@@ -1595,6 +1596,7 @@ addEventListener('keydown',e=>{if(e.repeat){keys[e.code]=true;return;}keys[e.cod
     if(A==='gR')selectGear('R');if(A==='gD')selectGear('D');if(A==='gN')selectGear('N');
     if(A==='lights')toggleLights();
     if(A==='unflip'&&pl.flip&&pl.flip.done)unflip();
+    if(A==='car')cycleCar(1);
     if(A==='end')endRun('fine');
     if(A==='blL')manualBlink(-1);if(A==='blR')manualBlink(1);if(A==='haz')pl.hazard=!pl.hazard;
   }
@@ -1637,7 +1639,7 @@ function readInput(dt){
     if(ed('gear')){const seq=['D','N','R','N'];pl.gpGi=((pl.gpGi||0)+1)%4;selectGear(seq[pl.gpGi]);if(pl.sel!==seq[pl.gpGi])pl.gpGi=(pl.gpGi+3)%4;}
     if(now.horn!==!!prev.horn)setHorn(now.horn);
     if(ed('view'))toggleView();if(ed('lights'))toggleLights();if(ed('haz'))pl.hazard=!pl.hazard;
-    if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&pl.flip&&pl.flip.done)unflip();
+    if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&pl.flip&&pl.flip.done)unflip();if(ed('car'))cycleCar(1);
     pl.gpPrev=now;
     let gT=0,gB=0;
     if(CP.pedal.mode==='two'){const nv=(A)=>{if(A.a<0)return 0;const r=gp.axes[A.a]||0,d=(A.full-A.rest)||1;return Math.max(0,Math.min(1,(r-A.rest)/d));};gT=nv(CP.thrA);gB=nv(CP.brkA);}
@@ -1681,6 +1683,13 @@ function resetPlayer(){
   cars.forEach(c=>{if(!c.ln)return;const q=lanePos(c.ln,c.s,c.ln.off);if(Math.hypot(q.x-p.x,q.z-p.z)<9)c.s-=20;});
   initAudio();
 }
+// cambio d'auto al volo: stessa posizione, stessa velocità, la corsa continua
+function switchCar(k){if(!PHYS[k]||k===selKey)return;const S={};['x','z','h','vx','vy','r','terrH','sel','lights','km','hits','infr','dmg','overN','vmax','ended','hazard'].forEach(q=>S[q]=pl[q]);
+  const cam=camera.position.clone();selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
+  resetPlayer();Object.assign(pl,S);pl.camInit=true;camera.position.copy(cam);
+  if(pl.sel==='D')pl.gear=Math.min(pl.P.gears.length,Math.max(1,pl.gear||1));pl.rpm=pl.P.idle;applyView();
+  pl.navMsg='Ora guidi: '+PHYS[k].label;pl.navMsgT=3;try{savePrefs();}catch(e){}}
+function cycleCar(d){if(!started||pl.flip)return;const K=Object.keys(PHYS),i=K.indexOf(selKey);switchCar(K[(i+d+K.length)%K.length]);}
 const G=9.81;
 function startFlip(dir,strong){if(pl.flip)return;setTimeout(()=>crashSound(8,'side',dir),300);pl.flip={phi:pl.susp.r+pl.slopeR,w:dir*(strong?3.2:2.2),dir,target:dir*(strong?Math.PI:Math.PI/2),done:false,t:0};pl.flips=(pl.flips||0)+1;crashSound(10);
   pl.infrMsg='Ribaltamento!';pl.infrT=4;}
@@ -2250,6 +2259,7 @@ const menu=document.getElementById('menu');
 function showMenu(){paused=true;menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Parti';if(AC)AC.suspend();setHorn(false);}
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
+document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};
 function savePrefs(){try{localStorage.setItem('sim_cfg',JSON.stringify(CFG));localStorage.setItem('sim_pref',JSON.stringify({mode:selMode.value,dest:selDest.value,time:selTime.value,wx:selWx.value,veh:selKey}));}catch(e){}}
 const selMode=document.getElementById('selMode'),selDest=document.getElementById('selDest'),selTime=document.getElementById('selTime'),selWx=document.getElementById('selWx');
 {const el=document.getElementById('cfgMir');el.checked=CFG.mir!==false;el.onchange=()=>{CFG.mir=el.checked;savePrefs();};}
@@ -2267,7 +2277,7 @@ document.getElementById('seedLbl').textContent=SEED;{const sw=document.getElemen
 function goWorld(n){try{localStorage.setItem('sim_seed',n);}catch(e){}location.hash='#w'+n;location.reload();}
 document.getElementById('newWorld').onclick=()=>goWorld(1+Math.floor(_rnd()*99999));
 document.getElementById('loadWorld').onclick=()=>{const n=parseInt(document.getElementById('seedIn').value,10);if(n>0)goWorld(n);};
-function startRun(){endBtn.style.display='block';document.getElementById('pauseBtn').style.display='block';savePrefs();document.getElementById('pauseOv').style.display='none';
+function startRun(){endBtn.style.display='block';document.getElementById('pauseBtn').style.display='block';document.getElementById('carBtn').style.display='block';savePrefs();document.getElementById('pauseOv').style.display='none';
   MODE=document.getElementById('selMode').value;if(G3D)MODE='free';TIME=document.getElementById('selTime').value;WX=document.getElementById('selWx').value;
   peds.forEach(p=>{if(p.down){p.down=false;p.m.rotation.z=0;}});
   if(opp){scene.remove(opp.mesh);cars.splice(cars.indexOf(opp),1);opp=null;}
