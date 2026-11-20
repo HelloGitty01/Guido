@@ -117,6 +117,47 @@ for ci, (nm, cu, cv, r, st) in enumerate(CITIES):
         R = add_road(P, c, w, nmx, tag='city%d' % ci); R['city'] = ci; R['main'] = main; C['roads'].append(R)
     cities.append(C)
 log('città', [(c['n'], len(c['nodes'])) for c in cities])
+# ------------------------------------------------------------------ rotatorie e semafori negli incroci delle città
+islands = []; tls = []
+NRB = {'capitale': 5, 'porto': 2, 'lido': 2, 'lago': 1, 'terme': 1, 'industria': 3, 'arte': 1, 'lago2': 0, 'borgo': 0, 'alpino': 0}
+NTL = {'capitale': 30, 'porto': 8, 'lido': 5, 'lago': 3, 'terme': 3, 'industria': 8, 'arte': 6, 'lago2': 0, 'borgo': 0, 'alpino': 0}
+for C in cities:
+    C['rb'] = set(); inc = {}
+    for R in C['roads']:
+        for q, p in enumerate(R['P']):
+            if p in C['nodes'].values(): inc.setdefault(p, []).append((R, q))
+    cand = [p for p, l in inc.items() if len(l) == 2 and all(0 < q < len(R['P']) - 1 for R, q in l) and any(R['c'] <= 6 for R, q in l)]
+    R0.shuffle(cand); ctr = C['nodes'].get((0, 0))
+    done = []
+    for p in cand:
+        if len(done) >= NRB[C['st']]: break
+        if ctr and math.dist(p, ctr) < C['sp'] * 1.6: continue
+        if any(math.dist(p, d) < C['sp'] * 2.5 for d in done): continue
+        main = any(R['c'] <= 5 for R, q in inc[p]); rr = 17.0 if main else 14.0
+        ends = []
+        for R, q in inc[p]:
+            P = R['P']; A = P[:q]; B = P[q + 1:]
+            A = [a for a in A if math.dist(a, p) > rr + 1]; B = [b for b in B if math.dist(b, p) > rr + 1]
+            if not A or not B: continue
+            ea = tuple(np.round(np.array(p) + (np.array(A[-1]) - p) / math.dist(A[-1], p) * rr, 3)); eb = tuple(np.round(np.array(p) + (np.array(B[0]) - p) / math.dist(B[0], p) * rr, 3))
+            R['P'] = A + [ea]
+            R2 = add_road([eb] + B, R['c'], R['w'], R['n'], tag=R['tag']); R2['city'] = R.get('city'); R2['main'] = R.get('main'); C['roads'].append(R2)
+            ends += [ea, eb]
+        if len(ends) < 3: continue
+        ang = lambda e: math.atan2(-(e[1] - p[1]), e[0] - p[0])
+        ends.sort(key=ang); ring = []
+        for k in range(len(ends)):
+            a0 = ang(ends[k]); a1 = ang(ends[(k + 1) % len(ends)])
+            if a1 <= a0: a1 += 2 * math.pi
+            ring.append(ends[k])
+            for t in np.arange(a0 + 0.2, a1 - 0.1, 0.2): ring.append((p[0] + math.cos(t) * rr, p[1] - math.sin(t) * rr))
+        ring.append(ends[0])
+        add_road(ring, 6, 7.5, 'Rotatoria ' + R0.choice(['della Fontana', 'dei Mille', 'Europa', 'del Mercato', 'della Pace', 'San Giorgio']), o=1, tag='rb')
+        islands.append((p, rr - 4.4)); C['rb'].add(p); done.append(p)
+    tl = [p for p in cand if p not in C['rb'] and not any(math.dist(p, d) < rr + 30 for d, rr in islands)]
+    R0.shuffle(tl)
+    for p in tl[:NTL[C['st']]]: tls.append((p, C['rot']))
+log('rotatorie', len(islands), 'semafori', len(tls))
 # ------------------------------------------------------------------ autostrada: due carreggiate e svincoli
 def offset_line(C, off):
     out = []
@@ -140,10 +181,11 @@ def bez(p0, p1, p2, p3, step=10):
 def nearest_city_node(C, x, z, maxd=1e9):
     best = None
     for p in C['nodes'].values():
+        if p in C.get('rb', ()): continue
         d = math.hypot(p[0] - x, p[1] - z)
         if d < maxd and (best is None or d < best[0]): best = (d, p)
     return best[1] if best else None
-exits = []
+exits = []; exinfo = []
 CN0 = {c['n']: c for c in cities}
 def interchange(C, label, pt=None):
     ccen = np.array([C['u'], C['v']])
@@ -154,7 +196,7 @@ def interchange(C, label, pt=None):
         cand = [k % NHW for k in range(i - 150, i + 151) if abs(HP[k % NHW] - HT[k % NHW]) < 4.5]
         if not cand: return
         i = min(cand, key=lambda k: min(abs(k - i), NHW - abs(k - i)))
-    exits.append(i)
+    exits.append(i); exinfo.append((i, C['n']))
     Hp = HC[i]; dn = hw_dir(i); r = np.array([-dn[1], dn[0]]); s = 1 if (ccen - Hp) @ r > 0 else -1
     near, far = (CA, CB) if s > 0 else (CB, CA)
     sgn = 1 if s > 0 else -1  # la carreggiata vicina va nel verso dn se s>0
@@ -237,6 +279,7 @@ def route(a, b, shore=False, mount=False):
 def exit_node(C, toward):
     d = np.array(toward) - [C['u'], C['v']]; d = d / np.hypot(*d); best = None
     for p in C['nodes'].values():
+        if p in C.get('rb', ()): continue
         v = np.array(p) - [C['u'], C['v']]; sc = v @ d - 0.6 * abs(v[0] * d[1] - v[1] * d[0])
         if best is None or sc > best[0]: best = (sc, p)
     return best[1]
@@ -400,12 +443,16 @@ for R in roads:
     P = R['P']; hh = R['h']; n = len(P); fl = []
     for i in range(n - 1):
         m = ((P[i][0] + P[i + 1][0]) / 2, (P[i][1] + P[i + 1][1]) / 2); hm = (hh[i] + hh[i + 1]) / 2; g = float(hat(H, [m[0]], [m[1]])[0])
-        dr, _ = rivtree.query(m)
-        br = 1 if (hm - g > 5.5 or (dr < 22 and hm - g > 1.5) or any(abs(i - qi) <= 2 for qi, _ in R.get('hwx', []))) else 0
+        cross = False
+        for kk in rivtree.query_ball_point(m, math.dist(P[i], P[i + 1]) / 2 + 30):
+            if kk + 1 < len(RIV) and segx(P[i], P[i + 1], tuple(RIV[kk]), tuple(RIV[kk + 1])): cross = True; break
+        br = 1 if (hm - g > 5.5 or cross or any(abs(i - qi) <= 2 for qi, _ in R.get('hwx', []))) else 0
         if R['tag'] == 'over':
             off = hwtree.query(m)[0]; br = 1 if off < 26 else 0
         tu = 1 if (R['c'] <= 1 and g - hm > 9) else 0
         fl.append((br, tu))
+    for i in range(len(fl)):
+        if fl[i][0] == 0 and ((i > 0 and fl[i - 1][0] and fl[i - 1][1] == 0 and R.get('_rx', {}).get(i - 1)) or False): pass
     s0 = 0
     for i in range(1, n):
         if i == n - 1 or fl[i] != fl[s0]:
@@ -548,6 +595,8 @@ def city_build(C):
     for i in range(max(0, ii0), min(N, ii0 + int(2 * RR / STEP) + 2)):
         for j in range(max(0, jj0), min(N, jj0 + int(2 * RR / STEP) + 2)):
             if WATER[i, j] or waterdist[i, j] < 12: occ.dr.rectangle([j * STEP - occ.x0 - 10, i * STEP - occ.z0 - 10, j * STEP - occ.x0 + 10, i * STEP - occ.z0 + 10], fill=255)
+    for (p, r_) in islands:
+        if math.dist(p, (cx, cz)) < RR: occ.dr.ellipse([p[0] - occ.x0 - r_ - 5, p[1] - occ.z0 - r_ - 5, p[0] - occ.x0 + r_ + 5, p[1] - occ.z0 + r_ + 5], fill=255)
     rot = C.get('rot', 0)
     # piazza centrale (e Duomo per la città d'arte)
     pz = grid_cell(C, 0, 0)
@@ -673,6 +722,50 @@ for q in range(9):
 for q in range(10):
     x = float(R0.uniform(2000, 20000)); zc = float(vcoast(x))
     lms.append(['boat', round(x, 1), round(zc + R0.uniform(500, 1400), 1), round(float(R0.uniform(150, 400)), 1), round(float(R0.uniform(80, 250)), 1), round(float(R0.uniform(0, 6.28)), 2), round(float(R0.uniform(0.008, 0.02)), 4), 1 if q % 3 else 0, 0.0])
+for (p, r_) in islands: lms.append(['island', round(p[0], 2), round(p[1], 2), round(r_, 2), round(float(hat(H, [p[0]], [p[1]])[0]), 2)])
+for (p, rot) in tls: lms.append(['tl', round(p[0], 2), round(p[1], 2), round(rot, 4)])
+# ------------------------------------------------------------------ cartelli: autostrada, raccordi, statali; cartelloni pubblicitari
+def kmtxt(m): return ('%d km' % round(m / 1000)) if m >= 1500 else ('%d m' % (round(m / 100) * 100))
+EX = sorted(exinfo)
+for i, nm in EX:
+    for car, sg in ((CA, 1), (CB, -1)):
+        for back, kind in ((95, 'hw1'), (32, 'hw2')):
+            k = (i - sg * back) % NHW; d = hw_dir(k) * sg; rr = np.array([-d[1], d[0]]); p = car[k] + rr * 8.4
+            lms.append(['sign', round(p[0], 1), round(p[1], 1), round(math.atan2(d[1], d[0]), 4), kind, ['USCITA', nm, kmtxt(back * 10 - 250) if kind == 'hw1' else '']])
+        # dopo lo svincolo: prossime uscite e distanze
+        k = (i + sg * 45) % NHW; d = hw_dir(k) * sg; rr = np.array([-d[1], d[0]]); p = car[k] + rr * 8.4
+        nxt = []
+        for step in range(1, len(EX)):
+            j, n2 = EX[(EX.index((i, nm)) + sg * step) % len(EX)]
+            dist = ((j - i) * sg) % NHW * 10.0
+            if n2 != nm and n2 not in [x[0] for x in nxt]: nxt.append((n2, dist))
+            if len(nxt) == 3: break
+        lms.append(['sign', round(p[0], 1), round(p[1], 1), round(math.atan2(d[1], d[0]), 4), 'hwd', [n2 + '  ' + kmtxt(dd) for n2, dd in nxt]])
+for R in statali:
+    P = R['P']
+    if len(P) < 12: continue
+    if R['tag'] == 'link':
+        a = np.array(P[-5]); b = np.array(P[-6]); d = (b - a) / np.hypot(*(b - a)); rr = np.array([-d[1], d[0]]); p = a + rr * (R['w'] / 2 + 2.2)
+        lms.append(['sign', round(p[0], 1), round(p[1], 1), round(math.atan2(d[1], d[0]), 4), 'a1', ['A1', 'Autostrada']])
+        continue
+    for end, nb in ((0, 1), (-1, -1)):
+        k = 5 if end == 0 else len(P) - 6; a = np.array(P[k]); b = np.array(P[k + nb]); d = (b - a) / np.hypot(*(b - a)); rr = np.array([-d[1], d[0]]); p = a + rr * (R['w'] / 2 + 2.2)
+        far = P[-1] if end == 0 else P[0]; tgt = min(cities, key=lambda C: math.dist((C['u'], C['v']), far))
+        L = float(np.hypot(*np.diff(np.array(P), axis=0).T).sum())
+        lms.append(['sign', round(p[0], 1), round(p[1], 1), round(math.atan2(d[1], d[0]), 4), 'st', [tgt['n'], kmtxt(L)]])
+ADS = 12; nb_ = 0
+for R in statali:
+    P = np.array(R['P'])
+    for k in range(30, len(P) - 30, 90):
+        if R0.random() < 0.45: continue
+        a = P[k]; d = P[k + 1] - P[k - 1]; d /= np.hypot(*d); sd = 1 if R0.random() < 0.5 else -1; rr = np.array([-d[1], d[0]]) * sd; p = a + rr * (R['w'] / 2 + 9)
+        if waterdist[gidx(*p)] < 20 or roadtree.query(p)[0] < 7 or hwtree.query(p)[0] < 25 or any(math.dist(p, (C['u'], C['v'])) < C['r'] * 0.9 for C in cities): continue
+        lms.append(['bill', round(p[0], 1), round(p[1], 1), round(math.atan2(rr[1], rr[0]), 4), int(R0.integers(0, ADS)), round(float(hat(H, [p[0]], [p[1]])[0]), 2)]); nb_ += 1
+for k in range(0, NHW, 160):
+    sd = 1 if (k // 160) % 2 else -1; d = hw_dir(k); rr = np.array([-d[1], d[0]]) * sd; p = HC[k] + rr * 32
+    if waterdist[gidx(*p)] < 20 or roadtree.query(p)[0] < 12: continue
+    lms.append(['bill', round(p[0], 1), round(p[1], 1), round(math.atan2(-rr[1], -rr[0]) + math.pi, 4), int(R0.integers(0, ADS)), round(float(hat(H, [p[0]], [p[1]])[0]), 2)]); nb_ += 1
+log('cartelli', sum(1 for L in lms if L[0] == 'sign'), 'cartelloni', nb_)
 log('extra', len(lms))
 # ------------------------------------------------------------------ acque: lago e mare come poligoni
 from skimage import measure
@@ -731,7 +824,7 @@ out = {'meta': {'S': 1, 'SV': 1, 'OX': OX, 'OZ': OZ, 'grid': [OX, OZ, STEP, N, N
 tr = np.array([W(p) for p in trees]); tr = tr[np.lexsort((tr[:, 0], tr[:, 1] // 200))]; out['trees'] = enc(tr.ravel(), 2)
 def wl(L):
     k = L[0]
-    if k in ('monu', 'tower', 'chim', 'ship', 'crane', 'cows', 'church', 'smog', 'boat'):
+    if k in ('monu', 'tower', 'chim', 'ship', 'crane', 'cows', 'church', 'smog', 'boat', 'island', 'tl', 'sign', 'bill'):
         L = list(L); L[1] = round(L[1] + OX, 1); L[2] = round(L[2] + OZ, 1); return L
     if k == 'duomo': return [k, [round(v + (OX if q % 2 == 0 else OZ), 1) for q, v in enumerate(L[1])], L[2]]
     if k in ('quay',): return [k, [round(v + (OX if q % 2 == 0 else OZ), 1) for q, v in enumerate(L[1])], L[2]]
