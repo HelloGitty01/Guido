@@ -2608,12 +2608,15 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
     c=L;if(L.length)cache.set(k,c);if(cache.size>60000)cache.clear();return c;}
   const api={yh:NaN,tiles,place};
   function pick(L,yh){if(!L.length)return NaN;if(isNaN(yh))return L[0];let best=NaN,low=1e9;for(const y of L){if(y<=yh+1.2&&(isNaN(best)||y>best))best=y;if(y<low)low=y;}return isNaN(best)?low:best;}
-  api.H=(x,z)=>{const fx=x/GSZ,fz=z/GSZ,i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j,yh=isNaN(api.yh)?NaN:api.yh;
-    const a=pick(hits(i,j),yh),b=pick(hits(i+1,j),yh),c=pick(hits(i,j+1),yh),d=pick(hits(i+1,j+1),yh);
+  // il 3D fotografico è "gibboso" (auto parcheggiate, cordoli, rumore della ricostruzione):
+  // per la guida si usa una superficie lisciata su nodi ogni 4,5 m, ognuno col valore basso di 9 misure vicine
+  const NS=3;
+  function node(i,j,yh){const P=[];for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const y=pick(hits(i*NS+a,j*NS+b),yh);if(!isNaN(y))P.push(y);}
+    if(P.length<3)return NaN;P.sort((p,q)=>p-q);return P[Math.min(P.length-1,Math.floor(P.length*0.3))];}
+  api.H=(x,z)=>{const st=GSZ*NS,fx=x/st,fz=z/st,i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j,yh=isNaN(api.yh)?NaN:api.yh;
+    const a=node(i,j,yh),b=node(i+1,j,yh),c=node(i,j+1,yh),d=node(i+1,j+1,yh);
     const ok=[a,b,c,d].filter(v=>!isNaN(v));if(!ok.length)return isNaN(yh)?(pl.terrH||0):yh;
-    if(ok.length<4){return ok.reduce((s,v)=>s+v,0)/ok.length;}
-    // spigoli (cordoli, muretti): se i quattro campioni sono molto diversi si prende il più vicino in quota
-    const mx=Math.max(a,b,c,d),mn=Math.min(a,b,c,d);if(mx-mn>0.8&&!isNaN(yh)){let best=a;[b,c,d].forEach(v=>{if(Math.abs(v-yh)<Math.abs(best-yh))best=v;});return best;}
+    if(ok.length<4)return ok.reduce((s,v)=>s+v,0)/ok.length;
     return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;};
   // attribuzioni obbligatorie di Google
   const cr=document.createElement('div');cr.style.cssText='position:fixed;left:8px;bottom:34px;z-index:5;font:11px system-ui;color:#fff;text-shadow:0 0 3px #000;pointer-events:none;max-width:60vw';document.body.appendChild(cr);
