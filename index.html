@@ -28,6 +28,13 @@
   .opts{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:14px;font-size:14px}.opts select{margin-left:6px;background:#1c232d;color:#eee;border:1px solid #2f3a48;border-radius:8px;padding:6px}
   #sum{position:fixed;inset:0;background:rgba(8,10,14,.82);display:none;align-items:center;justify-content:center;z-index:6}#sum .box{background:#141a22;border:1px solid #2f3a48;border-radius:14px;padding:22px 26px;max-width:420px;width:90%}#sum h2{margin:0 0 10px}#sum table{width:100%;font-size:15px;border-collapse:collapse}#sum td{padding:5px 0;border-bottom:1px solid #222a35}#sum td+td{text-align:right;font-weight:600}#sum button{margin-top:16px;background:#e8eef5;color:#111;border:0;border-radius:22px;padding:10px 20px;font-size:15px;margin-right:8px}
   .sm{background:#1c232d;color:#eee;border:1px solid #2f3a48;border-radius:8px;padding:6px 10px;cursor:pointer}
+  #holdOv{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:6;background:rgba(238,245,248,.82);font-family:'Nunito',system-ui,sans-serif;color:#5e1511}
+  #holdOv .hBox{text-align:center;padding:24px 30px;border-radius:18px;background:#fff;box-shadow:0 8px 30px rgba(94,21,17,.18);min-width:250px}
+  #holdOv .hSpin{width:42px;height:42px;margin:0 auto 12px;border-radius:50%;border:5px solid #f3d3d1;border-top-color:#d7261e;animation:hsp 0.9s linear infinite}
+  @keyframes hsp{to{transform:rotate(360deg)}}
+  #holdTxt{font:700 18px 'Baloo 2',system-ui,sans-serif;margin-bottom:10px}
+  #holdBar{height:8px;border-radius:4px;background:#f3d3d1;overflow:hidden;margin-bottom:14px}#holdBar i{display:block;height:100%;width:0;background:#d7261e;transition:width .3s}
+  #holdGo{border:0;border-radius:10px;padding:8px 16px;background:#eef5f8;color:#5e1511;font:600 14px 'Nunito',system-ui,sans-serif;cursor:pointer}
   #pauseOv{position:fixed;inset:0;display:none;align-items:center;justify-content:center;font-size:34px;font-weight:700;background:rgba(0,0,0,.35);z-index:4;pointer-events:none}
   #go{margin-top:16px;background:#e8eef5;color:#111;border:0;border-radius:24px;padding:12px 26px;font-size:16px;cursor:pointer}
   .keys{margin-top:18px;font-size:13px;opacity:.8;line-height:1.6}
@@ -144,6 +151,7 @@
 <div id="hud"></div>
 <canvas id="mini" width="200" height="200" style="position:fixed;right:12px;top:56px;width:170px;height:170px;border-radius:50%;border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none;z-index:2"></canvas>
 <div id="pauseOv">Pausa</div>
+<div id="holdOv"><div class="hBox"><div class="hSpin"></div><div id="holdTxt">Carico la città…</div><div id="holdBar"><i></i></div><button id="holdGo">Parti subito</button></div></div>
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
 <button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
 <button id="radioBtn" title="Autoradio (tasto M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">♪ Radio</button><div id="radioTag"></div>
@@ -2361,7 +2369,7 @@ document.getElementById('sumMenu').onclick=()=>{document.getElementById('sum').s
 // ================= MENU / CICLO =================
 let started=false,paused=true,simT=0;
 const menu=document.getElementById('menu');
-function showMenu(){paused=true;RADIO.pause(true);menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
+function showMenu(){if(hold)holdEnd();paused=true;RADIO.pause(true);menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;RADIO.pause(paused);document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
 document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};
@@ -2399,11 +2407,21 @@ document.getElementById('seedLbl').textContent=SEED;{const sw=document.getElemen
 function goWorld(n){try{localStorage.setItem('sim_seed',n);}catch(e){}location.hash='#w'+n;location.reload();}
 document.getElementById('newWorld').onclick=()=>goWorld(1+Math.floor(_rnd()*99999));
 document.getElementById('loadWorld').onclick=()=>{const n=parseInt(document.getElementById('seedIn').value,10);if(n>0)goWorld(n);};
+// attesa del caricamento della città 3D: l'auto resta ferma finché le tessere vicine non sono arrivate
+let hold=null;
+function holdStart(){hold={t:0,w0:performance.now(),quiet:0,n0:G3D.nLoad()};document.getElementById('holdOv').style.display='flex';document.getElementById('holdBar').firstChild.style.width='0';}
+function holdEnd(){if(!hold)return;hold=null;document.getElementById('holdOv').style.display='none';G3D.yh=NaN;pl.terrH=TH(pl.x,pl.z);pl.vx=pl.vy=0;runStart=simT;}
+function holdTick(dt){hold.t+=dt;G3D.yh=NaN;pl.terrH=TH(pl.x,pl.z);pl.vx=pl.vy=0;
+  const b=G3D.busy(),n=G3D.nLoad()-hold.n0;const now=performance.now();if(b||hold.q0==null)hold.q0=b?null:now;hold.quiet=hold.q0==null?0:(now-hold.q0)/1000;if(!b)for(let i=0;i<4;i++)G3D.gStep();
+  const p=Math.min(0.97,n/(n+b+(hold.quiet>0?0:8)+1)*Math.min(1,hold.t/3));document.getElementById('holdBar').firstChild.style.width=Math.round(p*100)+'%';
+  document.getElementById('holdTxt').textContent=n?'Carico la città… '+n+' pezzi':'Mi collego a Google…';
+  if((now-hold.w0>2500&&hold.quiet>1.2&&G3D.ready())||performance.now()-hold.w0>(MOBILE?60000:45000))holdEnd();}
+document.getElementById('holdGo').onclick=()=>holdEnd();
 function startRun(){endBtn.style.display='block';document.getElementById('pauseBtn').style.display='block';document.getElementById('carBtn').style.display='block';document.getElementById('radioBtn').style.display='block';savePrefs();document.getElementById('pauseOv').style.display='none';
   MODE=document.getElementById('selMode').value;if(G3D)MODE='free';TIME=document.getElementById('selTime').value;WX=document.getElementById('selWx').value;
   peds.forEach(p=>{if(p.down){p.down=false;p.m.rotation.z=0;}});
   if(opp){scene.remove(opp.mesh);cars.splice(cars.indexOf(opp),1);opp=null;}
-  RADIO.pause(false);resetPlayer();if(NWT){const cn=document.getElementById('selStart').value;if(G3D&&G3D.place)G3D.place(cn);NWT.spawn(cn,document.getElementById('selVia').value);if(G3D){G3D.yh=NaN;pl.terrH=TH(pl.x,pl.z);}}applyEnv();applyView();started=true;paused=false;menu.style.display='none';AC&&AC.resume();
+  RADIO.pause(false);resetPlayer();if(NWT){const cn=document.getElementById('selStart').value;if(G3D&&G3D.place)G3D.place(cn);NWT.spawn(cn,document.getElementById('selVia').value);if(G3D){G3D.yh=NaN;pl.terrH=TH(pl.x,pl.z);}}applyEnv();applyView();started=true;paused=false;menu.style.display='none';AC&&AC.resume();if(G3D&&G3D.city())holdStart();
   pl.ended=false;pl.vmax=0;pl.overN=0;runStart=simT;route=null;destMark.visible=false;
   if(MODE!=='free'){route=buildRoute(document.getElementById('selDest').value);if(route){destMark.position.set(route.dest.x,TH(route.dest.x,route.dest.z)+30,route.dest.z);destMark.visible=true;
     say(MODE==='race'?'Gara verso '+document.getElementById('selDest').selectedOptions[0].textContent+'. Pronti...':'Percorso calcolato verso '+document.getElementById('selDest').selectedOptions[0].textContent);}}
@@ -2441,7 +2459,7 @@ function loop(now){
   if(!paused){
     simT+=dt;updateLights(simT);
     // passo di integrazione fisso a 240 Hz: guida uguale a qualsiasi frame rate
-    physAcc+=dt;let ns=0;while(physAcc>=PH&&ns<16){readInput(PH);stepPhysics(PH);physAcc-=PH;ns++;}
+    if(hold){holdTick(dt);physAcc=0;}else{physAcc+=dt;let ns=0;while(physAcc>=PH&&ns<16){readInput(PH);stepPhysics(PH);physAcc-=PH;ns++;}}
     updateDust(dt);updateSkids();updateRain(dt);
     if(raceT<0){const before=Math.ceil(-raceT);raceT+=dt;const now=Math.ceil(-raceT);if(now!==before&&now>0){ding(1);pl.navMsg=String(now);pl.navMsgT=1;}if(raceT>=0){pl.navMsg='VIA!';pl.navMsgT=1.5;ding(1);}
       pl.vx=Math.min(pl.vx,0);}
@@ -2813,7 +2831,8 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   function hits(ix,iz){const k=ix*1000003+iz;let c=cache.get(k);if(c)return c;o3.set(ix*GSZ,4000,iz*GSZ);ray.set(o3,down);ray.far=8000;
     const I=[];try{tiles.raycast(ray,I);}catch(e){}I.sort((p,q)=>p.distance-q.distance);const L=[];for(const h of I){const y=h.point.y;if(!L.length||Math.abs(L[L.length-1]-y)>0.4)L.push(y);}
     c=L;if(L.length)cache.set(k,c);if(cache.size>60000)cache.clear();return c;}
-  const api={yh:NaN,tiles,place,U,mcv,groundNow:()=>{for(let i=0;i<400;i++){groundStep();if(gC&&!job)break;}},dbg:()=>({k:job&&job.k,gC,h:hits(Math.floor(pl.x/GSZ),Math.floor(pl.z/GSZ)).length})};
+  let nLoad=0;tiles.addEventListener('load-model',()=>{nLoad++;});
+  const api={yh:NaN,tiles,place,U,mcv,city:()=>city,nLoad:()=>nLoad,busy:()=>{const t=tiles.stats;return t.downloading+t.parsing+tiles.downloadQueue.items.length+tiles.parseQueue.items.length;},ready:()=>!!(city&&mC&&gC&&!job),gStep:()=>groundStep(),groundNow:()=>{for(let i=0;i<400;i++){groundStep();if(gC&&!job)break;}},dbg:()=>({k:job&&job.k,gC,h:hits(Math.floor(pl.x/GSZ),Math.floor(pl.z/GSZ)).length})};
   function pick(L,yh){if(!L.length)return NaN;if(isNaN(yh))return L[0];let best=NaN,low=1e9;for(const y of L){if(y<=yh+1.2&&(isNaN(best)||y>best))best=y;if(y<low)low=y;}return isNaN(best)?low:best;}
   // il 3D fotografico è "gibboso" (auto parcheggiate, cordoli, rumore della ricostruzione):
   // per la guida si usa una superficie lisciata su nodi ogni 4,5 m, ognuno col valore basso di 9 misure vicine
