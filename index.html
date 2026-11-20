@@ -103,8 +103,8 @@ const MODELS={};
   const LD=new THREE.GLTFLoader();if(window.MeshoptDecoder)LD.setMeshoptDecoder(MeshoptDecoder);
   // mondo reale del Nord-Ovest: dati compressi, scaricati solo se scelti nel menu
   const wv=(()=>{try{return localStorage.getItem('sim_world')||'';}catch(e){return '';}})(),offClaude=/github\.io$|^localhost$|^127\./.test(location.hostname);
-  // limite di sicurezza per le città 3D di Google: max 25 sessioni al giorno e 600 al mese (la quota gratuita è 1.000/mese)
-  window.G3D_LIM={d:25,m:600};
+  // limite di sicurezza per le città 3D di Google: max 20 sessioni al giorno e 600 al mese (la quota gratuita è 1.000/mese)
+  window.G3D_LIM={d:20,m:600};
   window.g3dUsage=()=>{try{const u=JSON.parse(localStorage.getItem('sim_g3d_use')||'{}'),t=new Date(),day=t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate(),mon=t.getFullYear()+'-'+(t.getMonth()+1);
     if(u.day!==day){u.day=day;u.d=0;}if(u.mon!==mon){u.mon=mon;u.m=0;}return u;}catch(e){return null;}};
   {const u=window.g3dUsage();window.G3D_BLOCK=wv==='g3d'&&(!u||u.d>=window.G3D_LIM.d||u.m>=window.G3D_LIM.m);}
