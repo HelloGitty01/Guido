@@ -115,7 +115,8 @@
   <div class="mgrid">
     <section class="card span"><h2><em>1</em> Scegli l'auto</h2><div class="veh" id="vehList"></div><div class="note">Ognuna ha massa, motore, rapporti, freni e baricentro della sua categoria. In corsa la cambi col tasto V.</div></section>
     <section class="card"><h2><em>2</em> Dove si va</h2>
-      <div class="row"><label>Mappa <select id="selWorld"><option value="base">Milano e dintorni</option><option value="nw">Nord-Ovest reale: Milano, Como, Biella</option><option value="g3d" id="optG3D" hidden>Centri città 3D fotorealistici (Google)</option></select></label><label id="lblStart" style="display:none">Partenza <select id="selStart"><option>Milano</option><option>Como</option><option>Biella</option></select></label><label id="lblVia" style="display:none">Via <input id="selVia" list="viaList" placeholder="centro (scrivi per cercare)" size="24"><datalist id="viaList"></datalist></label></div>
+      <div class="row"><label>Mappa <select id="selWorld"><option value="base">Milano e dintorni</option><option value="nw">Nord-Ovest reale: Milano, Como, Biella</option><option value="g3d" id="optG3D" hidden>Centri città 3D fotorealistici (Google)</option></select></label><label id="lblStart" style="display:none">Partenza <select id="selStart"><option>Milano</option><option>Como</option><option>Biella</option></select></label><label id="lblVia" style="display:none">Via <input id="selVia" placeholder="es. via Torino (vuoto = centro)" size="24" autocomplete="off"><button id="viaBtn" class="sm">Cerca</button></label></div>
+      <div class="row" id="viaRes"></div>
       <div class="row"><label id="lblKey" style="display:none">Chiave Google <input id="gKey" type="password" size="22" placeholder="incolla la chiave API"></label><span id="g3dUse" style="display:none"></span></div>
       <div class="row"><label>Modalità <select id="selMode"><option value="free">Guida libera</option><option value="nav">Da A a B col navigatore</option><option value="race">Gara contro il computer</option></select></label><label id="lblDest">Destinazione <select id="selDest"></select></label></div>
       <div class="row" id="seedRow"><span>Mondo n° <b id="seedLbl"></b></span><button id="newWorld" class="sm">Nuovo mondo</button><input id="seedIn" placeholder="numero" size="7"><button id="loadWorld" class="sm">Carica</button></div>
@@ -1653,7 +1654,7 @@ addEventListener('keydown',e=>{if(!ctrlWait||ctrlWait.kind!=='key')return;e.prev
   requestAnimationFrame(padPoll);})();
 const KEYMAP=CTRL.keys;
 const kd=list=>list.some(k=>keys[k]);
-addEventListener('keydown',e=>{if(e.repeat){keys[e.code]=true;return;}keys[e.code]=true;
+addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT')return;if(e.repeat){keys[e.code]=true;return;}keys[e.code]=true;
   if(e.code==='Escape')showMenu();const A=actOf(e.code);
   if(A==='pause'&&started)togglePause();
   if(started&&!paused){
@@ -2377,9 +2378,20 @@ document.getElementById('seedLbl').textContent=SEED;{const sw=document.getElemen
   if(window.G3DMODE||window.G3D_BLOCK){window.showG3DUse();if(window.G3D_BLOCK)sw.value='g3d';}
   if(window.G3DMODE){const lk=document.getElementById('lblKey'),gk=document.getElementById('gKey');lk.style.display='';try{gk.value=localStorage.getItem('sim_gkey')||'';}catch(e){}gk.onchange=()=>{try{localStorage.setItem('sim_gkey',gk.value.trim());}catch(e){}location.reload();};
     const sm=document.getElementById('selMode');sm.value='free';sm.disabled=true;document.getElementById('lblDest').style.display='none';}if(WORLD_NW){document.getElementById('lblStart').style.display='';const ss=document.getElementById('selStart');try{const v=localStorage.getItem('sim_start');if(v)ss.value=v;}catch(e){}ss.onchange=()=>{try{localStorage.setItem('sim_start',ss.value);}catch(e){}fillVia();};
-    const sv=document.getElementById('selVia');document.getElementById('lblVia').style.display='';try{sv.value=localStorage.getItem('sim_via')||'';}catch(e){}
-    sv.onchange=()=>{try{localStorage.setItem('sim_via',sv.value);}catch(e){}};
-    window.fillVia=()=>{if(!NWT)return;const dl=document.getElementById('viaList');dl.innerHTML='';NWT.streets(ss.value).forEach(n=>{const o=document.createElement('option');o.value=n;dl.appendChild(o);});};}sw.onchange=()=>{try{localStorage.setItem('sim_world',sw.value);}catch(e){}location.reload();};}
+    const sv=document.getElementById('selVia'),vr=document.getElementById('viaRes');document.getElementById('lblVia').style.display='';try{sv.value=localStorage.getItem('sim_via')||'';}catch(e){}
+    const norm=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/['’.]/g,' ').replace(/\s+/g,' ').trim();
+    const setVia=v=>{sv.value=v;try{localStorage.setItem('sim_via',v);}catch(e){}};
+    const showOk=()=>{vr.innerHTML=sv.value?'<span class="note">✓ Partenza da <b>'+sv.value.replace(/</g,'&lt;')+'</b>, '+ss.value+'</span>':'<span class="note">Partenza dal centro di '+ss.value+'</span>';};
+    // ricerca su richiesta: scrivi, premi Cerca (o Invio), scegli tra le vie trovate
+    const search=()=>{const q=norm(sv.value);if(!q){setVia('');showOk();return;}const all=NWT?NWT.streets(ss.value):[];
+      const words=q.split(' ').filter(w=>w.length>1&&!['via','viale','corso','piazza','piazzale','largo','vicolo','della','delle','dei','del','di'].includes(w));
+      const hits=all.filter(n=>{const m=norm(n);return m===q||(words.length?words.every(w=>m.includes(w)):m.includes(q));}).slice(0,12);
+      if(!hits.length){vr.innerHTML='<span class="note">Nessuna via trovata a '+ss.value+'. Prova con una parte del nome.</span>';return;}
+      if(hits.length===1&&norm(hits[0])===q){setVia(hits[0]);showOk();return;}
+      vr.innerHTML='';const lab=document.createElement('span');lab.className='note';lab.textContent='Scegli: ';vr.appendChild(lab);
+      hits.forEach(n=>{const b=document.createElement('button');b.className='sm';b.textContent=n;b.onclick=()=>{setVia(n);showOk();};vr.appendChild(b);});};
+    document.getElementById('viaBtn').onclick=search;sv.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search();}});
+    window.fillVia=()=>{if(sv.value&&NWT&&!NWT.streets(ss.value).includes(sv.value))setVia('');showOk();};}sw.onchange=()=>{try{localStorage.setItem('sim_world',sw.value);}catch(e){}location.reload();};}
 function goWorld(n){try{localStorage.setItem('sim_seed',n);}catch(e){}location.hash='#w'+n;location.reload();}
 document.getElementById('newWorld').onclick=()=>goWorld(1+Math.floor(_rnd()*99999));
 document.getElementById('loadWorld').onclick=()=>{const n=parseInt(document.getElementById('seedIn').value,10);if(n>0)goWorld(n);};
@@ -2711,12 +2723,29 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   const tiles=new TilesRenderer(url);if(key)tiles.registerPlugin(new GoogleCloudAuthPlugin({apiToken:key}));
   const draco=new DRACOLoader();draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/gltf/');
   const gl=new GLTFLoader(tiles.manager);gl.setDRACOLoader(draco);tiles.manager.addHandler(/\.(gltf|glb)$/g,gl);
-  tiles.errorTarget=MOBILE?24:12;tiles.parseQueue.maxJobs=MOBILE?4:10;tiles.downloadQueue.maxJobs=MOBILE?12:30;
+  tiles.errorTarget=MOBILE?16:6;tiles.parseQueue.maxJobs=MOBILE?4:10;tiles.downloadQueue.maxJobs=MOBILE?12:30;
   tiles.setCamera(camera);tiles.setResolutionFromRenderer(camera,renderer);
   scene.add(tiles.group);tiles.group.matrixAutoUpdate=false;
   let dirty=0;
   // le foto contengono già luce e ombre: materiale senza illuminazione
-  tiles.addEventListener('load-model',({scene:s})=>{s.traverse(o=>{if(o.isMesh){const m=o.material;o.material=new THREE.MeshBasicMaterial({map:m.map||null,color:m.map?0xffffff:(m.color||0xffffff),side:m.side});o.material.toneMapped=false;m.dispose&&m.dispose();o.castShadow=false;o.receiveShadow=false;}});dirty=1;});
+  // chiome degli alberi e teloni sopra la carreggiata: si tagliano oltre 4,5 m sopra la strada (maschera delle vie OSM attorno all'auto)
+  const MS=512,MPX=0.5,mcv=document.createElement('canvas');mcv.width=mcv.height=MS;const mctx=mcv.getContext('2d');
+  const mtex=new THREE.CanvasTexture(mcv);mtex.minFilter=mtex.magFilter=THREE.NearestFilter;mtex.generateMipmaps=false;mtex.flipY=false;
+  const U={uMask:{value:mtex},uBox:{value:new THREE.Vector4(0,0,1,0)},uRef:{value:0}};let mC=null,mT=0;
+  function buildMask(){const cx=pl.x,cz=pl.z,x0=cx-MS*MPX/2,z0=cz-MS*MPX/2,h0=NW.Hg(cx,cz);
+    // finché il 3D sotto l'auto non è caricato la quota di riferimento non è affidabile: niente tagli
+    if(!hits(Math.floor(cx/GSZ),Math.floor(cz/GSZ)).length){U.uBox.value.w=0;mC=null;return;}mctx.clearRect(0,0,MS,MS);mctx.lineCap='round';
+    NW.roads.forEach(R=>{if(R.c>9||R.t)return;const bx=R.X[0],bz=R.Z[0];if(Math.abs(bx-cx)>MS*MPX&&Math.abs(R.X[R.N-1]-cx)>MS*MPX)return;if(Math.abs(bz-cz)>MS*MPX&&Math.abs(R.Z[R.N-1]-cz)>MS*MPX)return;
+      mctx.lineWidth=(R.w+(R.c>=9?1:3))/MPX;for(let i=0;i<R.N-1;i++){const mx=(R.X[i]+R.X[i+1])/2,mz=(R.Z[i]+R.Z[i+1])/2;if(Math.abs(mx-cx)>MS*MPX*0.6||Math.abs(mz-cz)>MS*MPX*0.6)continue;
+        const dh=2*(NW.Hg(mx,mz)-h0),v=Math.max(0,Math.min(65535,Math.round((dh+64)*500)));mctx.strokeStyle=`rgb(255,${v>>8},${v&255})`;
+        mctx.beginPath();mctx.moveTo((R.X[i]-x0)/MPX,(R.Z[i]-z0)/MPX);mctx.lineTo((R.X[i+1]-x0)/MPX,(R.Z[i+1]-z0)/MPX);mctx.stroke();}});
+    mtex.needsUpdate=true;api.yh=pl.terrH;U.uBox.value.set(x0,z0,MS*MPX,1);U.uRef.value=api.H(cx,cz);mC=[cx,cz];}
+  function maskMat(m){m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <project_vertex>','#include <project_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform sampler2D uMask;uniform vec4 uBox;uniform float uRef;').replace('void main() {',`void main() {
+        vec2 mu=(vWP.xz-uBox.xy)/uBox.z;if(uBox.w>0.5&&mu.x>0.0&&mu.y>0.0&&mu.x<1.0&&mu.y<1.0){vec4 mk=texture2D(uMask,mu);if(mk.r>0.9&&mk.a>0.99){float dh=(floor(mk.g*255.0+0.5)*256.0+floor(mk.b*255.0+0.5))/500.0-64.0;if(vWP.y>uRef+dh+4.5)discard;}}`);};
+    m.customProgramCacheKey=()=>'g3dmask';return m;}
+  const ANI=renderer.capabilities.getMaxAnisotropy();
+  tiles.addEventListener('load-model',({scene:s})=>{s.traverse(o=>{if(o.isMesh){const m=o.material;if(m.map){m.map.anisotropy=ANI;m.map.needsUpdate=true;}o.material=maskMat(new THREE.MeshBasicMaterial({map:m.map||null,color:m.map?0xffffff:(m.color||0xffffff),side:m.side}));o.material.toneMapped=false;m.dispose&&m.dispose();o.castShadow=false;o.receiveShadow=false;}});dirty=1;});
   tiles.addEventListener('dispose-model',()=>{dirty=1;});
   // aggancio: centro città (lat, lon) -> centro della città nel mondo del gioco; est = +x, nord = -z, quota reale
   let city=null,counted=false;
@@ -2728,7 +2757,7 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   function hits(ix,iz){const k=ix*1000003+iz;let c=cache.get(k);if(c)return c;o3.set(ix*GSZ,4000,iz*GSZ);ray.set(o3,down);ray.far=8000;
     const I=[];try{tiles.raycast(ray,I);}catch(e){}I.sort((p,q)=>p.distance-q.distance);const L=[];for(const h of I){const y=h.point.y;if(!L.length||Math.abs(L[L.length-1]-y)>0.4)L.push(y);}
     c=L;if(L.length)cache.set(k,c);if(cache.size>60000)cache.clear();return c;}
-  const api={yh:NaN,tiles,place};
+  const api={yh:NaN,tiles,place,U,mcv};
   function pick(L,yh){if(!L.length)return NaN;if(isNaN(yh))return L[0];let best=NaN,low=1e9;for(const y of L){if(y<=yh+1.2&&(isNaN(best)||y>best))best=y;if(y<low)low=y;}return isNaN(best)?low:best;}
   // il 3D fotografico è "gibboso" (auto parcheggiate, cordoli, rumore della ricostruzione):
   // per la guida si usa una superficie lisciata su nodi ogni 4,5 m, ognuno col valore basso di 9 misure vicine
@@ -2746,6 +2775,7 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   function alert0(){city=null;pl.navMsg='Limite giornaliero delle città 3D raggiunto';pl.navMsgT=6;}
   api.update=(dt)=>{if(!city)return;camera.updateMatrixWorld();tiles.setResolutionFromRenderer(camera,renderer);tiles.update();
     if(dirty){dirty=0;cache.clear();}
+    mT-=dt;if(started&&(!mC||(mT<=0&&Math.hypot(pl.x-mC[0],pl.z-mC[1])>35))){mT=0.5;buildMask();}
     crT-=dt;if(crT<=0){crT=2;try{const a=tiles.getAttributions().map(x=>x.value).filter(v=>typeof v==='string').join(' ');cr.innerHTML='<b style="font-size:13px">Google</b> '+a.replace(/</g,'&lt;');}catch(e){}}};
   return api;
 })();
