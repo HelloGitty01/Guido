@@ -687,7 +687,7 @@ function dirtDist(x,z){const dx=x-RC.x,dz=z-RC.z,th=Math.atan2(dz,dx);let d=Math
   if(x>RC.x+150&&Math.abs(z)<20)d=Math.min(d,accessPath.proj(x,z).dist);return d;}
 
 // --- superfici e quote del terreno ---
-function surfaceAt(x,z){if(window.__surf)return window.__surf;if(NW&&x>6000&&NW.inside(x,z))return NW.surf(x,z);return surfaceAt0(x,z);}
+function surfaceAt(x,z){if(window.__surf)return window.__surf;if(G3D&&x>6000&&!NW.cityAt(x,z))return 'asphalt';if(NW&&x>6000&&NW.inside(x,z))return NW.surf(x,z);return surfaceAt0(x,z);}
 function surfaceAt0(x,z){
   if(Math.abs(x)<=L+3&&Math.abs(z)<=L+3)return 'asphalt';
   if(x>L&&x<RX0+2&&Math.abs(z)<ROAD_HALF+0.4)return 'asphalt';
@@ -2016,7 +2016,7 @@ function hornPush(){if(!pl.P||!started)return;const fx=Math.cos(pl.h),fz=-Math.s
     if(al<1||al>30||Math.abs(lat)>2.6)return;const ry=c.mesh.rotation.y;if(Math.cos(ry)*fx-Math.sin(ry)*fz<0.6)return;if(al<bd){bd=al;best=c;}});
   if(best)best.yieldPl=simT+4.5;}
 // ================= TRAFFICO (con il giocatore come ostacolo) =================
-function limitAt(x,z){if(NW&&x>6000&&NW.inside(x,z))return NW.limit(x,z);if(Math.abs(x)<=L+3&&Math.abs(z)<=L+3)return 50;if(x>L&&x<RX0+2&&Math.abs(z)<ROAD_HALF+1)return 70;if(Math.abs(ringSDF(x,z))<10)return 110;{const q=mRoad(x,z);if(q&&q.dist<6)return 50;}{const q2=lRoad(x,z);if(q2&&q2.dist<6)return (lPath.endPt&&Math.hypot(x-lPath.endPt.x,z-lPath.endPt.z)<150)?50:70;}return 90;}
+function limitAt(x,z){if(G3D&&x>6000&&!NW.cityAt(x,z))return 50;if(NW&&x>6000&&NW.inside(x,z))return NW.limit(x,z);if(Math.abs(x)<=L+3&&Math.abs(z)<=L+3)return 50;if(x>L&&x<RX0+2&&Math.abs(z)<ROAD_HALF+1)return 70;if(Math.abs(ringSDF(x,z))<10)return 110;{const q=mRoad(x,z);if(q&&q.dist<6)return 50;}{const q2=lRoad(x,z);if(q2&&q2.dist<6)return (lPath.endPt&&Math.hypot(x-lPath.endPt.x,z-lPath.endPt.z)<150)?50:70;}return 90;}
 function checkInfractions(){
   if(!pl.P)return;
   const box=ints.find(I=>Math.abs(pl.x-I.x)<ROAD_HALF&&Math.abs(pl.z-I.z)<ROAD_HALF)||null;
@@ -2697,15 +2697,20 @@ NWT=(()=>{if(!NW)return null;const HIDE=!!window.G3DMODE;
     if(m.kind==='exit')return "prendi l'uscita"+(m.name?' per '+m.name:'');if(m.kind==='enter')return 'immettiti'+(m.ref?' sulla '+m.ref:" in autostrada");
     if(Math.abs(a)<25)return 'prosegui'+on;if(Math.abs(a)>150)return 'fai inversione';return (Math.abs(a)<50?(a>0?'tieni la destra':'tieni la sinistra'):a>0?'svolta a destra':'svolta a sinistra')+on;}
   // strade nella minimappa e nello schermo del navigatore
-  function drawRoads(g,tp,range,scale){const ci=Math.floor(pl.x/TS),cj=Math.floor(pl.z/TS),r=Math.ceil(range/TS);const LW=[7,4,6,4,5,4.5,4,3,2.2,1.6];
+  function drawRoads(g,tp,range,scale){if(HIDE&&!NW.cityAt(pl.x,pl.z))return;const ci=Math.floor(pl.x/TS),cj=Math.floor(pl.z/TS),r=Math.ceil(range/TS);const LW=[7,4,6,4,5,4.5,4,3,2.2,1.6];
     for(let pass=0;pass<2;pass++){g.strokeStyle=pass?'#8b9790':'#5d6b62';for(let a=-r;a<=r;a++)for(let b=-r;b<=r;b++){const l=segT.get(tk(ci+a,cj+b));if(!l)continue;
       for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.c>=9)continue;if((R.c<=3)!==(pass===1))continue;g.lineWidth=LW[R.c]*scale;g.beginPath();g.moveTo(...tp(R.X[i],R.Z[i]));g.lineTo(...tp(R.X[i+1],R.Z[i+1]));g.stroke();}}}}
   // vie percorribili di una città (per scegliere da dove partire)
-  function streets(name){const c=NW.cities.find(c=>c.n===name);if(!c)return[];const S=new Set();NW.roads.forEach(R=>{if(R.c>8||!R.n||R.t)return;const m=Math.floor(R.N/2);if(Math.hypot(R.X[m]-c.wx,R.Z[m]-c.wz)<c.r1)S.add(R.n);});return [...S].sort((a,b)=>a.localeCompare(b,'it'));}
+  const cityR=c=>{const p=NW.places.find(p=>p.n===c.n&&p.t===0);return Math.max(c.r1,(p?p.R:0)+400);};
+  function streets(name){const c=NW.cities.find(c=>c.n===name);if(!c)return[];const S=new Set(),RR=cityR(c);NW.roads.forEach(R=>{if(R.c>8||!R.n||R.t)return;const m=Math.floor(R.N/2);if(Math.hypot(R.X[m]-c.wx,R.Z[m]-c.wz)<RR)S.add(R.n);});return [...S].sort((a,b)=>a.localeCompare(b,'it'));}
+  // nelle città 3D il mondo è in scala reale ovunque: un punto della mappa compressa va riportato alla distanza vera dal centro
+  function toReal(x,z,c){const dx=x-c.wx,dz=z-c.wz,r=Math.hypot(dx,dz);if(r<=c.r1||r<1e-6)return[x,z];const T=NW.M.rho,st=NW.M.rstep;let d;
+    if(r>=T[T.length-1])d=(T.length-1)*st+(r-T[T.length-1])*NW.M.S;else{let k=0;while(k<T.length-2&&T[k+1]<r)k++;d=(k+(r-T[k])/Math.max(1e-6,T[k+1]-T[k]))*st;}
+    return[c.wx+dx/r*d,c.wz+dz/r*d];}
   function spawnVia(name,via){const c=NW.cities.find(c=>c.n===name);if(!c||!via)return false;const v=via.trim().toLowerCase();let best=null;
-    NW.roads.forEach(R=>{if(R.c>8||R.t||!R.n||R.n.toLowerCase()!==v)return;for(let i=0;i<R.N-1;i++){const mx=(R.X[i]+R.X[i+1])/2,mz=(R.Z[i]+R.Z[i+1])/2,d=Math.hypot(mx-c.wx,mz-c.wz),L=R.cum[i+1]-R.cum[i];if(d>c.r1||L<8)continue;const sc=d-Math.min(L,40);if(!best||sc<best.sc)best={sc,R,i};}});
-    if(!best)return false;const R=best.R,i=best.i,dx=R.X[i+1]-R.X[i],dz=R.Z[i+1]-R.Z[i],l=Math.hypot(dx,dz)||1,off=R.o?0:R.w/4;
-    pl.x=R.X[i]+dx*0.3-dz/l*off;pl.z=R.Z[i]+dz*0.3+dx/l*off;pl.h=Math.atan2(-dz,dx);return true;}
+    const RR=cityR(c);NW.roads.forEach(R=>{if(R.c>8||R.t||!R.n||R.n.toLowerCase()!==v)return;for(let i=0;i<R.N-1;i++){const mx=(R.X[i]+R.X[i+1])/2,mz=(R.Z[i]+R.Z[i+1])/2,d=Math.hypot(mx-c.wx,mz-c.wz),L=R.cum[i+1]-R.cum[i];if(d>RR||L<8)continue;const sc=d-Math.min(L,40);if(!best||sc<best.sc)best={sc,R,i};}});
+    if(!best)return false;const R=best.R,i=best.i;let a=[R.X[i],R.Z[i]],b=[R.X[i+1],R.Z[i+1]];if(HIDE){a=toReal(a[0],a[1],c);b=toReal(b[0],b[1],c);}
+    const dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,off=R.o?0:R.w/4;pl.x=a[0]+dx*0.3-dz/l*off;pl.z=a[1]+dz*0.3+dx/l*off;pl.h=Math.atan2(-dz,dx);return true;}
   function spawn(name,via){const s=NW.J.starts.find(t=>t[0]===name)||NW.J.starts[0];pl.x=s[1];pl.z=s[2];pl.h=s[3];if(via&&!spawnVia(name,via)){pl.navMsg='Via non trovata: parto dal centro';pl.navMsgT=4;}NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;update(0,true);}
   function dests(){const L=[];const d=NW.places.map((p,i)=>[p,i]).filter(([p])=>p.t<=1).sort((a,b)=>a[0].n.localeCompare(b[0].n));d.forEach(([p,i])=>L.push(['nwp_'+i,p.n+(p.t===0?'':'')]));return L;}
   return {update,segQ,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets};
