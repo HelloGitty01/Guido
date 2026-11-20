@@ -1556,6 +1556,7 @@ function initAudio(){
 }
 function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
   const f=Math.max(10,st.rpm/60*P.cyl/2),load=st.load,r=st.rpm/P.red;
+  if(!isFinite(f)||!isFinite(load)||!isFinite(r))return;
   eng.osc.forEach(x=>{x.os.frequency.setTargetAtTime(f*x.o,t,0.025);x.g.gain.setTargetAtTime(x.a*(x.o<=1?0.55:0.25+load*0.55+r*0.3),t,0.05);});
   eng.mod.frequency.setTargetAtTime(f,t,0.025);eng.dmod.frequency.setTargetAtTime(f*0.5,t,0.03);
   eng.cbp.frequency.setTargetAtTime(150+f*2.5+load*300,t,0.05);eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9),t,0.05);
