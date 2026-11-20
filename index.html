@@ -2408,7 +2408,7 @@ function startRun(){endBtn.style.display='block';document.getElementById('pauseB
   startGhost();if(ghost)setTimeout(()=>{pl.navMsg='Auto fantasma: il tuo record';pl.navMsgT=3;},2500);
 }
 document.getElementById('go').onclick=()=>{startRun();
-  if(isTouch){document.getElementById('tbtn').style.display='flex';const h=document.getElementById('hint');h.style.display='block';setTimeout(()=>h.style.display='none',5000);}};
+  if(isTouch){[['pauseBtn',12],['carBtn',104],['radioBtn',242]].forEach(([id,x])=>{const b=document.getElementById(id);b.style.left=x+'px';b.style.top='58px';});document.getElementById('tbtn').style.display='flex';const h=document.getElementById('hint');h.style.display='block';setTimeout(()=>h.style.display='none',5000);}};
 
 let last=performance.now(),clusterT=0,physAcc=0,frameN=0,screenT=0;const PH=1/240;
 // polvere su sterrato ed erba
@@ -2741,10 +2741,13 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   const GG=48,GSP=12,gdata=new Uint8Array(GG*GG*4),gtex=new THREE.DataTexture(gdata,GG,GG,THREE.RGBAFormat);gtex.magFilter=gtex.minFilter=THREE.LinearFilter;gtex.needsUpdate=true;
   const MS=768,MPX=0.6,mcv=document.createElement('canvas');mcv.width=mcv.height=MS;const mctx=mcv.getContext('2d');
   const mtex=new THREE.CanvasTexture(mcv);mtex.minFilter=mtex.magFilter=THREE.NearestFilter;mtex.generateMipmaps=false;mtex.flipY=false;
-  const U={uMask:{value:mtex},uBox:{value:new THREE.Vector4(0,0,1,0)},uGround:{value:gtex},uGBox:{value:new THREE.Vector4(0,0,1,0)},uGRef:{value:0}};let mC=null,mT=0,job=null,gC=null;
-  function buildMask(){const cx=pl.x,cz=pl.z,x0=cx-MS*MPX/2,z0=cz-MS*MPX/2;mctx.clearRect(0,0,MS,MS);mctx.lineCap='round';mctx.strokeStyle='#ff0000';
+  const U={uMask:{value:mtex},uBox:{value:new THREE.Vector4(0,0,1,0)},uGround:{value:gtex},uGBox:{value:new THREE.Vector4(0,0,1,0)},uGRef:{value:0},uCity:{value:new THREE.Vector3(0,0,-1)}};let mC=null,mT=0,job=null,gC=null;
+  function buildMask(){const cx=pl.x,cz=pl.z,x0=cx-MS*MPX/2,z0=cz-MS*MPX/2;mctx.globalCompositeOperation='source-over';mctx.fillStyle='#000';mctx.fillRect(0,0,MS,MS);mctx.globalCompositeOperation='lighter';mctx.lineCap='round';mctx.lineJoin='round';mctx.strokeStyle='#ff0000';
     NW.roads.forEach(R=>{if(R.c>9||R.t)return;const L=MS*MPX;if(Math.abs(R.X[0]-cx)>L&&Math.abs(R.X[R.N-1]-cx)>L)return;if(Math.abs(R.Z[0]-cz)>L&&Math.abs(R.Z[R.N-1]-cz)>L)return;
       mctx.lineWidth=(R.w+(R.c>=9?1:3))/MPX;mctx.beginPath();for(let i=0;i<R.N;i++){const x=(R.X[i]-x0)/MPX,z=(R.Z[i]-z0)/MPX;i?mctx.lineTo(x,z):mctx.moveTo(x,z);}mctx.stroke();});
+    const L=MS*MPX;mctx.fillStyle=mctx.strokeStyle='#00ff00';mctx.lineWidth=5/MPX;
+    NW.J.blds.forEach(b=>{const rg=b[3];if(Math.abs(rg[0]-cx)>L*0.6||Math.abs(rg[1]-cz)>L*0.6)return;mctx.beginPath();for(let q=0;q<rg.length;q+=2){const x=(rg[q]-x0)/MPX,z=(rg[q+1]-z0)/MPX;q?mctx.lineTo(x,z):mctx.moveTo(x,z);}mctx.closePath();mctx.fill();mctx.stroke();});
+    const c=NW.cities.find(c=>Math.hypot(cx-c.wx,cz-c.wz)<c.r1+L);U.uCity.value.set(c?c.wx:0,c?c.wz:0,c?c.r1-60:-1);
     mtex.needsUpdate=true;U.uBox.value.set(x0,z0,MS*MPX,1);mC=[cx,cz];}
   function groundStep(){if(!job){if(gC&&Math.hypot(pl.x-gC[0],pl.z-gC[1])<110)return;if(!hits(Math.floor(pl.x/GSZ),Math.floor(pl.z/GSZ)).length)return;
       job={cx:pl.x,cz:pl.z,k:0,v:new Float32Array(GG*GG).fill(NaN)};
@@ -2759,10 +2762,13 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
     for(let k=0;k<GG*GG;k++){const v=M[k]<Infinity?M[k]:avg;gdata[k*4]=Math.max(0,Math.min(255,Math.round((v-ref+64)*2)));gdata[k*4+3]=255;}
     gtex.needsUpdate=true;U.uGBox.value.set(x0,z0,GG*GSP,1);U.uGRef.value=ref;gC=[job.cx,job.cz];job=null;}
   function maskMat(m){m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <project_vertex>','#include <project_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;');
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform sampler2D uMask,uGround;uniform vec4 uBox,uGBox;uniform float uGRef;').replace('void main() {',`void main() {
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform sampler2D uMask,uGround;uniform vec4 uBox,uGBox;uniform float uGRef;uniform vec3 uCity;').replace('void main() {',`void main() {
         float hgt=-1000.0;vec2 gu=(vWP.xz-uGBox.xy)/uGBox.z;
         if(uGBox.w>0.5&&gu.x>0.0&&gu.y>0.0&&gu.x<1.0&&gu.y<1.0){hgt=vWP.y-(uGRef+texture2D(uGround,gu).r*127.5-64.0);
-          vec2 mu=(vWP.xz-uBox.xy)/uBox.z;if(uBox.w>0.5&&mu.x>0.0&&mu.y>0.0&&mu.x<1.0&&mu.y<1.0){vec4 mk=texture2D(uMask,mu);if(mk.r>0.9&&mk.a>0.99&&hgt>4.5)discard;}}`)
+          vec2 mu=(vWP.xz-uBox.xy)/uBox.z;if(uBox.w>0.5&&mu.x>0.0&&mu.y>0.0&&mu.x<1.0&&mu.y<1.0){vec4 mk=texture2D(uMask,mu);
+            // nel centro, dove ci sono le piante OSM: oltre 2,5 m resta solo ciò che sta sugli edifici (via alberi, pali, chioschi, teloni)
+            if(hgt>2.5&&mk.g<0.5&&uCity.z>0.0&&distance(vWP.xz,uCity.xy)<uCity.z)discard;
+            if(mk.r>0.5&&mk.g<0.5&&hgt>4.5)discard;}}`)
         .replace('#include <map_fragment>',`#include <map_fragment>
         if(hgt>2.5){vec3 c=diffuseColor.rgb;if(c.g>c.r*1.03&&c.g>c.b*1.08&&c.g-c.r>0.002&&c.g<0.6)discard;}`);};
     m.customProgramCacheKey=()=>'g3dmask2';return m;}
@@ -2773,7 +2779,10 @@ G3D=(()=>{if(!window.G3DMODE||!window.TILES3D||!NW)return null;
   let city=null,counted=false;
   function place(name){if(!counted){const u=window.g3dUsage();if(!u||u.d>=window.G3D_LIM.d||u.m>=window.G3D_LIM.m){alert0();return;}u.d++;u.m++;try{localStorage.setItem('sim_g3d_use',JSON.stringify(u));}catch(e){alert0();return;}counted=true;window.showG3DUse&&window.showG3DUse();}city=NW.cities.find(c=>c.n===name)||NW.cities[0];const enu=new THREE.Matrix4();WGS84_ELLIPSOID.getEastNorthUpFrame(city.lat*Math.PI/180,city.lon*Math.PI/180,enu);
     const R=new THREE.Matrix4().set(1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0,0,1);
-    tiles.group.matrix.copy(new THREE.Matrix4().makeTranslation(city.wx,0,city.wz).multiply(R).multiply(enu.invert()));tiles.group.matrixWorldNeedsUpdate=true;tiles.group.updateMatrixWorld(true);cache.clear();}
+    // la mappa OSM usa metri per grado di longitudine calcolati a 45,69°: qui si corregge alla latitudine vera della città, così piante e 3D combaciano
+    const f=city.lat*Math.PI/180,KXt=111319.49*Math.cos(f)/Math.sqrt(1-0.00669438*Math.sin(f)**2),KXg=111320*Math.cos(45.69*Math.PI/180),KZt=111132.95-559.82*Math.cos(2*f);
+    const Sc=new THREE.Matrix4().makeScale(KXg/KXt,1,111130/KZt);
+    tiles.group.matrix.copy(new THREE.Matrix4().makeTranslation(city.wx,0,city.wz).multiply(Sc).multiply(R).multiply(enu.invert()));tiles.group.matrixWorldNeedsUpdate=true;tiles.group.updateMatrixWorld(true);cache.clear();}
   // quota del suolo: raggi verticali sulle mesh 3D, campionati su una griglia di 1,5 m e memorizzati
   const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),o3=new THREE.Vector3(),cache=new Map(),GSZ=1.5;
   function hits(ix,iz){const k=ix*1000003+iz;let c=cache.get(k);if(c)return c;o3.set(ix*GSZ,4000,iz*GSZ);ray.set(o3,down);ray.far=8000;
