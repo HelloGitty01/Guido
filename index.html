@@ -734,12 +734,16 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   roads.forEach((R,ri)=>{if(R.c>=10)return;const m=Math.min(60,R.w/2+40);for(let i=0;i<R.N-1;i++){
     const x0=Math.min(R.X[i],R.X[i+1])-m,x1=Math.max(R.X[i],R.X[i+1])+m,z0=Math.min(R.Z[i],R.Z[i+1])-m,z1=Math.max(R.Z[i],R.Z[i+1])+m;
     for(let a=Math.floor(x0/HC);a<=Math.floor(x1/HC);a++)for(let b=Math.floor(z0/HC);b<=Math.floor(z1/HC);b++){const k=hk(a,b);let l=hash.get(k);if(!l)hash.set(k,l=[]);l.push(ri,i);}}});
+  function hCurve(R,i,t){const H=R.Hh,p1=H[i],p2=H[i+1],p0=i>0?H[i-1]:2*p1-p2,p3=i+2<R.N?H[i+2]:2*p2-p1,t2=t*t,t3=t2*t;
+    // con dislivelli bruschi (rampe, ponti) resta lineare per non creare gobbe
+    if(Math.abs(p0-p1)>3||Math.abs(p3-p2)>3)return p1+(p2-p1)*t;
+    return 0.5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);}
   // tutti i segmenti strada vicini a (x,z) entro "lim" oltre il bordo carreggiata
   const QR=[];
   function near(x,z,lim){QR.length=0;const l=hash.get(hk(Math.floor(x/HC),Math.floor(z/HC)));if(!l)return QR;
     for(let q=0;q<l.length;q+=2){const R=roads[l[q]],i=l[q+1],ax=R.X[i],az=R.Z[i],ex=R.X[i+1]-ax,ez=R.Z[i+1]-az,l2=ex*ex+ez*ez||1e-9;
       let t=((x-ax)*ex+(z-az)*ez)/l2;t=t<0?0:t>1?1:t;const d=Math.hypot(x-ax-t*ex,z-az-t*ez);if(d>R.w/2+lim)continue;
-      QR.push({R,i,t,d,h:R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t,side:(x-ax)*ez-(z-az)*ex});}return QR;}
+      QR.push({R,i,t,d,h:hCurve(R,i,t),side:(x-ax)*ez-(z-az)*ex});}return QR;}
   // terreno spianato attorno alle strade (trincee e rilevati raccordati)
   function Hground(x,z){let g=Hg(x,z);if(!inside(x,z))return g;const L=near(x,z,60);if(!L.length)return g;
     const W=[];for(const q of L){if(q.R.t||q.R.c>=9)continue;const hw=q.R.w/2+1,dh=g-q.h;let w=0;
@@ -754,8 +758,13 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   const SWW=4.0,SWH=0.16,swRoad=R=>R.c>=4&&R.c<=7&&!R.b&&!R.t;
   function sidewalk(x,z){if(!cityAt(x,z))return null;const L=near(x,z,SWW+0.1);for(const q of L){if(!swRoad(q.R))continue;if(q.d<q.R.w/2)return null;}
     for(const q of L){if(swRoad(q.R)&&q.d>=q.R.w/2&&q.d<q.R.w/2+SWW&&!nearJ(x,z,11))return q.h+SWH;}return null;}
-  function H(x,z){const g=Hground(x,z);if(!inside(x,z))return g;const L=near(x,z,0.25);if(!L.length){const sw=sidewalk(x,z);return sw!=null?Math.max(g,sw):g;}
-    const yh=api.yh;let tun=false;const C=[];for(const q of L){C.push(q.h+0.05);if(q.R.t)tun=true;}
+  function H(x,z){const g=Hground(x,z);if(!inside(x,z))return g;const L0=near(x,z,0.6),ct=L0.length?!!cityAt(x,z):false,L=L0.filter(q=>q.d<=q.R.w/2+(ct&&swRoad(q.R)?0.05:0.6));
+    if(!L.length){const sw=sidewalk(x,z);return sw!=null?Math.max(g,sw):g;}
+    const yh=api.yh;
+    // la strada alla quota dell'auto più vicina al proprio asse (non la più alta): niente gradini agli incroci, niente terreno nascosto
+    {let best=null,bs=1e9;for(const q of L){if(!isNaN(yh)&&Math.abs(q.h-yh)>1.6)continue;if(isNaN(yh)&&q.h>g+2.5)continue;const s=q.d/(q.R.w/2+0.6);if(s<bs){bs=s;best=q;}}if(best)return best.h+0.05;}
+    // nessuna strada alla quota dell'auto: si passa sopra o sotto (ponti e gallerie)
+    let tun=false;const C=[];for(const q of L){C.push(q.h+0.05);if(q.R.t)tun=true;}
     if(!(tun&&g>(isNaN(yh)?-1e9:yh)+2.5))C.push(g);
     if(isNaN(yh)){let best=-1e9;for(const s of C)if(s<g+2.5&&s>best)best=s;return best>-1e9?best:g;}
     let best=-1e9,low=1e9;for(const s of C){if(s<=yh+1.1&&s>best)best=s;if(s<low)low=s;}return best>-1e9?best:low;}
@@ -767,7 +776,7 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   const BIG={Milano:3500,Como:2400,Biella:2300};places.forEach(p=>{if(p.inC&&p.t===0&&BIG[p.n])p.R=BIG[p.n];});
   const PC=500,phash=new Map();places.forEach((p,pi)=>{if(p.inC&&!(p.t===0&&BIG[p.n]))return;for(let a=Math.floor((p.x-p.R)/PC);a<=Math.floor((p.x+p.R)/PC);a++)for(let b=Math.floor((p.z-p.R)/PC);b<=Math.floor((p.z+p.R)/PC);b++){const k=hk(a,b);let l=phash.get(k);if(!l)phash.set(k,l=[]);l.push(pi);}});
   function placeAt(x,z){const l=phash.get(hk(Math.floor(x/PC),Math.floor(z/PC)));if(!l)return null;let best=null,bv=1e9;for(const pi of l){const p=places[pi],d=Math.hypot(x-p.x,z-p.z)/p.R;if(d<1&&d<bv){bv=d;best=p;}}return best?{p:best,f:bv}:null;}
-  function surf(x,z){const q=roadAt(x,z,0.3);if(q)return 'asphalt';
+  function surf(x,z){const q=roadAt(x,z,0.6);if(q)return 'asphalt';
     const lk=lakeAt(x,z);if(lk&&Hg(x,z)<lakes[lk-1].lv-0.3)return 'water';
     if(cityAt(x,z))return 'asphalt';return 'grass';}
   function limit(x,z){const q=roadAt(x,z,2);const urb=!!cityAt(x,z)||!!placeAt(x,z);
