@@ -389,12 +389,12 @@ def place_home():
     # spiana il lotto con raccordo morbido
     for ii in range(N):
         zz = ii * STEP
-        if abs(zz - z) > 140: continue
+        if abs(zz - z) > 170: continue
         for jj in range(N):
             xx = jj * STEP
-            if abs(xx - x) > 140: continue
+            if abs(xx - x) > 170: continue
             d = np.array([xx - x, zz - z]); u = d @ a; v = d @ b
-            eu = max(0, abs(u) - 34); ev = max(0, abs(v) - 42); e = math.hypot(eu, ev)
+            eu = max(0, u - 34, -u - 64); ev = max(0, abs(v) - 42); e = math.hypot(eu, ev)
             w = 1.0 if e <= 0 else max(0.0, 1 - e / 60) ** 2 * (3 - 2 * max(0.0, 1 - e / 60)) if e < 60 else 0.0
             if w > 0: H[ii, jj] = H[ii, jj] * (1 - w) + h0 * w
     # vialetto: dalla strada all'ingresso, poi dentro fino al piazzale
@@ -403,7 +403,7 @@ def place_home():
     pts = bez(Q, t0, E0 - a * min(30, L / 3), E0) + [tuple(E0 + a * 7), tuple(E0 + a * 14)]
     seen = []; [seen.append(p) for p in pts if not seen or math.hypot(p[0] - seen[-1][0], p[1] - seen[-1][1]) > 2]
     seen[0] = tuple(q)
-    add_road(seen, 8, 4.5, 'Vialetto di Casa Guido', ms=20, tag='home')
+    add_road(seen, 8, 6.5, 'Vialetto di Casa Guido', ms=20, tag='home')
     HOME = {'x': float(x), 'z': float(z), 'a': float(math.atan2(a[1], a[0])), 'h': h0}
     log('casa di Guido', round(x), round(z), 'quota', round(h0), 'sul lago', round(h0 - LV), 'vialetto', round(L))
 place_home()
@@ -949,7 +949,7 @@ out = {'meta': {'S': 1, 'SV': 1, 'OX': OX, 'OZ': OZ, 'grid': [OX, OZ, STEP, N, N
        'nodes': enc([v for k, (i, p) in sorted(nodes.items(), key=lambda t: t[1][0]) for v in p], 2), 'edges': edges, 'starts': starts}
 FT = cKDTree([(f[0], f[1]) for f in FUEL]) if FUEL else None
 if FT is not None: trees = [p for p in trees if FT.query(p)[0] > 45]
-if HOME: trees = [p for p in trees if math.hypot(p[0] - HOME['x'], p[1] - HOME['z']) > 75]
+if HOME: trees = [p for p in trees if math.hypot(p[0] - HOME['x'], p[1] - HOME['z']) > 95]
 tr = np.array([W(p) for p in trees]); tr = tr[np.lexsort((tr[:, 0], tr[:, 1] // 200))]; out['trees'] = enc(tr.ravel(), 2)
 def wl(L):
     k = L[0]
