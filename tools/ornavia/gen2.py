@@ -346,6 +346,62 @@ for R in statali:
         Rf = add_road([tuple(a + (b - a) * t) for t in np.linspace(0, 1, max(2, int(L / 12) + 1))], 8, 4.0, 'Strada vicinale', tag='farm')
         farms.append({'u': b[0], 'v': b[1], 'd': nrm, 'alp': hh > 700, 'road': Rf})
 log('cascine', len(farms))
+# ------------------------------------------------------------------ aree di servizio (autostrada) e distributori (statali)
+FUEL = []  # (x, z, rot, nome, tipo)
+def hw_flat(i, span):
+    return all(abs(HP[k % NHW] - HT[k % NHW]) < 2.2 and not is_water(*HC[k % NHW]) for k in range(i - span, i + span + 1))
+SA_NAMES = ['Area di servizio Colle Verde', 'Area di servizio Le Querce', 'Area di servizio Belvedere']
+sa_done = []
+RPT = cKDTree([p for R in roads if R['tag'] != 'hw' for p in R['P']])
+def sa_clear(i):
+    dn = hw_dir(i); r = np.array([-dn[1], dn[0]])
+    return all(RPT.query(HC[k % NHW] + r * sg * 36)[0] > 45 for k in range(i - 34, i + 35, 4) for sg in (1, -1))
+for frac, nm in zip((0.12, 0.45, 0.78), SA_NAMES):
+    i0 = int(frac * NHW); best = None
+    for i in range(i0 - 500, i0 + 501, 5):
+        i %= NHW
+        if any(min(abs(i - e), NHW - abs(i - e)) < 75 for e in exits + sa_done): continue
+        if not hw_flat(i, 34) or not sa_clear(i): continue
+        dd = min(min(abs(i - e), NHW - abs(i - e)) for e in exits) if exits else 999
+        sc = -abs(i - i0)
+        if best is None or sc > best[0]: best = (sc, i)
+    if not best: print('niente area di servizio', nm); continue
+    i = best[1]; sa_done.append(i)
+    for car, sgn in ((CA, 1), (CB, -1)):
+        dn = hw_dir(i); r = np.array([-dn[1], dn[0]]); dv = dn * sgn; out = r * sgn
+        ks = list(range(i - 30, i + 31)); 
+        if sgn < 0: ks = ks[::-1]
+        k1, k2 = ks[0] % NHW, ks[-1] % NHW
+        A0, A1 = car[k1], car[k2]
+        lane = [car[k % NHW] + out * 30 for k in ks[16:-16]]
+        P = bez(A0, A0 + dv * 70, lane[0] - dv * 50, lane[0])[:-1] + [tuple(p) for p in lane] + bez(lane[-1], lane[-1] + dv * 50, A1 - dv * 70, A1)[1:]
+        R = add_road(P, 5, 7.0, nm, o=1, ms=50, tag='ramp')
+        hh = HP[i]
+        for q, p in enumerate(R['P']):
+            if K(p) not in FIX: FIX[K(p)] = hh + (HP[k1] - hh) * max(0, 1 - q / 8) + (HP[k2] - hh) * max(0, 1 - (len(R['P']) - 1 - q) / 8)
+        c = car[i % NHW] + out * 30
+        FUEL.append((float(c[0]), float(c[1]), float(math.atan2(dv[1], dv[0])), nm, 'hw'))
+nst = 0
+for R in sorted(statali, key=lambda R: -len(R['P'])):
+    if nst >= 7: break
+    P = R['P']; n = len(P)
+    for k in list(range(n // 2, n - 30, 7)) + list(range(n // 2, 30, -7)):
+        x, z = P[k]
+        if not far_from_all(x, z, 250, 350) or slope_at(x, z) > 0.07 or waterdist[gidx(x, z)] < 80 or hwtree.query([x, z])[0] < 150: continue
+        if any(math.hypot(x - f['u'], z - f['v']) < 200 for f in farms): continue
+        if any(math.hypot(x - f[0], z - f[1]) < 2500 for f in FUEL): continue
+        d = np.array(P[k + 8]) - np.array(P[k]); d /= np.hypot(*d)
+        v4 = np.array(P[k + 4]) - P[k]
+        if abs(v4[0] * d[1] - v4[1] * d[0]) > 3: continue  # tratto quasi dritto
+        nrm = np.array([-d[1], d[0]])
+        if any(slope_at(*(np.array(P[j]) + nrm * 14)) > 0.08 or is_water(*(np.array(P[j]) + nrm * 14)) for j in range(k, k + 9)): continue
+        offs = [0, 5, 10.5, 12, 12, 12, 10.5, 5, 0]
+        pts = [tuple(P[k])] + [tuple(np.array(P[k + j]) + nrm * offs[j]) for j in range(1, 8)] + [tuple(P[k + 8])]
+        add_road(pts, 7, 6.0, 'Distributore ' + R['n'], ms=30, tag='fuel')
+        c = np.array(P[k + 4]) + nrm * 12
+        FUEL.append((float(c[0]), float(c[1]), float(math.atan2(d[1], d[0])), 'Distributore', 'st')); nst += 1
+        break
+log('aree di servizio', len(sa_done), 'distributori', nst)
 # ------------------------------------------------------------------ incroci: inserisce i vertici comuni dove le strade si incrociano
 def node_roads():
     NR = [R for R in roads if R['tag'] not in ('hw',)]
@@ -727,6 +783,12 @@ for (p, rot) in tls: lms.append(['tl', round(p[0], 2), round(p[1], 2), round(rot
 # ------------------------------------------------------------------ cartelli: autostrada, raccordi, statali; cartelloni pubblicitari
 def kmtxt(m): return ('%d km' % round(m / 1000)) if m >= 1500 else ('%d m' % (round(m / 100) * 100))
 EX = sorted(exinfo)
+for i in sa_done:
+    nmx = [f[3] for f in FUEL if f[4] == 'hw'][sa_done.index(i) * 2].replace('Area di servizio ', '')
+    for car, sg in ((CA, 1), (CB, -1)):
+        for back, kind in ((110, 'hw1'), (45, 'hw2')):
+            k = (i - sg * back) % NHW; d = hw_dir(k) * sg; rr = np.array([-d[1], d[0]]); p = car[k] + rr * 8.4
+            lms.append(['sign', round(p[0], 1), round(p[1], 1), round(math.atan2(d[1], d[0]), 4), kind, ['AREA DI SERVIZIO', nmx, kmtxt(back * 10 - 300) if kind == 'hw1' else '']])
 for i, nm in EX:
     for car, sg in ((CA, 1), (CB, -1)):
         for back, kind in ((95, 'hw1'), (32, 'hw2')):
@@ -821,6 +883,8 @@ out = {'meta': {'S': 1, 'SV': 1, 'OX': OX, 'OZ': OZ, 'grid': [OX, OZ, STEP, N, N
        'areas': [[a[0], enc(wring(a[1]), 2)] for a in areas], 'places': [[C['n'], 0 if C in cities else 2, round(C['u'] + OX, 1), round(C['v'] + OZ, 1), 50000 if C in cities else 800, 1] for C in allc],
        'trees': [], 'rails': [], 'lms': [],
        'nodes': enc([v for k, (i, p) in sorted(nodes.items(), key=lambda t: t[1][0]) for v in p], 2), 'edges': edges, 'starts': starts}
+FT = cKDTree([(f[0], f[1]) for f in FUEL]) if FUEL else None
+if FT is not None: trees = [p for p in trees if FT.query(p)[0] > 45]
 tr = np.array([W(p) for p in trees]); tr = tr[np.lexsort((tr[:, 0], tr[:, 1] // 200))]; out['trees'] = enc(tr.ravel(), 2)
 def wl(L):
     k = L[0]
@@ -831,6 +895,9 @@ def wl(L):
     if k == 'umbr': return [k, [round(v + (OX if q % 2 == 0 else OZ), 1) for q, v in enumerate(L[1])]]
     return L
 out['lms'] = [wl(L) for L in lms]
+out['lms'] += [['fuel', round(x + OX, 1), round(z + OZ, 1), round(r, 4), nm, kd] for x, z, r, nm, kd in FUEL]
+out['meta']['ring'] = [[round(CA[k][0] + OX, 1), round(CA[k][1] + OZ, 1)] for k in range(0, NHW, 150)]
+k0 = NHW - 15; d0 = hw_dir(k0); out['meta']['ringStart'] = [round(CA[k0][0] + OX, 1), round(CA[k0][1] + OZ, 1), round(math.atan2(-d0[1], d0[0]), 4)]
 js = json.dumps(out, separators=(',', ':')).encode()
 HMq = np.clip(np.round(H * 10), -32000, 32000).astype(np.int16); hmd = np.diff(HMq.astype(np.int32), axis=1, prepend=0).astype(np.int16)
 blob = {'gz': base64.b64encode(gzip.compress(js, 9)).decode(), 'hm': base64.b64encode(gzip.compress(hmd.tobytes(), 9)).decode(), 'lm': base64.b64encode(gzip.compress(WM.tobytes(), 9)).decode()}
