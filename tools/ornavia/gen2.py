@@ -346,6 +346,67 @@ for R in statali:
         Rf = add_road([tuple(a + (b - a) * t) for t in np.linspace(0, 1, max(2, int(L / 12) + 1))], 8, 4.0, 'Strada vicinale', tag='farm')
         farms.append({'u': b[0], 'v': b[1], 'd': nrm, 'alp': hh > 700, 'road': Rf})
 log('cascine', len(farms))
+# ------------------------------------------------------------------ casa di Guido: villetta con garage in collina, vista lago
+HOME = None
+def place_home():
+    global HOME
+    lakeD = ndimage.distance_transform_edt(~LAKE) * STEP
+    RP = [(p, ri) for ri, R in enumerate(roads) if R['tag'] != 'hw' and R['c'] <= 8 for p in R['P']]
+    RT = cKDTree([p for p, _ in RP])
+    vx, vz = 11000.0, 11500.0  # Valdorna
+    best = None
+    for i in range(10, N - 10, 2):
+        for j in range(10, N - 10, 2):
+            ld = lakeD[i, j]
+            if ld < 220 or ld > 1300: continue
+            x, z = j * STEP, i * STEP; h = H[i, j]
+            if not (25 < h - LV < 120) or WATER[i, j]: continue
+            blk = H[i - 3:i + 4, j - 3:j + 4]
+            if blk.max() - blk.min() > 10: continue
+            if not far_from_all(x, z, 250, 450) or hwtree.query([x, z])[0] < 220: continue
+            if any(math.hypot(x - f['u'], z - f['v']) < 300 for f in farms): continue
+            d, k = RT.query([x, z])
+            if d < 70 or d > 280: continue
+            # direzione verso il lago (in discesa) e vista libera
+            gy, gx = np.gradient(lakeD[i - 2:i + 3, j - 2:j + 3])
+            a = -np.array([gx[2, 2], gy[2, 2]]); n = np.hypot(*a)
+            if n < 1e-6: continue
+            a /= n
+            ok = True
+            for t in range(60, int(ld), 60):
+                ii, jj = gidx(x + a[0] * t, z + a[1] * t)
+                if H[ii, jj] > h - 3 - t * 0.02: ok = False; break
+            if not ok: continue
+            sc = -abs(h - LV - 55) * 2 - math.hypot(x - vx, z - vz) / 60 - d / 5 - (blk.max() - blk.min()) * 3
+            if best is None or sc > best[0]: best = (sc, x, z, a, k)
+    if not best: print('casa di Guido: nessun posto'); return
+    _, x, z, al, k = best
+    q, ri = RP[k]; Q = np.array(q)
+    a = np.array([x, z]) - Q; a /= np.hypot(*a)  # asse del lotto: dalla strada verso l'interno (la vista sul lago è alle spalle dell'ingresso)
+    b = np.array([-a[1], a[0]])
+    P0 = np.array([x, z]); E0 = P0 - a * 25
+    h0 = float(np.median(H[gidx(x, z)[0] - 1:gidx(x, z)[0] + 2, gidx(x, z)[1] - 1:gidx(x, z)[1] + 2]))
+    # spiana il lotto con raccordo morbido
+    for ii in range(N):
+        zz = ii * STEP
+        if abs(zz - z) > 140: continue
+        for jj in range(N):
+            xx = jj * STEP
+            if abs(xx - x) > 140: continue
+            d = np.array([xx - x, zz - z]); u = d @ a; v = d @ b
+            eu = max(0, abs(u) - 34); ev = max(0, abs(v) - 42); e = math.hypot(eu, ev)
+            w = 1.0 if e <= 0 else max(0.0, 1 - e / 60) ** 2 * (3 - 2 * max(0.0, 1 - e / 60)) if e < 60 else 0.0
+            if w > 0: H[ii, jj] = H[ii, jj] * (1 - w) + h0 * w
+    # vialetto: dalla strada all'ingresso, poi dentro fino al piazzale
+    dq = E0 - Q; L = np.hypot(*dq)
+    t0 = (Q + dq / L * min(30, L / 3))
+    pts = bez(Q, t0, E0 - a * min(30, L / 3), E0) + [tuple(E0 + a * 7), tuple(E0 + a * 14)]
+    seen = []; [seen.append(p) for p in pts if not seen or math.hypot(p[0] - seen[-1][0], p[1] - seen[-1][1]) > 2]
+    seen[0] = tuple(q)
+    add_road(seen, 8, 4.5, 'Vialetto di Casa Guido', ms=20, tag='home')
+    HOME = {'x': float(x), 'z': float(z), 'a': float(math.atan2(a[1], a[0])), 'h': h0}
+    log('casa di Guido', round(x), round(z), 'quota', round(h0), 'sul lago', round(h0 - LV), 'vialetto', round(L))
+place_home()
 # ------------------------------------------------------------------ aree di servizio (autostrada) e distributori (statali)
 FUEL = []  # (x, z, rot, nome, tipo)
 def hw_flat(i, span):
@@ -873,6 +934,9 @@ for C in cities:
     if best:
         _, a, b = best; off = 1.8; t = np.array(b) - a; t /= np.hypot(*t); p = np.array(a) + np.array([-t[1], t[0]]) * off
         starts.append([C['n'], round(p[0] + OX, 1), round(p[1] + OZ, 1), round(math.atan2(-t[1], t[0]), 4)])
+if HOME:
+    ha = np.array([math.cos(HOME['a']), math.sin(HOME['a'])]); hp = np.array([HOME['x'], HOME['z']]) - ha * 11
+    starts.insert(0, ['Casa di Guido', round(hp[0] + OX, 1), round(hp[1] + OZ, 1), round(math.atan2(-ha[1], ha[0]), 4)])
 out = {'meta': {'S': 1, 'SV': 1, 'OX': OX, 'OZ': OZ, 'grid': [OX, OZ, STEP, N, N], 'enc': 1, 'nation': 'Ornavia',
                 'cities': [{'n': C['n'], 'lon': 0, 'lat': 0, 'wx': C['u'] + OX, 'wz': C['v'] + OZ, 'R': C['r'] * 1.15, 'r1': C['r'] * 1.15, 'st': C['st'], 'v': 1 if C in villages else 0} for C in allc],
                 'rho': [0, 20], 'rstep': 20, 'full': 1},
@@ -885,6 +949,7 @@ out = {'meta': {'S': 1, 'SV': 1, 'OX': OX, 'OZ': OZ, 'grid': [OX, OZ, STEP, N, N
        'nodes': enc([v for k, (i, p) in sorted(nodes.items(), key=lambda t: t[1][0]) for v in p], 2), 'edges': edges, 'starts': starts}
 FT = cKDTree([(f[0], f[1]) for f in FUEL]) if FUEL else None
 if FT is not None: trees = [p for p in trees if FT.query(p)[0] > 45]
+if HOME: trees = [p for p in trees if math.hypot(p[0] - HOME['x'], p[1] - HOME['z']) > 75]
 tr = np.array([W(p) for p in trees]); tr = tr[np.lexsort((tr[:, 0], tr[:, 1] // 200))]; out['trees'] = enc(tr.ravel(), 2)
 def wl(L):
     k = L[0]
@@ -895,6 +960,7 @@ def wl(L):
     if k == 'umbr': return [k, [round(v + (OX if q % 2 == 0 else OZ), 1) for q, v in enumerate(L[1])]]
     return L
 out['lms'] = [wl(L) for L in lms]
+if HOME: out['meta']['home'] = {'x': round(HOME['x'] + OX, 2), 'z': round(HOME['z'] + OZ, 2), 'a': round(HOME['a'], 5), 'h': round(HOME['h'], 2)}
 out['lms'] += [['fuel', round(x + OX, 1), round(z + OZ, 1), round(r, 4), nm, kd] for x, z, r, nm, kd in FUEL]
 out['meta']['ring'] = [[round(CA[k][0] + OX, 1), round(CA[k][1] + OZ, 1)] for k in range(0, NHW, 150)]
 k0 = NHW - 15; d0 = hw_dir(k0); out['meta']['ringStart'] = [round(CA[k0][0] + OX, 1), round(CA[k0][1] + OZ, 1), round(math.atan2(-d0[1], d0[0]), 4)]
