@@ -3308,6 +3308,12 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     {const parts=[{g:trunk(0.35,0.03,0.015),c:bark}];[[0.25,0.3,0.32],[0.45,0.25,0.27],[0.62,0.19,0.24],[0.78,0.12,0.22]].forEach(([y,r,h],k)=>parts.push({g:new THREE.ConeGeometry(r,h,8).translate(0,h/2,0).toNonIndexed(),c:[0.12,0.26+k*0.02,0.14],dy:y,shade:1}));V.push(merge(parts));}
     // 3: latifoglia semplice (boschi lontani)
     {const parts=[{g:trunk(0.32,0.04,0.024),c:bark}];[[0,0.6,0,0.32],[0.16,0.5,0.06,0.22],[-0.14,0.72,-0.05,0.24],[0.05,0.48,-0.17,0.2]].forEach(([x,y,z,r],k)=>parts.push({g:lump(r,0,1,0.9,1),c:leaf[k%4],dx:x,dy:y,dz:z,shade:1}));V.push(merge(parts));}
+    // 4: palma (lidi e porti)
+    {const parts=[];for(let i=0;i<6;i++)parts.push({g:new THREE.CylinderGeometry(0.018-i*0.0015,0.022-i*0.0015,0.13,6).translate(0,0.065,0).toNonIndexed(),c:[0.48,0.38,0.26],dx:i*i*0.004,dy:i*0.125});
+     for(let k=0;k<8;k++){const a=k/8*Math.PI*2,g=new THREE.ConeGeometry(0.05,0.42,4).rotateZ(-Math.PI/2).translate(0.2,0,0).toNonIndexed();g.scale(1,0.25,1);g.rotateZ(-0.35);g.rotateY(a);parts.push({g,c:leaf[k%4].map(v=>v*1.1),dx:0.1,dy:0.76});}
+     parts.push({g:lump(0.05,0,1,1,1),c:[0.4,0.3,0.18],dx:0.1,dy:0.74});V.push(merge(parts));}
+    // 5: cipresso slanciato (città d'arte e terme)
+    {const parts=[{g:trunk(0.12,0.025,0.018),c:bark}];[0.18,0.34,0.5,0.66,0.8,0.92].forEach((y,k)=>parts.push({g:lump(0.085-k*0.009,1,1,2.0,1),c:[0.13,0.3,0.16],dy:y,shade:1}));V.push(merge(parts));}
     return V;})();
   const treeVM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.95});
   // ---------- laghi: costruiti una volta sola ----------
@@ -3850,9 +3856,10 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);}
     // alberi veri (censimento e filari)
     const tl=treeT.get(T.key);if(tl&&tl.length){const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),co=new THREE.Color(),UPV=new THREE.Vector3(0,1,0);
-      const by=[[],[]];tl.forEach(ti=>by[hsh(ti,3)<0.82?0:1].push(ti));
+      const by=[[],[],[],[],[],[]];tl.forEach(ti=>{const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;
+        if(st==='lido'||st==='porto')v=r<0.7?4:v;else if(st==='arte'||st==='terme')v=r<0.55?5:v;else if(st==='alpino')v=r<0.7?2:v;by[v].push(ti);});
       by.forEach((L,vi)=>{if(!L.length)return;const im=new THREE.InstancedMesh(TREEV[vi],treeVM,L.length);
-        L.forEach((ti,q)=>{const x=TR[ti*2],z=TR[ti*2+1],g=NW.Hground(x,z),v=hsh(ti,7),s=(vi?11:8)+v*5;Q.setFromAxisAngle(UPV,v*6.28);im.setMatrixAt(q,M4.compose(V.set(x,g-0.1,z),Q,S3.set(s*(0.9+0.2*hsh(ti,9)),s,s*(0.9+0.2*hsh(ti,5)))));
+        L.forEach((ti,q)=>{const x=TR[ti*2],z=TR[ti*2+1],g=NW.Hground(x,z),v=hsh(ti,7),s=(vi===4?10:vi===5?12:vi===2?10:vi?11:8)+v*5;Q.setFromAxisAngle(UPV,v*6.28);im.setMatrixAt(q,M4.compose(V.set(x,g-0.1,z),Q,S3.set(s*(0.9+0.2*hsh(ti,9)),s,s*(0.9+0.2*hsh(ti,5)))));
           co.setRGB(0.85+0.3*v,0.9+0.2*hsh(ti,4),0.85+0.2*v);im.setColorAt(q,co);addSeg(T,x-0.25,z,x+0.25,z);});
         im.castShadow=true;im.receiveShadow=true;scene.add(im);T.dobj.push(im);});}
     // parchi e piazze
