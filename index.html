@@ -1141,6 +1141,7 @@ function prepCarLevel(sc,k,cfg,flatTo){
     T.wsX=C.ws??(I.wsX!=null?I.wsX:(I.glass.isEmpty()?T.L*0.2:I.glass.max.x));T.rearX=C.rear??(I.rearX!=null?I.rearX:(I.glass.isEmpty()?-T.L*0.4:I.glass.min.x));
     // tetto: punto più alto della carrozzeria sopra l'abitacolo
     const gx=I.glass.isEmpty()?0:(I.glass.min.x+I.glass.max.x)/2;let ry=0;I.paintMeshes.forEach(b=>{for(let i=0;i<b.n;i++){const x=b.pos[i*3];if(Math.abs(x-gx)<0.6&&b.pos[i*3+1]>ry)ry=b.pos[i*3+1];}});
+    {let hy=0;I.paintMeshes.forEach(b=>{for(let i=0;i<b.n;i++){const x=b.pos[i*3];if(x>T.wsX+0.03&&x<T.wsX+0.45&&Math.abs(b.pos[i*3+2])<sz.z/2-0.25&&b.pos[i*3+1]>hy)hy=b.pos[i*3+1];}});T.hoodY=hy||null;}
     T.roofX=gx;T.roofY=ry||sz.y;T.beltY=I.glass.isEmpty()?sz.y*0.55:I.glass.min.y-0.12;
     // abitacolo del modello, misurato dal suo volante
     // abitacolo disegnato dal gioco (plancia, volante, strumenti), messo dove il modello ha il volante; dell'auto vera restano cofano e coda
@@ -1744,8 +1745,11 @@ function buildCockpit(T,P){
   // abitacolo del modello: della plancia disegnata restano solo volante, strumenti, schermo e immagini degli specchi
   if(T.glb){wipers.forEach(w=>w.bl.visible=false);wipers.length=0;}
   if(O.model){const keep=[pivot,cl,scr,scrF,rm,...sms,pod];g.children.forEach(c=>{if(!keep.includes(c))c.visible=false;});wipers.length=0;}
+  // occhi più in alto rispetto all'abitacolo (come alzare il sedile): plancia e volante scendono nell'inquadratura, più strada davanti
+  const lift=O.model?0:(O.lift??(T.big||van?0.26:0.22));
+  [rm,...sms].forEach(o=>o.position.y+=lift*0.8);g.children.forEach(o=>{if(o.material===frM)o.position.y+=lift*0.8;});
   g.visible=false;
-  return {g,spin,tex,cv,stex,scv,gtex,gcv,wipers,eye:new THREE.Vector3(eyeX,eyeY,drvZ),wsx,model:!!O.model,mirrors:[rm,...sms]};
+  return {g,spin,tex,cv,stex,scv,gtex,gcv,wipers,eye:new THREE.Vector3(eyeX,eyeY+lift,drvZ),wsx,model:!!O.model,mirrors:[rm,...sms]};
 }
 
 function drawScreen(ck,st){
