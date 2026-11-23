@@ -206,7 +206,7 @@
   <div class="cta"><button id="go">Si parte!</button><button id="ctrlBtn" class="sm">Comandi</button><button id="credBtn" class="sm">Crediti</button><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div>
   <details class="keys"><summary>Come si guida</summary>
     <kbd>A</kbd> acceleratore · <kbd>Z</kbd> freno · <kbd>,</kbd> sterzo a sinistra · <kbd>.</kbd> sterzo a destra (rilasciando, il volante torna al centro)<br>
-    <kbd>Tab</kbd> mappa grande · <kbd>O</kbd> modalità foto · <kbd>J</kbd> registra clip · trascina col mouse (o due dita) per girare attorno all'auto, rotella per lo zoom · <kbd>D</kbd> drive · <kbd>R</kbd> retromarcia · <kbd>N</kbd> folle (D, N e R si cambiano sotto i 15 km/h; con i tasti, Maiusc per sterzare più stretto) · <kbd>Q</kbd>/<kbd>E</kbd> frecce · <kbd>X</kbd> quattro frecce · <kbd>P</kbd> pausa · <kbd>L</kbd> fari · <kbd>F</kbd> fine corsa · <kbd>H</kbd> clacson · <kbd>Spazio</kbd> freno a mano · <kbd>C</kbd> visuale · <kbd>Esc</kbd> menu<br>
+    <kbd>Tab</kbd> mappa grande · <kbd>O</kbd> modalità foto · <kbd>J</kbd> registra clip · trascina col mouse (o due dita) per girare attorno all'auto, rotella per lo zoom · <kbd>D</kbd> drive · <kbd>R</kbd> retromarcia · <kbd>N</kbd> folle (D, N e R si cambiano sotto i 15 km/h; con i tasti, tenendo premuta la freccia la curva si stringe) · <kbd>Q</kbd>/<kbd>E</kbd> frecce · <kbd>X</kbd> quattro frecce · <kbd>P</kbd> pausa · <kbd>L</kbd> fari · <kbd>F</kbd> fine corsa · <kbd>H</kbd> clacson · <kbd>Spazio</kbd> freno a mano · <kbd>C</kbd> visuale · <kbd>Esc</kbd> menu<br>
     Gamepad: stick sinistro sterzo · stick destro su/giù gas e freno · grilletto destro marcia D-N-R · grilletto sinistro clacson · A vista · Y fari · X quattro frecce · B freno a mano · croce ←/→ frecce<br>
     Smartphone: tieni il dito sullo schermo e trascina su (gas), giù (freno, retromarcia da fermo), sinistra/destra (sterzo).<br>
     Limite in città: 50 km/h. Superarlo è consentito, ma il quadro avvisa con 3 "ding".
@@ -2066,12 +2066,14 @@ function readInput(dt){
       // tasto premuto: si arriva in circa due decimi di secondo alla "curva giusta" per la velocità (vedi stepPhysics), controsterzo ancora più rapido
       const opp=pl.steerIn!==0&&Math.sign(steerT)!==Math.sign(pl.steerIn);
       const rate=(opp?9:5)*CFG.rap;
-      pl.steerIn=Math.max(-1,Math.min(1,pl.steerIn+steerT*rate*dt));pl.kbSharp=!!(keys.ShiftLeft||keys.ShiftRight);
+      pl.steerIn=Math.max(-1,Math.min(1,pl.steerIn+steerT*rate*dt));
+      // tenendo premuto oltre mezzo secondo la curva si stringe gradualmente (come girare di più il volante)
+      pl.kbHold=opp?0:Math.abs(pl.steerIn)>0.99?Math.min(1.4,(pl.kbHold||0)+dt):0;
     } else {
       // tasti rilasciati: il volante torna al centro da solo, in modo progressivo (più deciso in velocità)
       // autoallineamento: da fermo nessun ritorno, piano lento, veloce rapido (come la coppia di autoallineamento reale)
       const rate=v<0.4?0:Math.min(6,1.5+v*0.5)*CFG.rit;const k=Math.min(Math.abs(pl.steerIn),rate*dt);
-      pl.steerIn-=Math.sign(pl.steerIn)*k;if(Math.abs(pl.steerIn)<0.004)pl.steerIn=0;
+      pl.steerIn-=Math.sign(pl.steerIn)*k;if(Math.abs(pl.steerIn)<0.004)pl.steerIn=0;pl.kbHold=0;
     }
   }
   pl.thrIn+=((pl.fuel!=null&&pl.fuel<=0&&(CFG.fuel??1))?0-pl.thrIn:(pl.P.gov&&Math.abs(pl.vx)*3.6>pl.P.gov?0:thr)-pl.thrIn)*Math.min(1,dt*(thr>pl.thrIn?3:8));pl.brkIn+=(brk-pl.brkIn)*Math.min(1,dt*(brk>pl.brkIn?4:10));
@@ -2246,7 +2248,8 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   else{// tastiera: il tasto chiede una curva "normale" per la velocità (accelerazione laterale di circa mezza g, con Maiusc più stretta);
     // da fermo o in manovra è tutto sterzo, in città una decina di gradi, in autostrada pochi gradi
     const lock=0.6*(P.truck?0.85:1),aL=G*0.9*(P.mu||0.8),vv=Math.max(0.8,avx);
-    tgtD=si*(pl.kbSharp?maxD:Math.min(lock,Math.max(maxD*0.55,Math.atan(wb*aL/(vv*vv)))));}
+    const dN=Math.min(lock,Math.max(maxD*0.55,Math.atan(wb*aL/(vv*vv)))),hk=Math.max(0,Math.min(1,((pl.kbHold||0)-0.4)/0.9));
+    tgtD=si*(dN+(Math.max(dN,maxD)-dN)*hk);}
   if(AID>0&&avx>7&&pl.vx>0){const bF=Math.atan2(pl.vy+pl.r*a,avx),lim=AID===2?0.19:0.24;tgtD=Math.max(bF-lim,Math.min(bF+lim,tgtD));}
   const dd=tgtD-pl.delta,rateD=0.9*CFG.rap*(P.steerRate||1)/(1+v/13);
   pl.delta+=Math.sign(dd)*Math.min(Math.abs(dd),rateD*dt);
