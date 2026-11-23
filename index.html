@@ -4270,7 +4270,13 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const RR=cityR(c);NW.roads.forEach(R=>{if(R.c>8||R.t||!R.n||R.n.toLowerCase()!==v)return;for(let i=0;i<R.N-1;i++){const mx=(R.X[i]+R.X[i+1])/2,mz=(R.Z[i]+R.Z[i+1])/2,d=Math.hypot(mx-c.wx,mz-c.wz),L=R.cum[i+1]-R.cum[i];if(d>RR||L<8)continue;const sc=d-Math.min(L,40);if(!best||sc<best.sc)best={sc,R,i};}});
     if(!best)return false;const R=best.R,i=best.i;let a=[R.X[i],R.Z[i]],b=[R.X[i+1],R.Z[i+1]];if(HIDE){a=toReal(a[0],a[1],c);b=toReal(b[0],b[1],c);}
     const dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,off=R.o?0:R.w/4;pl.x=a[0]+dx*0.3-dz/l*off;pl.z=a[1]+dz*0.3+dx/l*off;pl.h=Math.atan2(-dz,dx);return true;}
-  function spawn(name,via){const s=NW.J.starts.find(t=>t[0]===name)||NW.J.starts[0];pl.x=s[1];pl.z=s[2];pl.h=s[3];if(via&&!spawnVia(name,via)){pl.navMsg='Via non trovata: parto dal centro';pl.navMsgT=4;}NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;update(0,true);}
+  // punto di partenza controllato: se è in pendenza, dentro una galleria o sopra un'altra strada, si cerca il tratto piano più vicino
+  function flatAt(x,z,h){const fx=Math.cos(h),fz=-Math.sin(h),rx=Math.sin(h),rz=Math.cos(h);NW.yh=NaN;const Hh=(a,b)=>NW.H(x+fx*a+rx*b,z+fz*a+rz*b),c=Hh(0,0);
+    return Math.abs(Hh(0,0.9)-Hh(0,-0.9))<0.25&&Math.abs(Hh(1.6,0)-Hh(-1.6,0))<0.45&&NW.Hg(x,z)-c<1.5;}
+  function fixStart(){if(flatAt(pl.x,pl.z,pl.h))return;const L=[];for(const R of NW.roads){if(R.b||R.t||R.c<5)continue;for(let i=0;i<R.N-1;i++){const mx=(R.X[i]+R.X[i+1])/2,mz=(R.Z[i]+R.Z[i+1])/2,d=Math.hypot(mx-pl.x,mz-pl.z);if(d<600&&R.cum[i+1]-R.cum[i]>8)L.push([d,R,i]);}}
+    L.sort((a,b)=>a[0]-b[0]);for(const[d,R,i] of L){const ex=R.X[i+1]-R.X[i],ez=R.Z[i+1]-R.Z[i],l=Math.hypot(ex,ez),h=Math.atan2(-ez,ex),x=(R.X[i]+R.X[i+1])/2-ez/l*1.8,z=(R.Z[i]+R.Z[i+1])/2+ex/l*1.8;
+      if(flatAt(x,z,h)){pl.x=x;pl.z=z;pl.h=h;return;}}}
+  function spawn(name,via){const s=NW.J.starts.find(t=>t[0]===name)||NW.J.starts[0];pl.x=s[1];pl.z=s[2];pl.h=s[3];if(via&&!spawnVia(name,via)){pl.navMsg='Via non trovata: parto dal centro';pl.navMsgT=4;}if(!via)fixStart();NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;update(0,true);}
   function dests(){const L=[];const d=NW.places.map((p,i)=>[p,i]).filter(([p])=>p.t<=1).sort((a,b)=>a[0].n.localeCompare(b[0].n));d.forEach(([p,i])=>L.push(['nwp_'+i,p.n+(p.t===0?'':'')]));return L;}
   // ---------- traffico e pedoni di Ornavia: fitti in città, medi fuori, radi in montagna ----------
   const TRF=(()=>{const NE=E.length,ECELL=200,eh=new Map();
