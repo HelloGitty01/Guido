@@ -1088,7 +1088,7 @@ function rrGlass(w,h,r,u0,u1,v0,v1){const g=new THREE.ShapeGeometry(rrect(w,h,r)
 // forma: ogni veicolo diventa un gruppo "piatto": pezzi uniti per materiale, ruote su perni sterzanti, luci separate
 const GLB_CARS={utilitaria:{flip:true,len:3.38},berlina:{},sw:{},suv:{},furgone:{len:4.3,flip:true},camion:{}};
 // flotta: modelli già in metri e col muso verso +x; dove il modello non ha un volante separato se ne indica la posizione
-const GLB_FLEET={volvo:{},wagoneer:{},hellcat:{steer:[0.3,0.86,-0.38,0.19]},zil:{},taxi:{steer:[0.42,0.97,-0.4,0.2]}};
+const GLB_FLEET={volvo:{},wagoneer:{},hellcat:{steer:[0.3,0.86,-0.38,0.19]},zil:{ws:3.0,rear:1.45},taxi:{steer:[0.42,0.97,-0.4,0.2]}};
 const CARX={};
 function prepCarLevel(sc,k,cfg,flatTo){
   const root=new THREE.Group(),inner=new THREE.Group();inner.add(sc);root.add(inner);
@@ -1138,15 +1138,17 @@ function prepCarLevel(sc,k,cfg,flatTo){
     const T=TYPES[k],sz=bb.getSize(new THREE.Vector3()),I=F.info;
     if(C.steer&&!I.steer){const[a,b,c,r]=C.steer;I.steer=new THREE.Box3(new THREE.Vector3(a-0.06,b-r,c-r),new THREE.Vector3(a+0.06,b+r,c+r));}
     T.L=+sz.x.toFixed(2);T.W=+sz.z.toFixed(2);T.Hm=sz.y;T.glb=true;T.wr=I.wheels.length?I.wheels[0].r:0.31;
-    T.wsX=I.wsX!=null?I.wsX:(I.glass.isEmpty()?T.L*0.2:I.glass.max.x);T.rearX=I.rearX!=null?I.rearX:(I.glass.isEmpty()?-T.L*0.4:I.glass.min.x);
+    T.wsX=C.ws??(I.wsX!=null?I.wsX:(I.glass.isEmpty()?T.L*0.2:I.glass.max.x));T.rearX=C.rear??(I.rearX!=null?I.rearX:(I.glass.isEmpty()?-T.L*0.4:I.glass.min.x));
     // tetto: punto più alto della carrozzeria sopra l'abitacolo
     const gx=I.glass.isEmpty()?0:(I.glass.min.x+I.glass.max.x)/2;let ry=0;I.paintMeshes.forEach(b=>{for(let i=0;i<b.n;i++){const x=b.pos[i*3];if(Math.abs(x-gx)<0.6&&b.pos[i*3+1]>ry)ry=b.pos[i*3+1];}});
     T.roofX=gx;T.roofY=ry||sz.y;T.beltY=I.glass.isEmpty()?sz.y*0.55:I.glass.min.y-0.12;
     // abitacolo del modello, misurato dal suo volante
-    if(I.steer&&k!=='utilitaria'){const c=I.steer.getCenter(new THREE.Vector3()),z=I.steer.getSize(new THREE.Vector3()),R=Math.max(z.y,z.z)/2*0.95,wt=Math.min(1.0,Math.max(0.25,Math.atan2(z.x,z.y)));
-      const eyeX=c.x-0.5,eyeY=c.y+0.33,roof=T.roofY||sz.y;
-      T.ck={model:true,wsx:T.wsX,dashTop:c.y+0.1,eyeX,eyeY:Math.min(eyeY,roof-0.17),drvZ:c.z,wx:c.x-0.02,wy:c.y-0.06,R,wt,cx:c.x+0.06,clY:c.y+R*0.78,clS:0.72,scr:[c.x+0.14,c.y+0.14,c.z>0?-0.08:0.08],rm:[eyeX+0.42,roof-0.18],sm:[c.x-0.01,c.y+0.1,T.W/2-0.02]};}
-    if(k==='utilitaria')T.ck={model:true,clFixed:true,wsx:0.65,dashTop:1.0,eyeX:-0.07,eyeY:1.19,drvZ:-0.38,wx:0.442,wy:0.83,R:0.185,wt:0.42,cx:0.5,clY:1.045,clS:0.72,scr:[0.58,1.04,0.1],rm:[0.33,1.27],sm:[0.43,1.0,0.86]};
+    // abitacolo disegnato dal gioco (plancia, volante, strumenti), messo dove il modello ha il volante; dell'auto vera restano cofano e coda
+    const Wb=I.glass.isEmpty()?T.W-0.2:Math.min(T.W-0.1,(I.glass.max.z-I.glass.min.z)+0.1);
+    if(I.steer&&k!=='utilitaria'){const c=I.steer.getCenter(new THREE.Vector3()),z=I.steer.getSize(new THREE.Vector3()),R=Math.min(T.big?0.24:0.2,Math.max(0.17,Math.max(z.y,z.z)/2*0.95)),wt=Math.min(1.0,Math.max(0.3,Math.atan2(z.x,z.y)));
+      const roof=T.roofY||sz.y,eyeX=c.x-0.55,eyeY=Math.min(c.y+0.36,roof-0.12);
+      T.ck={model:false,W:Wb,wsx:T.wsX,dashTop:c.y+0.12,eyeX,eyeY,drvZ:c.z,wx:c.x-0.02,wy:c.y-0.04,R,wt,rm:[T.wsX-0.28,Math.min(roof-0.12,eyeY+0.17)],sm:[c.x+0.02,c.y+0.16,Wb/2+0.12]};}
+    if(k==='utilitaria')T.ck={model:false,W:1.5,wsx:0.65,dashTop:1.0,eyeX:-0.07,eyeY:1.19,drvZ:-0.38,wx:0.442,wy:0.83,R:0.185,wt:0.42,rm:[0.36,1.3],sm:[0.43,1.0,0.86]};
     const hasLights=F.obj.children.some(m=>m.userData.role==='tail');
     CARX[k]={full:F.obj,lod:Lo&&Lo.obj,hasLights,wheels:F.info.wheels};
     }catch(e){console.warn('veicolo '+k+' non preparato',e);}
@@ -1156,6 +1158,8 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
   const X=CARX[k],T=TYPES[k],g=new THREE.Group();g.rotation.order='YZX';
   const paintCache=new Map(),litC={},allMats=[];
   const lit=(src,kind)=>{const key=kind+src.uuid;if(litC[key])return litC[key];const m=src.clone();m.emissive=new THREE.Color({tail:0xff1a0a,head:0xfff2d6,rev:0xffffff,blinkL:0xff8a00,blinkR:0xff8a00}[kind]).multiplyScalar(kind==='tail'?3:2);
+    // il colore del vetro segue la funzione, qualunque fosse nel modello: stop rossi, fari e retromarcia bianchi, frecce gialle
+    m.color=new THREE.Color({tail:0xb01008,head:0xf4f4ee,rev:0xf4f4f4,blinkL:0xff9a10,blinkR:0xff9a10}[kind]);if(kind==='tail'||kind==='blinkL'||kind==='blinkR'){m.map=null;}
     m.emissiveMap=null;m.emissiveIntensity=0;litC[key]=m;allMats.push(m);return m;};
   const anyC=new Map();const own=src=>{if(!fine)return src;if(!anyC.has(src)){const m=src.clone();anyC.set(src,m);allMats.push(m);}return anyC.get(src);};
   const paintOf=src=>{if(!paintCache.has(src)){const m=src.clone();if(T.fleet){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color);if(k==='utilitaria')m.color.multiplyScalar(1.7);if(opt.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.3;m.roughness=0.32;}m.envMapIntensity=0.9;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
@@ -1175,6 +1179,16 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
   // il furgone non ha luci separate: si aggiungono piccole lampade
   const hl=T.L/2,hy=T.Hm*0.42;
   const gAdd=g.add.bind(g),gx=T.fleet?{add:()=>{}}:g;
+  // flotta: le luci mancanti si appoggiano alla carrozzeria vera (raggio dal davanti o dal dietro), mai sospese fuori
+  const RC=new THREE.Raycaster(),bodyMs=[];if(T.fleet){g.updateMatrixWorld(true);g.traverse(o=>{if(o.isMesh&&o.userData.role!=='wheel'&&o.userData.role!=='glass')bodyMs.push(o);});}
+  const flush=(front,y,z,w,h,mat)=>{for(let zz=z;Math.abs(zz)>0.25;zz-=Math.sign(z)*0.05){RC.set(new THREE.Vector3(front?hl+1.5:-hl-1.5,y,zz),new THREE.Vector3(front?-1:1,0,0));RC.far=2.4;const hit=RC.intersectObjects(bodyMs,false)[0];
+      if(hit&&Math.abs(hit.point.x)>hl-0.7){const m=new THREE.Mesh(new THREE.BoxGeometry(0.02,h,w),mat);m.position.copy(hit.point);m.position.x+=front?0.012:-0.012;g.add(m);return m;}}return null;};
+  if(T.fleet){const Wb=T.W/2-(k==='hellcat'||k==='taxi'?0.25:0.12),hy2=k==='zil'?0.9:Math.max(0.55,T.Hm*0.38);
+    if(!ud.headM){ud.headM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15});[1,-1].forEach(sd=>flush(true,hy2,sd*(Wb-0.22),0.2,0.09,ud.headM));}
+    if(!ud.tailM){ud.tailM=new THREE.MeshStandardMaterial({color:0xb01008,emissive:0xff0000,emissiveIntensity:0.15});[1,-1].forEach(sd=>flush(false,hy2+0.04,sd*(Wb-0.12),0.16,0.1,ud.tailM));}
+    if(!ud.revM){ud.revM=new THREE.MeshStandardMaterial({color:0xf4f4f4,emissive:0xffffff,emissiveIntensity:0});[1,-1].forEach(sd=>flush(false,hy2-0.06,sd*(Wb-0.32),0.07,0.05,ud.revM));}
+    if(!ud.indL){ud.indL=new THREE.MeshStandardMaterial({color:0xff9a10,emissive:0xff8a00,emissiveIntensity:0});ud.indR=ud.indL.clone();
+      [[ud.indL,-1],[ud.indR,1]].forEach(([mm,sd])=>{flush(true,hy2-0.08,sd*Wb,0.09,0.05,mm);flush(false,hy2+0.12,sd*Wb,0.08,0.05,mm);});}}
   if(!ud.headM){ud.headM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const h=new THREE.Mesh(new THREE.CircleGeometry(0.09,12),ud.headM);h.rotation.y=Math.PI/2;h.position.set(hl+0.01,hy,sd*(T.W/2-0.3));gx.add(h);});}
   if(!ud.tailM){ud.tailM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.16,0.1),ud.tailM);t.position.set(-hl-0.01,hy,sd*(T.W/2-0.12));gx.add(t);});}
   if(!ud.revM){ud.revM=new THREE.MeshStandardMaterial({color:0xcfcfcf,emissive:0xffffff,emissiveIntensity:0});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.06,0.08),ud.revM);t.position.set(-hl-0.01,hy-0.14,sd*(T.W/2-0.12));gx.add(t);});}
@@ -1647,7 +1661,7 @@ const fabricTex=canvasTex(128,(g,n)=>{g.fillStyle='#2a2b2e';g.fillRect(0,0,n,n);
 const dashTexC=canvasTex(128,(g,n)=>{g.fillStyle='#1e1f21';g.fillRect(0,0,n,n);for(let i=0;i<5000;i++){const v=22+Math.random()*16|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*n,Math.random()*n,1,1);}});
 const ventTex=canvasTex(64,(g,n)=>{g.fillStyle='#0c0c0d';g.fillRect(0,0,n,n);g.fillStyle='#3a3c40';for(let y=3;y<n;y+=8)g.fillRect(2,y,n-4,3);g.strokeStyle='#8a8d92';g.lineWidth=3;g.strokeRect(1,1,n-2,n-2);});
 function buildCockpit(T,P){
-  const g=new THREE.Group(),van=!!T.van,W=T.W,O=T.ck||{};   // O: misure prese dall'abitacolo del modello 3D
+  const g=new THREE.Group(),van=!!T.van,O=T.ck||{},W=O.W??T.W;   // O: misure prese dall'abitacolo del modello 3D
   const wsx=O.wsx??T.gh[3][0],dashTop=O.dashTop??((van?1.2:T.hb)+0.04),eyeX=O.eyeX??(wsx-(van?0.92:1.0)),eyeY=O.eyeY??(dashTop+(van?0.36:0.27)),drvZ=O.drvZ??-(W/2-0.48);
   const dm=new THREE.MeshStandardMaterial({color:P.dash,map:dashTexC,roughness:0.85});
   const trim=new THREE.MeshStandardMaterial({color:0x8d9096,metalness:0.8,roughness:0.3});
@@ -1705,11 +1719,7 @@ function buildCockpit(T,P){
     const sill=new THREE.Mesh(rbox(wsx-eyeX+0.7,0.045,0.1,0.02),dm);sill.position.set((wsx+eyeX-0.7)/2,dashTop+0.02,sd*(W/2-0.1));g.add(sill);
     const arm=new THREE.Mesh(rbox(0.4,0.06,0.1,0.025),dm);arm.position.set(eyeX-0.05,dashTop-0.2,sd*(W/2-0.14));g.add(arm);});
   const pm=new THREE.MeshStandardMaterial({color:0x29292b,roughness:0.9,envMapIntensity:0.3});
-  if(!van){const top=T.gh[2],y1=T.gh[1][1];
-    const head=new THREE.Mesh(new THREE.BoxGeometry(T.gh[2][0]-T.gh[1][0],0.02,(W-0.16)*0.86),new THREE.MeshStandardMaterial({color:0xd6d3cd,roughness:0.95,envMapIntensity:0.2}));head.position.set((T.gh[1][0]+T.gh[2][0])/2,y1-0.03,0);g.add(head);
-    [drvZ,-drvZ].forEach(z=>{const v=new THREE.Mesh(rbox(0.2,0.016,0.36,0.007),new THREE.MeshStandardMaterial({color:0xa8a398}));v.position.set(top[0]-0.1,y1-0.05,z);g.add(v);});}
-  else {
-    const head=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.03,W-0.1),new THREE.MeshStandardMaterial({color:0xb9b4aa}));head.position.set(0.6,2.02,0);g.add(head);}
+  // niente cielo, plafoniera, alette e montanti: la vista resta libera
   // sedile del passeggero (riferimento di scala)
   const seatM=new THREE.MeshStandardMaterial({color:0x26272a,map:fabricTex,roughness:0.95});
   const cush=new THREE.Mesh(rbox(0.5,0.13,0.5,0.05),seatM);cush.position.set(eyeX+0.05,dashTop-0.55,-drvZ);g.add(cush);
@@ -1718,8 +1728,13 @@ function buildCockpit(T,P){
   // specchi: retrovisore centrale e specchietti esterni (vetro = immagine posteriore)
   const rmx=O.rm?O.rm[0]:van?1.3:T.gh[2][0]-0.08,rmy=O.rm?O.rm[1]:(van?2.0:T.gh[2][1])-0.13;
   const rm=new THREE.Mesh(rrGlass(0.235,0.058,0.022,0.32,0.68,0.12,0.92),mirrorM);rm.position.set(rmx-0.003,rmy,-0.04);rm.rotation.y=-Math.PI/2-0.12;g.add(rm);
+  // cornici degli specchi disegnate attorno al vetro, così l'immagine cade sempre al centro
+  const frM=new THREE.MeshStandardMaterial({color:0x141416,roughness:0.6});
+  {const f=new THREE.Mesh(rbox(0.03,0.078,0.255,0.02),frM);f.position.set(rmx+0.014,rmy,-0.04);f.rotation.y=-0.12;g.add(f);const st=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.01,0.09,8),frM);st.position.set(rmx+0.03,rmy+0.07,-0.04);g.add(st);}
   const smx=O.sm?O.sm[0]+0.102:van?1.3:wsx-0.12,smy=T.hb+0.12,sms=[];
-  [[-1,0.66,1.0,0.22],[1,0.0,0.34,-0.22]].forEach(([sd,u0,u1,yaw])=>{const sm=new THREE.Mesh(rrGlass(O.sm?0.14:0.2,O.sm?0.08:0.1,0.025,u0,u1,0.08,0.92),mirrorM);sm.position.set(smx-0.102,O.sm?O.sm[1]:T.hb+0.13,sd*(O.sm?O.sm[2]:W/2+0.1));sm.rotation.y=-Math.PI/2+yaw;g.add(sm);sms.push(sm);
+  [[-1,0.66,1.0,0.22],[1,0.0,0.34,-0.22]].forEach(([sd,u0,u1,yaw])=>{const gw=O.sm?0.15:0.2,gh2=O.sm?0.09:0.1,sy=O.sm?O.sm[1]:T.hb+0.13,sz2=sd*(O.sm?O.sm[2]:W/2+0.1);const sm=new THREE.Mesh(rrGlass(gw,gh2,0.025,u0,u1,0.08,0.92),mirrorM);sm.position.set(smx-0.102,sy,sz2);sm.rotation.y=-Math.PI/2+yaw;g.add(sm);sms.push(sm);
+  const hs=new THREE.Mesh(rbox(0.07,gh2+0.03,gw+0.03,0.025),frM);hs.position.set(smx-0.102+Math.cos(yaw)*0.04,sy,sz2+Math.sin(yaw)*0.04*-1);hs.rotation.y=yaw;g.add(hs);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.03,Math.abs(sz2)-W/2+0.02),frM);arm.position.set(smx-0.07,sy-0.03,sd*(W/2+(Math.abs(sz2)-W/2)/2-0.01));g.add(arm);
 });
   rearCam.position.set(eyeX+0.2,eyeY+0.02,0);
   // tergicristalli
@@ -1727,6 +1742,7 @@ function buildCockpit(T,P){
     [-0.38,0.18].forEach(z0=>{const piv=new THREE.Vector3(base[0]+0.03,base[1]+0.03,z0),bl=new THREE.Mesh(new THREE.BoxGeometry(0.58,0.012,0.012),new THREE.MeshStandardMaterial({color:0x0d0d0d,roughness:0.6}));g.add(bl);
       wipers.push({piv,bl,u:new THREE.Vector3(ux/ul,uy/ul,0)});});}
   // abitacolo del modello: della plancia disegnata restano solo volante, strumenti, schermo e immagini degli specchi
+  if(T.glb){wipers.forEach(w=>w.bl.visible=false);wipers.length=0;}
   if(O.model){const keep=[pivot,cl,scr,scrF,rm,...sms,pod];g.children.forEach(c=>{if(!keep.includes(c))c.visible=false;});wipers.length=0;}
   g.visible=false;
   return {g,spin,tex,cv,stex,scv,gtex,gcv,wipers,eye:new THREE.Vector3(eyeX,eyeY,drvZ),wsx,model:!!O.model,mirrors:[rm,...sms]};
