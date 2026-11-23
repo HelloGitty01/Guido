@@ -103,6 +103,34 @@
   #sum button,#credClose,#ctrlClose{background:var(--red)!important;color:#fff!important;border:0!important;border-radius:22px!important;padding:9px 20px!important;font:800 15px Nunito,sans-serif;margin-right:8px;cursor:pointer}
   #ctrlOv .sm,#ctrlBody button{background:#fff;color:var(--wine);border:2px solid var(--line);border-radius:8px}
   #steerInd{position:fixed;bottom:48px;left:50%;transform:translateX(-50%);z-index:3;display:none;text-align:center;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}#steerInd svg{display:block;margin:0 auto;transition:none}#steerInd b{color:#fff;font:800 12px Nunito,sans-serif}
+  /* smartphone: due zone per i pollici (gas/freno a sinistra, sterzo a destra), icone al posto delle scritte */
+  #mobTop,#mobL,#mobR{display:none}
+  body.mob.run #mobTop{display:flex;position:fixed;left:8px;top:8px;gap:6px;z-index:4}
+  #mobTop button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(94,21,17,.62);color:#fff;font-size:18px;padding:0;line-height:1}
+  #mobTop button.off{display:none}
+  body.mob.run #mobL{display:block;position:fixed;left:0;bottom:0;width:34vw;height:78vh;z-index:3;touch-action:none}
+  body.mob.run #mobR{display:block;position:fixed;right:0;bottom:0;width:46vw;height:56vh;z-index:3;touch-action:none}
+  #mobL .trk{position:absolute;left:36px;bottom:5vh;width:58px;height:58vh;border-radius:29px;background:rgba(0,0,0,.22);border:2px solid rgba(255,255,255,.28)}
+  #mobR .trk{position:absolute;right:6vw;bottom:7vh;width:34vw;height:58px;border-radius:29px;background:rgba(0,0,0,.22);border:2px solid rgba(255,255,255,.28)}
+  .trk .kn{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .trk i{position:absolute;color:rgba(255,255,255,.55);font-style:normal;font-size:14px}
+  #mobL .trk i:nth-of-type(1){left:50%;top:8px;transform:translateX(-50%)}#mobL .trk i:nth-of-type(2){left:50%;bottom:8px;transform:translateX(-50%)}
+  #mobR .trk i:nth-of-type(1){left:12px;top:50%;transform:translateY(-50%)}#mobR .trk i:nth-of-type(2){right:12px;top:50%;transform:translateY(-50%)}
+  .trk.act{background:rgba(0,0,0,.32);border-color:rgba(255,255,255,.5)}
+  #mGear{position:absolute;left:108px;bottom:5vh;display:flex;flex-direction:column;gap:6px}
+  #mGear button{width:44px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.35);color:#fff;font:800 17px Nunito,sans-serif;padding:0}
+  #mGear button.on{background:#c8202a;border-color:#fff}
+  #mHorn{position:absolute;right:6vw;bottom:calc(7vh + 72px);width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.35);font-size:22px;padding:0}
+  body.mob #endBtn,body.mob #pauseBtn,body.mob #carBtn,body.mob #radioBtn,body.mob #jobBtn,body.mob #sideBtns,body.mob #tbtn,body.mob #hint{display:none!important}
+  body.mob #ext{right:auto;left:50%;transform:translateX(-50%);bottom:8px;padding:4px 14px;font-size:15px}
+  body.mob #steerInd{bottom:44px}body.mob #steerInd svg{width:34px;height:34px}
+  body.mob #hud{left:50%;bottom:auto;top:54px;transform:translateX(-50%);font-size:12px;max-width:60vw;text-align:center}
+  body.mob #hud:empty{display:none}
+  body.mob #mini{width:112px!important;height:112px!important;top:44px!important}
+  body.mob #radioTag{bottom:auto;top:96px}
+  body.mob #navBox{top:54px!important;font-size:14px!important;padding:5px 12px!important}
+  body.mob #cashHud{top:auto;bottom:8px;left:12px;transform:none;pointer-events:none;font-size:13px}body.mob #cashTag{top:96px}
+  body.mob.photo #mobTop,body.mob.photo #mobL,body.mob.photo #mobR{display:none!important}
   #cashHud{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:rgba(94,21,17,.78);color:#fff;border-radius:16px;padding:4px 14px;font:800 14px Nunito,sans-serif;z-index:3;display:none;white-space:nowrap}
   #cashTag{position:fixed;top:84px;left:50%;transform:translateX(-50%);border-radius:14px;padding:4px 12px;font:800 15px Nunito,sans-serif;z-index:3;display:none}#cashTag.pos{background:#2f9e44;color:#fff}#cashTag.neg{background:#c8202a;color:#fff}
   #jobOv{position:fixed;inset:0;background:rgba(8,10,14,.6);display:none;align-items:center;justify-content:center;z-index:9}#jobOv>div{background:#fff;color:#2a1a18;border-radius:18px;padding:16px 18px;max-width:560px;width:92%;max-height:86vh;overflow:auto;font:15px Nunito,sans-serif}
@@ -184,6 +212,9 @@
 <div id="sum"><div class="box"><h2 id="sumT">Riepilogo</h2><table id="sumTab"></table><button id="sumAgain">Rifai</button><button id="sumMenu">Menu</button></div></div>
 <button id="tFix" style="display:none">Raddrizza</button><div id="tbtn"><button id="tGear">R</button><button id="tView">Vista</button><button id="tHorn">Clacson</button><button id="tMenu">Menu</button></div>
 <div id="stick"><div id="knob"></div></div>
+<div id="mobTop"><button data-p="endBtn" title="Fine corsa">⏹</button><button data-p="pauseBtn" title="Pausa">⏸</button><button data-p="tView" title="Vista">👁</button><button data-p="carBtn" title="Cambia auto">⇄</button><button data-p="radioBtn" title="Radio">♪</button><button data-p="jobBtn" title="Lavori" id="mJob">💼</button><button data-p="mapBtn" title="Mappa">🗺</button><button data-p="photoBtn" title="Foto">📷</button></div>
+<div id="mobL"><div class="trk"><div class="kn"></div><i>▲</i><i>▼</i></div><div id="mGear"><button data-g="D">D</button><button data-g="N">N</button><button data-g="R">R</button></div></div>
+<div id="mobR"><button id="mHorn">📯</button><div class="trk"><div class="kn"></div><i>◀</i><i>▶</i></div></div>
 <div id="hint">Tieni il dito sullo schermo e trascina:<br>↑ su = acceleratore · ↓ giù = freno<br>← → = sterzo<br>Meglio con il telefono in orizzontale</div>
 <div id="ext"><b id="extSpd">0</b> km/h · <span id="extGear">D1</span></div>
 <div id="sideBtns"><button id="mapBtn" title="Mappa (Tab)">🗺 Mappa</button><button id="photoBtn" title="Modalità foto (O)">📷 Foto</button><button id="recBtn" title="Registra clip (J)">⏺ Clip</button></div>
@@ -1921,7 +1952,7 @@ const touch={on:false,id:null,x0:0,y0:0,steer:0,thr:0,brk:0};
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 const stickEl=document.getElementById('stick'),knobEl=document.getElementById('knob');
 const cl1=v=>Math.max(-1,Math.min(1,v));
-renderer.domElement.addEventListener('touchstart',e=>{if(touch.on||paused)return;const t=e.changedTouches[0];
+renderer.domElement.addEventListener('touchstart',e=>{if(touch.on||paused||MOB)return;const t=e.changedTouches[0];
   Object.assign(touch,{on:true,id:t.identifier,x0:t.clientX,y0:t.clientY,steer:0,thr:0,brk:0});
   stickEl.style.left=t.clientX+'px';stickEl.style.top=t.clientY+'px';stickEl.style.display='block';knobEl.style.transform='';
   document.getElementById('hint').style.display='none';AC&&AC.resume();e.preventDefault();},{passive:false});
@@ -1931,6 +1962,23 @@ renderer.domElement.addEventListener('touchmove',e=>{for(const t of e.changedTou
   touch.steer=Math.sign(sx)*Math.max(0,Math.abs(sx)-0.06)/0.94;
   touch.thr=Math.max(0,-sy-0.08)/0.92;touch.brk=Math.max(0,sy-0.08)/0.92;
   knobEl.style.transform=`translate(${sx*48}px,${sy*48}px)`;}e.preventDefault();},{passive:false});
+// smartphone: pollice sinistro = gas (su) e freno (giù), pollice destro = sterzo; ogni cursore parte da dove appoggi il dito e torna al centro quando lo alzi
+const MOB=isTouch&&matchMedia('(pointer:coarse)').matches;if(MOB)document.body.classList.add('mob');
+const MZ={L:{id:null,v:0},R:{id:null,v:0}};
+function mzSync(){touch.on=MZ.L.id!=null||MZ.R.id!=null;touch.thr=Math.max(0,MZ.L.v);touch.brk=Math.max(0,-MZ.L.v);touch.steer=MZ.R.v;}
+[['L','mobL',0],['R','mobR',1]].forEach(([k,id,hor])=>{const el=document.getElementById(id),trk=el.querySelector('.trk'),kn=el.querySelector('.kn'),Z=MZ[k];
+  const set=(t)=>{const r=trk.getBoundingClientRect();let v;if(hor){const R0=r.width*0.42;v=cl1((t.clientX-Z.a)/R0);kn.style.transform=`translateX(${v*R0}px)`;}else{const R0=r.height*0.42;v=cl1(-(t.clientY-Z.a)/R0);kn.style.transform=`translateY(${-v*R0}px)`;}
+    Z.v=Math.sign(v)*Math.max(0,Math.abs(v)-0.05)/0.95;mzSync();};
+  el.addEventListener('touchstart',e=>{if(paused)return;for(const t of e.changedTouches){if(t.target.closest('button'))continue;if(Z.id!=null)continue;Z.id=t.identifier;Z.a=hor?t.clientX:t.clientY;trk.classList.add('act');set(t);AC&&AC.resume();}e.preventDefault();},{passive:false});
+  el.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===Z.id)set(t);e.preventDefault();},{passive:false});
+  const end=e=>{for(const t of e.changedTouches)if(t.identifier===Z.id){Z.id=null;Z.v=0;kn.style.transform='';trk.classList.remove('act');mzSync();}};
+  el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);});
+document.querySelectorAll('#mGear button').forEach(b=>b.addEventListener('touchstart',e=>{selectGear(b.dataset.g);e.preventDefault();e.stopPropagation();},{passive:false}));
+{const h=document.getElementById('mHorn');h.addEventListener('touchstart',e=>{setHorn(true);e.preventDefault();e.stopPropagation();},{passive:false});h.addEventListener('touchend',()=>setHorn(false));h.addEventListener('touchcancel',()=>setHorn(false));}
+document.querySelectorAll('#mobTop button').forEach(b=>b.onclick=e=>{e.currentTarget.blur();const t=document.getElementById(b.dataset.p);if(t)t.click();});
+setInterval(()=>{if(!MOB)return;const run=started&&!pl.ended&&menu.style.display!=='flex';document.body.classList.toggle('run',run);if(!run)return;
+  document.querySelectorAll('#mGear button').forEach(b=>b.classList.toggle('on',pl.sel===b.dataset.g));document.getElementById('mJob').classList.toggle('off',MODE!=='career');
+  const pb=document.querySelector('#mobTop [data-p="pauseBtn"]');pb.textContent=paused?'▶':'⏸';},250);
 function touchEnd(e){for(const t of e.changedTouches){if(t.identifier===touch.id){touch.on=false;touch.id=null;touch.steer=touch.thr=touch.brk=0;stickEl.style.display='none';}}}
 renderer.domElement.addEventListener('touchend',touchEnd);renderer.domElement.addEventListener('touchcancel',touchEnd);
 document.getElementById('tView').onclick=()=>toggleView();
@@ -3314,7 +3362,7 @@ HOME.tick=function(dt){if(!HOME.ok)return;const far=Math.abs(camera.position.x-H
     let best=null,bd=1e9;for(const[k,C]of Object.entries(HOME.cars)){if(!C.m.visible)continue;let d;if(C.pad){const c=Math.cos(C.h),sn=-Math.sin(C.h),ax=C.x+c*3.1,az=C.z+sn*3.1,bx=C.x-c*16,bz=C.z-sn*16,ex=bx-ax,ez=bz-az,t=Math.max(0,Math.min(1,((g.x-ax)*ex+(g.z-az)*ez)/(ex*ex+ez*ez)));d=Math.hypot(g.x-ax-ex*t,g.z-az-ez*t)-1.3;}else d=Math.hypot(g.x-C.x,g.z-C.z)-TYPES[k].L/2;if(d<bd){bd=d;best=k;}}
     const card=document.getElementById('homeCard');if(best&&bd<1.4){if(HOME.near!==best){HOME.near=best;const P=PHYS[best],lk=CAR.on&&!CAR.s.own[best];card.innerHTML=`<b>${P.label}</b><span>${P.desc}</span>`+(lk?`<span>In vendita: <b>${CAR.fmt(P.price)}</b> · hai ${CAR.fmt(CAR.s.money)}</span><button id="homeIn">💶 Compra (Invio)</button>`:`<button id="homeIn">🔑 Sali (Invio)</button>`);document.getElementById('homeIn').onclick=()=>HOME.enter(best);}card.style.display='flex';}
     else{HOME.near=null;card.style.display='none';}
-    hud.textContent='Casa di Guido · a piedi'+(isTouch?'':' · frecce o gas/freno/sterzo per camminare · Maiusc per correre · Invio per salire');}
+    hud.textContent=MOB?'':'Casa di Guido · a piedi'+(isTouch?'':' · frecce o gas/freno/sterzo per camminare · Maiusc per correre · Invio per salire');}
   if(HOME.mode==='return'){HOME.parkT=0;if(HOME.t>0.6){if(c.st==='rub'){g.sp*=0.9;}
       else{const w=HOME.path[0];if(w){const[x,z]=hW(w[0],w[1]);if(walkTo(g,x,z,1.75,dt)<0.4)HOME.path.shift();if(HOME.path.length<=2)HOME.doorA=1.6;}
         if(!HOME.path.length&&!HOME.done)HOME.finish();}}
@@ -3376,7 +3424,7 @@ function loop(now){
     {const fx=document.getElementById('tFix'),need=!!(pl.flip&&pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5);fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
     navBox.style.display=(pl.navMsgT>0)?'block':'none';if(pl.navMsgT>0)navBox.textContent=pl.navMsg+(route&&route.next&&view!=='cockpit'?'':'');
     if(route&&view!=='cockpit'&&route.next){navBox.style.display='block';navBox.textContent=Math.round(Math.max(0,route.next.s-route.ps))+' m · '+manText(route.next);}
-    hud.textContent=(pl.infrT>0?'⚠ '+pl.infrMsg+'  ':'')+`${pl.P.label} · ${pl.km.toFixed(2)} km · urti: ${pl.hits} · rossi: ${pl.infr.rosso} · contromano: ${pl.infr.contromano}`+licTxt()+fuelTxt()+(isTouch?'':' · C: vista · Tab: mappa · O: foto · J: clip · Esc: menu');
+    if(MOB)hud.textContent=pl.infrT>0?'⚠ '+pl.infrMsg:'';else hud.textContent=(pl.infrT>0?'⚠ '+pl.infrMsg+'  ':'')+`${pl.P.label} · ${pl.km.toFixed(2)} km · urti: ${pl.hits} · rossi: ${pl.infr.rosso} · contromano: ${pl.infr.contromano}`+licTxt()+fuelTxt()+(isTouch?'':' · C: vista · Tab: mappa · O: foto · J: clip · Esc: menu');
   } else if(!started){
     simT+=dt;updateLights(simT);if(!NWT){updateTraffic(dt);updatePeds(dt);updateAnimals(dt);}
     const a=simT*0.05;camera.position.set(Math.cos(a)*70,40,Math.sin(a)*70);camera.lookAt(0,0,0);sun.position.set(-60,90,40);sun.target.position.set(0,0,0);
