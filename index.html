@@ -28,7 +28,7 @@
   .veh button span{opacity:.7;font-size:12px}
   .veh button.sel{border-color:#7fb2ff;background:#22324a}
   .opts{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:14px;font-size:14px}.opts select{margin-left:6px;background:#1c232d;color:#eee;border:1px solid #2f3a48;border-radius:8px;padding:6px}
-  #sum{position:fixed;inset:0;background:rgba(8,10,14,.82);display:none;align-items:center;justify-content:center;z-index:6}#sum .box{background:#141a22;border:1px solid #2f3a48;border-radius:14px;padding:22px 26px;max-width:420px;width:90%}#sum h2{margin:0 0 10px}#sum table{width:100%;font-size:15px;border-collapse:collapse}#sum td{padding:5px 0;border-bottom:1px solid #222a35}#sum td+td{text-align:right;font-weight:600}#sum button{margin-top:16px;background:#e8eef5;color:#111;border:0;border-radius:22px;padding:10px 20px;font-size:15px;margin-right:8px}
+  #sum{position:fixed;inset:0;background:rgba(8,10,14,.82);display:none;align-items:center;justify-content:center;z-index:6}#sum .box{background:#141a22;border:1px solid #2f3a48;border-radius:14px;padding:22px 26px;max-width:420px;width:90%;max-height:92vh;overflow:auto;box-sizing:border-box}@media (max-height:500px){#sum .box{padding:10px 16px!important;max-width:760px;width:94%}#sum h2{font-size:18px!important;margin:0 0 4px!important}#sum table{font-size:13px!important}#sum table tbody{display:grid;grid-template-columns:1fr 1fr;column-gap:22px}#sum table tr{display:flex;justify-content:space-between;gap:8px}#sum table td{padding:3px 0!important}#sum .box button{margin-top:8px!important;padding:8px 18px!important}}#sum h2{margin:0 0 10px}#sum table{width:100%;font-size:15px;border-collapse:collapse}#sum td{padding:5px 0;border-bottom:1px solid #222a35}#sum td+td{text-align:right;font-weight:600}#sum button{margin-top:16px;background:#e8eef5;color:#111;border:0;border-radius:22px;padding:10px 20px;font-size:15px;margin-right:8px}
   .sm{background:#1c232d;color:#eee;border:1px solid #2f3a48;border-radius:8px;padding:6px 10px;cursor:pointer}
   #pauseOv{position:fixed;inset:0;display:none;align-items:center;justify-content:center;font-size:34px;font-weight:700;background:rgba(0,0,0,.35);z-index:4;pointer-events:none}
   #go{margin-top:16px;background:#e8eef5;color:#111;border:0;border-radius:24px;padding:12px 26px;font-size:16px;cursor:pointer}
@@ -2033,7 +2033,7 @@ function readInput(dt){
 function resetPlayer(){
   const P=PHYS[selKey],T=TYPES[selKey];
   if(pl.mesh)scene.remove(pl.mesh);
-  pl.P=P;pl.T=T;pl.yb=null;pl.vb=0;pl.air=false;pl.nLoad=1;pl.mesh=makeCar(selKey,0x8a1f1f,true,true);pl.paint=pl.mesh.userData.paint;scene.add(pl.mesh);
+  pl.P=P;pl.T=T;pl.t0=simT;pl.yb=null;pl.vb=0;pl.air=false;pl.nLoad=1;pl.mesh=makeCar(selKey,0x8a1f1f,true,true);pl.paint=pl.mesh.userData.paint;scene.add(pl.mesh);
   pl.ck=buildCockpit(T,P);pl.mesh.add(pl.ck.g);pl.mesh.add(rearCam);
   const clipM=pl.paint.clone();pl.clipPlanes=[new THREE.Plane(),new THREE.Plane()];clipM.clippingPlanes=pl.clipPlanes;clipM.clipIntersection=true;clipM.side=THREE.DoubleSide;
   rearCam.near=pl.ck.model?Math.max(1.2,pl.ck.eye.x+T.L/2+0.25):0.3;rearCam.updateProjectionMatrix();
@@ -2235,7 +2235,9 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   suspension(dt,ax);
   {const P2=pl.P,ssf=(pl.T.W-0.2)/(2*P2.h),lat=(pl.ay||0)/G+Math.tan(pl.slopeR),tilt=pl.slopeR+pl.susp.r,sf=pl.surfR;
    pl.tipT=(Math.abs(lat)>ssf*0.97)?(pl.tipT||0)+dt:0;
-   if(pl.tipT>0.18||Math.abs(tilt)>0.72||(sf!=='asphalt'&&Math.abs(pl.vy)>7&&Math.abs(pl.vx)>6))startFlip(Math.sign((Math.abs(tilt)>0.72?tilt:-(pl.ay||pl.vy)))||1,Math.hypot(pl.vx,pl.vy)>13);}
+   // niente ribaltamenti appena partiti o da fermi: un'inclinazione letta male dal terreno (bordo strada, banchina) non deve rovesciare l'auto
+   const mv=Math.hypot(pl.vx,pl.vy),fresh=simT-(pl.t0??-99)<2.5;
+   if(!fresh&&(pl.tipT>0.18||(Math.abs(tilt)>0.72&&mv>3)||(sf!=='asphalt'&&Math.abs(pl.vy)>7&&Math.abs(pl.vx)>6)))startFlip(Math.sign((Math.abs(tilt)>0.72?tilt:-(pl.ay||pl.vy)))||1,Math.hypot(pl.vx,pl.vy)>13);}
   pl.skid=((pl.lockF||pl.lockR)&&Math.abs(pl.vx)>3)||(pl.spinW>0&&Math.abs(pl.vx)<25)||(pl.slip>0.13&&Math.abs(pl.vx)>4)||(pl.brkIn>0.95&&Math.abs(pl.vx)>8&&pl.surfR!=='asphalt');
 }
 function suspension(dt,axInst){
@@ -4387,7 +4389,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
 if(NWT&&window.fillVia)window.fillVia();
 if(NWT){{const keep=new Set([sky,sun,sun.target,rain,destMark,skMesh,...dust,...clouds]);BASE0.forEach(o=>{if(!keep.has(o)&&!o.isLight)o.visible=false;});clouds.forEach(c=>{c.position.x+=8000;c.position.z+=8000;c.position.y+=950;});}camera.far=12000;camera.updateProjectionMatrix();const sd=document.getElementById('selDest');sd.innerHTML='';NWT.dests().forEach(([id,n])=>{const o=document.createElement('option');o.value=id;o.textContent=n;sd.appendChild(o);});
   if(PREF.dest&&[...sd.options].some(o=>o.value===PREF.dest))sd.value=PREF.dest;else{const c=[...sd.options].find(o=>o.textContent==='Como');if(c)sd.value=c.value;}}
-if(NWT)HOME.init();window.__setCar=k=>switchCar(k);window.__mk={makeHuman,makeDog,makePed};window.__sim={cfg:CFG,env:(t)=>{TIME=t;applyEnv();},NW,NWT,CARX,MAPLE,MONU,PROPS,HOUSE,PEDX,COWX,TYPES,peds:()=>peds,camera,animals:()=>animals,herds:()=>herds,buildRoute:(d)=>buildRoute(d),manText:(m)=>manText(m),mPath,TH,THREE,scene,pl,keys,cars,renderer,lanes,surfaceAt,step:(dt)=>{simT+=dt;updateLights(simT);for(let i=0;i<4;i++){readInput(dt/4);stepPhysics(dt/4);}if(!NWT)updateTraffic(dt);}};
+if(NWT)HOME.init();window.__setCar=k=>switchCar(k);window.__mk={makeHuman,makeDog,makePed};window.__sim={cfg:CFG,PHYS,env:(t)=>{TIME=t;applyEnv();},NW,NWT,CARX,MAPLE,MONU,PROPS,HOUSE,PEDX,COWX,TYPES,peds:()=>peds,camera,animals:()=>animals,herds:()=>herds,buildRoute:(d)=>buildRoute(d),manText:(m)=>manText(m),mPath,TH,THREE,scene,pl,keys,cars,renderer,lanes,surfaceAt,step:(dt)=>{simT+=dt;updateLights(simT);for(let i=0;i<4;i++){readInput(dt/4);stepPhysics(dt/4);}if(!NWT)updateTraffic(dt);}};
 requestAnimationFrame(loop);
 }
 </script>
