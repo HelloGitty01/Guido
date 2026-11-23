@@ -1016,6 +1016,7 @@ const TYPES={
   wagoneer:{L:4.76,W:1.9,hb:1.05,H:1.8,fleet:true,gh:[[-2.2,1.05],[-2.1,1.75],[0.55,1.75],[1.0,1.05]]},
   hellcat:{L:5.03,W:2.0,hb:0.9,H:1.45,fleet:true,gh:[[-1.6,0.9],[-1.1,1.4],[0.4,1.4],[1.05,0.9]]},
   zil:{L:8.76,W:2.2,hb:1.3,H:3.09,fleet:true,big:true,camL:12,camH:5.6,gh:[[2.4,1.6],[2.4,2.6],[3.0,2.6],[3.3,1.6]]},
+  daily:{L:5.6,W:2.0,hb:1.15,H:2.4,fleet:true,gh:[[-2.7,1.2],[-2.7,2.3],[1.5,2.3],[2.0,1.2]]},
   taxi:{L:5.35,W:2.0,hb:0.95,H:1.5,fleet:true,gh:[[-1.9,0.95],[-1.55,1.45],[0.55,1.45],[1.1,0.95]]},
   furgone:{L:5.0,W:2.0,hb:1.05,H:2.25,gh:[[0.95,1.2],[0.95,2.0],[1.42,2.0],[1.91,1.2]],van:true}
 };
@@ -1093,7 +1094,7 @@ function rrGlass(w,h,r,u0,u1,v0,v1){const g=new THREE.ShapeGeometry(rrect(w,h,r)
 // forma: ogni veicolo diventa un gruppo "piatto": pezzi uniti per materiale, ruote su perni sterzanti, luci separate
 const GLB_CARS={utilitaria:{flip:true,len:3.38},berlina:{},sw:{},suv:{},furgone:{len:4.3,flip:true},camion:{}};
 // flotta: modelli già in metri e col muso verso +x; dove il modello non ha un volante separato se ne indica la posizione
-const GLB_FLEET={volvo:{},wagoneer:{},hellcat:{steer:[0.3,0.86,-0.38,0.19]},zil:{ws:3.0,rear:1.45},taxi:{steer:[0.42,0.97,-0.4,0.2]}};
+const GLB_FLEET={volvo:{},wagoneer:{},hellcat:{steer:[0.3,0.86,-0.38,0.19]},zil:{ws:3.0,rear:1.45},taxi:{steer:[0.42,0.97,-0.4,0.2]},daily:{}};
 const CARX={};
 function prepCarLevel(sc,k,cfg,flatTo){
   const root=new THREE.Group(),inner=new THREE.Group();inner.add(sc);root.add(inner);
@@ -1295,7 +1296,7 @@ function makeCar(k,color,shadow=true,fine=false,opt={}){
 }
 const typeKeys=Object.keys(TYPES).filter(k=>k!=='camion'&&!TYPES[k].fleet),typeW=CARX.utilitaria?[0.26,0.26,0.2,0.17,0.11]:CARX.berlina?[0,0.36,0.28,0.24,0.12]:[0.32,0.2,0.2,0.2,0.08];
 // auto della flotta del giocatore anche nel traffico (il camion più di rado)
-const FLEET_TRAF=[['volvo',1],['wagoneer',0.5],['hellcat',0.8],['taxi',1.2],['zil',0.5]];
+const FLEET_TRAF=[['volvo',1],['wagoneer',0.5],['hellcat',0.8],['taxi',1.2],['zil',0.5],['daily',0.8]];
 function randTrafType(){if(Math.random()<(window.__fleetP??(MOBILE?0.1:0.15))){const ok=FLEET_TRAF.filter(([k])=>CARX[k]&&TYPES[k]);const tot=ok.reduce((a,[,w])=>a+w,0);let r=Math.random()*tot;for(const[k,w]of ok){if((r-=w)<=0)return k;}}return randType();}
 function randType(){let r=Math.random(),a=0;for(let i=0;i<5;i++){a+=typeW[i];if(r<a)return typeKeys[i];}return 'utilitaria';}
 const randColor=()=>COLORS[(Math.random()*COLORS.length)|0];
@@ -1633,6 +1634,7 @@ const PHYS={
  wagoneer:{awd:true,offroad:1.25,label:'Jeep Grand Wagoneer',desc:'5.9 V8 AMC · 144 CV · 380 Nm · 2050 kg · 4x4 Selec-Trac · automatico a 3 marce',m:2150,Pkw:107,Tmax:380,rpk:1800,pl:500,rspan:2250,idle:620,red:4400,gears:[2.45,1.45,1.0],fd:3.31,rw:0.37,CdA:1.45,h:0.78,wf:0.56,ratio:21,brake:0.72,mu:0.74,cyl:8,diesel:false,dash:0x3a2a20,vmax:160,fq:1.05,zeta:0.2,rollK:2.1,steerRate:0.55,tank:76,shiftT:0.6,snd:{exh:1.05,lope:1.4},price:12000},
  hellcat:{rwd:true,tcDef:true,label:'Dodge Challenger Hellcat',desc:'6.2 V8 sovralimentato · 717 CV · 881 Nm · 2020 kg · trazione posteriore · automatico a 8 marce',m:2020,Pkw:535,Tmax:881,rpk:4400,pl:800,rspan:3900,idle:850,red:6500,gears:[4.71,3.14,2.10,1.67,1.29,1.0,0.84,0.67],fd:2.62,rw:0.36,CdA:0.82,h:0.5,wf:0.54,ratio:15,brake:1.25,mu:1.15,cyl:8,diesel:false,dash:0x161618,vmax:315,fq:1.65,zeta:0.42,rollK:0.8,steerRate:1.1,tank:70,shiftT:0.18,snd:{exh:1.7,blower:1,lope:0.6},price:65000},
  zil:{truck:true,label:'Camion ZIL-133',desc:'10,9 litri V8 diesel · 210 CV · 637 Nm · 11 t con il carico · 3 assi · 10 marce',m:12500,Pkw:154,Tmax:640,rpk:1700,pl:200,rspan:2120,idle:600,red:2800,gears:[7.82,6.38,4.03,3.29,2.5,2.04,1.53,1.25,1.0,0.815],fd:6.33,rw:0.43,CdA:6.5,h:1.3,wf:0.4,ratio:23,brake:0.62,mu:0.8,cyl:8,diesel:true,dash:0x2b2d30,vmax:90,gov:85,fq:1.3,zeta:0.35,rollK:2.3,steerRate:0.5,tank:250,shiftT:0.7,snd:{exh:1.35,rough:1.3},price:18000},
+ daily:{rwd:true,label:'Iveco Daily 35.8 (1982)',desc:'2.5 diesel Sofim · 72 CV · 147 Nm · 2300 kg col carico · trazione posteriore · 5 marce',m:2300,Pkw:53,Tmax:147,rpk:2400,pl:400,rspan:2400,idle:750,red:4400,gears:[4.38,2.43,1.47,1.0,0.82],fd:4.3,rw:0.32,CdA:1.9,h:0.85,wf:0.5,ratio:22,brake:0.7,mu:0.78,cyl:4,diesel:true,dash:0x2a2b2d,vmax:120,fq:1.15,zeta:0.3,rollK:1.9,steerRate:0.6,tank:70,snd:{exh:1.1,rough:1.3},price:4000},
  taxi:{rwd:true,label:'Ford Crown Victoria Taxi',desc:'4.6 V8 · 224 CV · 373 Nm · 1880 kg · trazione posteriore · automatico a 4 marce',m:1880,Pkw:167,Tmax:373,rpk:3300,pl:1100,rspan:1260,idle:600,red:5200,gears:[2.84,1.55,1.0,0.7],fd:3.27,rw:0.35,CdA:0.82,h:0.58,wf:0.55,ratio:17,brake:0.85,mu:0.78,cyl:8,diesel:false,dash:0x232325,vmax:190,fq:1.1,zeta:0.24,rollK:1.6,steerRate:0.85,tank:72,shiftT:0.4,snd:{exh:0.75,lope:0.3},price:4500}
 };
 let selKey=(PREF&&PREF.veh&&PHYS[PREF.veh])?PREF.veh:'utilitaria';
@@ -1914,7 +1916,7 @@ function ding(n=3){if(!AC)return;for(let i=0;i<n;i++){const t=AC.currentTime+i*0
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.25,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+0.28);o.connect(g).connect(ACOUT());o.start(t);o.stop(t+0.3);}}
 let horn=null;
 // clacson a due trombe: onde ricche, saturazione e risonanza della membrana; tono diverso per ogni auto
-const HORNF={utilitaria:[440,554],berlina:[392,494],sw:[370,466],suv:[330,415],furgone:[294,370],volvo:[392,494],wagoneer:[330,415],hellcat:[370,466],zil:[196,247],taxi:[349,440]};
+const HORNF={utilitaria:[440,554],berlina:[392,494],sw:[370,466],suv:[330,415],furgone:[294,370],volvo:[392,494],wagoneer:[330,415],hellcat:[370,466],zil:[196,247],daily:[294,370],taxi:[349,440]};
 function setHorn(on){if(on&&!horn)hornPush();if(!AC)return;const t=AC.currentTime;
   if(on&&!horn){const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.16,t+0.018);
     const sh=AC.createWaveShaper(),cu=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;cu[i]=Math.tanh(3*x);}sh.curve=cu;
@@ -2656,7 +2658,8 @@ const CKIMG={volvo:{man:true,wheel:{src:'cockpit/volvo_w.webp',c:[475,436],a:123
   wagoneer:{wheel:{src:'cockpit/jeep_w.webp',c:[462,420],a:135,b:135,box:[323,281,602,560]},src:'cockpit/jeep.webp',size:[1024,572],glass:{C:[626,83,796,118],L:[123,287,229,333]},spd:[490,361],fs:8,gear:[490,371],turnL:[466,331],turnR:[514,331],beam:[490,331]},
   taxi:{wheel:{src:'cockpit/taxi_w.webp',c:[462,421],a:136,b:136,box:[322,281,603,562]},src:'cockpit/taxi.webp',size:[1024,572],glass:{C:[627,84,796,119],L:[121,276,223,330]},spd:[473,346],fs:8,gear:[476,357],turnL:[430,324],turnR:[515,324],beam:[500,324]},
   hellcat:{wheel:{src:'cockpit/hellcat_w.webp',c:[518,431],a:118,b:122,box:[396,305,641,503]},src:'cockpit/hellcat.webp',size:[1024,503],glass:{C:[617,196,741,227],L:[141,313,247,361]},spd:[517,346],fs:11,gear:[517,362],turnL:[505,332],turnR:[529,332],beam:[517,332]},
-  zil:{man:true,wheel:{src:'cockpit/zil_w.webp',c:[501,385],a:127,b:122,box:[370,259,633,512]},src:'cockpit/zil.webp',size:[1024,572],glass:{L:[24,148,150,324]},spd:[463,351],fs:8,gear:[463,361],turnL:[445,322],turnR:[555,322],beam:[500,322]}};
+  zil:{wheel:{src:'cockpit/zil_w.webp',c:[524,384],a:112,b:103,box:[408,277,641,492]},man:true,src:'cockpit/zil.webp',size:[1024,503],glass:{C:[681,80,815,116],L:[30,112,190,298]},spd:[472,352],fs:7,gear:[472,361],turnL:[503,330],turnR:[538,330],beam:[520,330]},
+  daily:{wheel:{src:'cockpit/daily_w.webp',c:[507,423],a:130,b:126,box:[373,293,642,554]},man:true,src:'cockpit/daily.webp',size:[1024,572],glass:{C:[668,76,806,112],L:[103,222,193,358]},spd:[463,378],fs:7,gear:[507,372],turnL:[482,345],turnR:[532,345],beam:[507,344]}};
 const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
 function ckQuad(k,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}const m=new THREE.Mesh(g,mirrorM);CKO.hud.add(m);CKO.q[k]=m;return m;}
 ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
@@ -3264,7 +3267,7 @@ const SMOKE=(()=>{const N=QG.lo?160:420,pos=new Float32Array(N*3),col=new Float3
   const V=new THREE.Vector3();let acc={tyre:0,exh:0};
   function emit(x,y,z,vx,vy,vz,life,s0,s1,a0,c){const p=P[head],i=head;head=(head+1)%N;Object.assign(p,{t:0,life,vx,vy,vz,s0,s1,a0});pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;col[i*3]=c;col[i*3+1]=c;col[i*3+2]=c*1.03;}
   // quantità di fumo dello scarico per mezzo (la Panda poco, Volvo e Wagoneer molto, il camion moltissimo)
-  const EXH={utilitaria:0.3,volvo:1,wagoneer:1,hellcat:0.6,zil:1.7,taxi:0.6};
+  const EXH={utilitaria:0.3,volvo:1,wagoneer:1,hellcat:0.6,zil:1.7,taxi:0.6,daily:1.1};
   function update(dt){if(!pl.P||!pl.mesh||!started){return;}const M=pl.mesh,T=pl.T,v=Math.abs(pl.vx),ch=Math.cos(pl.h),sh=-Math.sin(pl.h),rx=Math.sin(pl.h),rz=Math.cos(pl.h);
     const air=WX==='rain'?0.5:1,sf=pl.surfR||'asphalt',ud=M.userData;
     // gomme: pattinamento in accelerazione, bloccaggio in frenata, derapata laterale; sull'asfalto fumo bianco, sullo sterrato polvere
@@ -3445,13 +3448,13 @@ HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign
   // piazzale in asfalto e pavimento del garage
   const asph=M(0x45474b,0.95,{polygonOffset:true,polygonOffsetFactor:-2});plane(29,29.3,asph,-14,0.035,-10.15);
   const conc=M(0x9c988f,0.9,{polygonOffset:true,polygonOffsetFactor:-2});plane(24,11.4,conc,-14,0.04,-30.3);
-  const wl=M(0xf2f0ea,0.6,{polygonOffset:true,polygonOffsetFactor:-3});for(let i=0;i<=6;i++)plane(0.12,9.5,wl,-26+i*4,0.045,-30.8);
+  const wl=M(0xf2f0ea,0.6,{polygonOffset:true,polygonOffsetFactor:-3});const NB=Object.keys(PHYS).length,BW=24/NB;for(let i=0;i<=NB;i++)plane(0.12,9.5,wl,-26+i*BW,0.045,-30.8);
   // garage: muri, pilastri, tetto piano, fascia rossa come il logo
   const plast=M(0xe9dcc2,0.9),grey=M(0x6c6e70,0.8),red=M(0xc8202a,0.6),roofM=M(0x5d5f62,0.9);
   box(24.6,4.3,0.3,plast,-14,2.15,-36.15);box(0.3,4.3,11.9,plast,-26.15,2.15,-30.25);box(0.3,4.3,11.9,plast,-1.85,2.15,-30.25);
   box(25.2,0.4,12.6,roofM,-14,4.5,-30.2,false);box(25.2,0.7,0.35,plast,-14,3.95,-24.25,false);box(25.25,0.22,0.38,red,-14,3.7,-24.24,false);
-  for(let i=1;i<6;i++)box(0.32,3.6,0.32,grey,-26+i*4,1.8,-24.45);
-  const lampM=M(0xffffff,0.4,{emissive:0xfff1d6,emissiveIntensity:0});nm.push([lampM,1.6]);for(let i=0;i<6;i++)box(1.6,0.08,0.25,lampM,-24+i*4,4.27,-30,false);
+  for(let i=1;i<NB;i++)box(0.32,3.6,0.32,grey,-26+i*BW,1.8,-24.45);
+  const lampM=M(0xffffff,0.4,{emissive:0xfff1d6,emissiveIntensity:0});nm.push([lampM,1.6]);for(let i=0;i<NB;i++)box(1.6,0.08,0.25,lampM,-26+(i+0.5)*BW,4.27,-30,false);
   {const tx=canvasTex(512,(g,n)=>{g.fillStyle='#fff';g.fillRect(0,0,n,n/4);g.fillStyle='#c8202a';g.font='bold 58px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('GARAGE DI GUIDO',n/2,n/8+4);});
     tx.repeat.set(1,0.25);tx.offset.set(0,0.75);const sm=new THREE.MeshStandardMaterial({map:tx,emissiveMap:tx,emissive:0xffffff,emissiveIntensity:0,roughness:0.6});nm.push([sm,0.7]);
     const sg=new THREE.Mesh(new THREE.PlaneGeometry(7,0.95),sm);sg.position.set(-14,3.98,-24.06);G.add(sg);}
@@ -3503,7 +3506,7 @@ HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign
   G.traverse(o=>{if(o.isMesh){o.castShadow=o.castShadow!==false;o.receiveShadow=true;}});
   HOME.segS=NWT.addDyn(segs);
   // le auto in garage, una per posto, col muso verso l'uscita
-  HOME.carH=-(HOME.A+Math.PI/2);Object.keys(PHYS).forEach((k,i)=>{const u=-24+i*4,v=-30.4,[x,z]=hW(u,v),m=makeCar(k,0x8a1f1f,true,true);m.position.set(x,HOME.y,z);m.rotation.set(0,HOME.carH,0);scene.add(m);
+  HOME.carH=-(HOME.A+Math.PI/2);Object.keys(PHYS).forEach((k,i)=>{const u=-26+(i+0.5)*24/Object.keys(PHYS).length,v=-30.4,[x,z]=hW(u,v),m=makeCar(k,0x8a1f1f,true,true);m.position.set(x,HOME.y,z);m.rotation.set(0,HOME.carH,0);scene.add(m);
     const T=TYPES[k],c=Math.cos(HOME.carH),s=-Math.sin(HOME.carH),hl=T.L/2,hw=T.W/2,P=[[-hl,-hw],[hl,-hw],[hl,hw],[-hl,hw]].map(([a,b])=>[x+a*c-b*s,z+a*s+b*c]),sg=[];for(let q=0;q<4;q++)sg.push([P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]]);
     HOME.cars[k]={m,x,z,u,v,segs:sg,dyn:NWT.addDyn(sg)};});
   // Guido e Gatto
