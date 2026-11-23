@@ -1124,11 +1124,12 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
   ud.tailM=find('tail');ud.headM=find('head');ud.revM=find('rev');ud.indL=find('blinkL');ud.indR=find('blinkR');
   // il furgone non ha luci separate: si aggiungono piccole lampade
   const hl=T.L/2,hy=T.Hm*0.42;
-  if(!ud.headM){ud.headM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const h=new THREE.Mesh(new THREE.CircleGeometry(0.09,12),ud.headM);h.rotation.y=Math.PI/2;h.position.set(hl+0.01,hy,sd*(T.W/2-0.3));g.add(h);});}
-  if(!ud.tailM){ud.tailM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.16,0.1),ud.tailM);t.position.set(-hl-0.01,hy,sd*(T.W/2-0.12));g.add(t);});}
-  if(!ud.revM){ud.revM=new THREE.MeshStandardMaterial({color:0xcfcfcf,emissive:0xffffff,emissiveIntensity:0});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.06,0.08),ud.revM);t.position.set(-hl-0.01,hy-0.14,sd*(T.W/2-0.12));g.add(t);});}
+  const gAdd=g.add.bind(g),gx=T.fleet?{add:()=>{}}:g;
+  if(!ud.headM){ud.headM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const h=new THREE.Mesh(new THREE.CircleGeometry(0.09,12),ud.headM);h.rotation.y=Math.PI/2;h.position.set(hl+0.01,hy,sd*(T.W/2-0.3));gx.add(h);});}
+  if(!ud.tailM){ud.tailM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.16,0.1),ud.tailM);t.position.set(-hl-0.01,hy,sd*(T.W/2-0.12));gx.add(t);});}
+  if(!ud.revM){ud.revM=new THREE.MeshStandardMaterial({color:0xcfcfcf,emissive:0xffffff,emissiveIntensity:0});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.06,0.08),ud.revM);t.position.set(-hl-0.01,hy-0.14,sd*(T.W/2-0.12));gx.add(t);});}
   if(!ud.indL){ud.indL=new THREE.MeshStandardMaterial({color:0x6b3a00,emissive:0xff8a00,emissiveIntensity:0});ud.indR=ud.indL.clone();
-    [[ud.indL,-1],[ud.indR,1]].forEach(([mm,sd])=>{[hl-0.03,-hl+0.03].forEach(x=>{const f=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.05,0.07),mm);f.position.set(x,k==='utilitaria'?(x>0?0.66:0.78):hy+0.16,sd*(T.W/2-(k==='utilitaria'?0.12:0.16)));g.add(f);});});}
+    [[ud.indL,-1],[ud.indR,1]].forEach(([mm,sd])=>{[hl-0.03,-hl+0.03].forEach(x=>{const f=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.05,0.07),mm);f.position.set(x,k==='utilitaria'?(x>0?0.66:0.78):hy+0.16,sd*(T.W/2-(k==='utilitaria'?0.12:0.16)));gx.add(f);});});}
   const blob=new THREE.Mesh(new THREE.PlaneGeometry(T.L+0.7,T.W+0.6),blobM);blob.rotation.x=-Math.PI/2;blob.position.y=0.035;g.add(blob);
   [...g.children].forEach(c=>{if(c!==core)core.add(c);});
   if(!fine&&X.lod)CARLOD.list.push({g,core,k,col:new THREE.Color(color)});
