@@ -2158,14 +2158,18 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   const hF=(hw[0]+hw[1])/2,hR=(hw[2]+hw[3])/2,hL=(hw[0]+hw[2])/2,hRt=(hw[1]+hw[3])/2;
   pl.slopeP=Math.atan2(hF-hR,wb);pl.slopeR=-Math.atan2(hRt-hL,2*tw);pl.terrH=(hF+hR)/2;
   // scocca libera in verticale: sulle creste prese forte le ruote si staccano, poi si riatterra
-  {const gy=pl.terrH;if(pl.yb==null||!isFinite(pl.yb)||Math.abs(pl.yb-gy)>6){pl.yb=gy;pl.vb=0;pl.gy0=gy;}
-   const vg=Math.max(-25,Math.min(25,(gy-pl.gy0)/dt));pl.gy0=gy;const droop=P.truck?0.17:0.13,rel=pl.yb-gy;
+  {const g0=pl.terrH;if(pl.yb==null||!isFinite(pl.yb)||Math.abs(pl.yb-g0)>6){pl.yb=g0;pl.vb=0;pl.gy0=g0;pl.gyS=g0;}
+   // profilo "sentito" dalla scocca: gomme e sospensioni assorbono gradini, cordoli e piccole buche (non lanciano la macchina)
+   pl.gyS+=(g0-pl.gyS)*Math.min(1,dt/0.11);const gy=pl.gyS,sp=Math.hypot(pl.vx,pl.vy);
+   const vg=Math.max(-9,Math.min(9,(gy-pl.gy0)/dt));pl.gy0=gy;const droop=P.truck?0.2:0.14,rel=pl.yb-gy;
    const wz=2*Math.PI*(P.fq||1.3)*1.05,kz=wz*wz,cz=2*Math.min(0.9,(P.zeta||0.3)*1.6)*wz;let acc,N;
-   if(rel<droop){acc=Math.max(-G,kz*(gy-pl.yb)+cz*(vg-pl.vb));N=(acc+G)/G;}else{acc=-G;N=0;}
-   if(pl.air&&rel<droop){const vi=vg-pl.vb;if(vi>1.2)landing(Math.min(1,vi/6),pl.airT||0);pl.air=false;}
-   if(!pl.air&&N<0.02&&rel>0.02){pl.air=true;pl.airT=0;}if(pl.air)pl.airT=(pl.airT||0)+dt;
+   // staccarsi da terra richiede che la strada "scappi" sotto più in fretta della gravità: solo in velocità, su creste vere
+   const canFly=sp>14;
+   if(rel<droop||!canFly){acc=kz*(gy-pl.yb)+cz*(vg-pl.vb);if(canFly)acc=Math.max(-G,acc);else acc=Math.max(-2.5*G,acc);N=Math.max(canFly?0:0.15,(acc+G)/G);}else{acc=-G;N=0;}
+   if(pl.air&&(rel<droop||!canFly)){const vi=vg-pl.vb;if(vi>1.5)landing(Math.min(1,vi/6),pl.airT||0);pl.air=false;}
+   if(canFly&&!pl.air&&N<0.02&&rel>0.04){pl.air=true;pl.airT=0;}if(pl.air)pl.airT=(pl.airT||0)+dt;
    pl.vb+=acc*dt;pl.yb+=pl.vb*dt;
-   if(pl.yb<gy-0.11){if(pl.vb<vg-2.5)landing(Math.min(1,(vg-pl.vb)/7),1);pl.yb=gy-0.11;pl.vb=Math.max(pl.vb,vg);}  // finecorsa
+   if(pl.yb<gy-0.11){if(pl.vb<vg-3)landing(Math.min(1,(vg-pl.vb)/8),1);pl.yb=gy-0.11;pl.vb=Math.max(pl.vb,vg);}  // finecorsa
    pl.nLoad=Math.max(0,Math.min(2.6,N));}
   // velocità verticale della strada sotto ogni ruota (dossi, cordoli, buche)
   if(!pl.wh||pl.wh.length!==4)pl.wh=hw.slice();const vroad=hw.map((h,i)=>Math.max(-3,Math.min(3,(h-pl.wh[i])/dt)));pl.wh=hw;
