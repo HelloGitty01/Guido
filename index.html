@@ -2237,7 +2237,7 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   if(pl.hb&&Math.abs(pl.vx)>0.5)for(const i of [2,3]){lock[i]=true;Fx[i]=-Dm[i]*0.8*sgn;}
   for(let i=0;i<4;i++)Fx[i]=Math.max(-Dm[i],Math.min(Dm[i],Fx[i]));
   pl.lockF=lock[0]||lock[1];pl.lockR=lock[2]||lock[3];pl.spinF=spin[0]||spin[1];
-  pl.spinW=spin.some(Boolean)?0.6:0;
+  pl.spinW=spin.some(Boolean)?0.6:0;pl.spinA=spin;pl.lockA=lock;
   // sterzo, con assistenza che non lascia superare il limite di aderenza delle gomme anteriori
   const v=Math.hypot(pl.vx,pl.vy),maxD=0.6/(1+v*v/115)*(P.truck?0.85:1),avx=Math.max(Math.abs(pl.vx),0.5);   // sterzo progressivo: in velocità serve più volante per lo stesso angolo
   const si=pl.steerIn;// risposta progressiva: un tocco di tasto o un filo di levetta = poco sterzo; il pieno arriva solo tenendo premuto (o a fondo corsa)
@@ -2245,8 +2245,8 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   if(pl.steerAnalog)tgtD=Math.sign(si)*Math.pow(Math.abs(si),touch.on?1.2+0.5*CFG.prec:1.6+0.5*CFG.prec)*maxD;
   else{// tastiera: il tasto chiede una curva "normale" per la velocità (accelerazione laterale di circa mezza g, con Maiusc più stretta);
     // da fermo o in manovra è tutto sterzo, in città una decina di gradi, in autostrada pochi gradi
-    const lock=0.6*(P.truck?0.85:1),aL=G*(pl.kbSharp?0.95:0.58)*(P.mu||0.8)/Math.max(0.6,CFG.prec),vv=Math.max(0.8,avx);
-    tgtD=si*Math.min(lock,Math.atan(wb*aL/(vv*vv)));}
+    const lock=0.6*(P.truck?0.85:1),aL=G*0.9*(P.mu||0.8),vv=Math.max(0.8,avx);
+    tgtD=si*(pl.kbSharp?maxD:Math.min(lock,Math.max(maxD*0.55,Math.atan(wb*aL/(vv*vv)))));}
   if(AID>0&&avx>7&&pl.vx>0){const bF=Math.atan2(pl.vy+pl.r*a,avx),lim=AID===2?0.19:0.24;tgtD=Math.max(bF-lim,Math.min(bF+lim,tgtD));}
   const dd=tgtD-pl.delta,rateD=0.9*CFG.rap*(P.steerRate||1)/(1+v/13);
   pl.delta+=Math.sign(dd)*Math.min(Math.abs(dd),rateD*dt);
@@ -3145,6 +3145,40 @@ const JOB={cur:null,offers:[],pax:null,
             const bk=J.R.n,old=CAR.s.best[bk];if(!old||t<old)CAR.s.best[bk]=t;CAR.add(p,'Cronoscalata '+fmtT(t)+(old&&t<old?' · record!':''));CAR.s.jobs++;CAR.save();DJ.say('lavoro',true,'Cronoscalata '+bk+' chiusa in '+fmtT(t)+'!');this.cur=null;destMark.visible=false;route=null;return;}
           const q=J.cp[J.ci];this.go(q[0],q[1],null);pl.navMsg='Intermedio '+J.ci+'/'+J.cp.length+' · '+fmtT(simT-J.tc);pl.navMsgT=2;}}}}};
 window.__c={get CAR(){return CAR;},get JOB(){return JOB;},get POL(){return POL;},get EVT(){return EVT;},get DJ(){return DJ;}};
+
+// ================= FUMO: gomme che sgommano o slittano, e gas di scarico (quantità diversa per ogni mezzo) =================
+const SMOKE=(()=>{const N=QG.lo?160:420,pos=new Float32Array(N*3),col=new Float32Array(N*3),siz=new Float32Array(N),alp=new Float32Array(N),P=[];let head=0;
+  for(let i=0;i<N;i++){P.push({t:9,life:1,vx:0,vy:0,vz:0,s0:1,s1:2,a0:0});alp[i]=0;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('size',new THREE.BufferAttribute(siz,1));g.setAttribute('alpha',new THREE.BufferAttribute(alp,1));
+  const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:true,uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{scale:{value:innerHeight*0.6},lum:{value:1}}]),
+    vertexShader:'attribute float size;attribute float alpha;attribute vec3 color;varying float vA;varying vec3 vC;uniform float scale;\n#include <fog_pars_vertex>\nvoid main(){vA=alpha;vC=color;vec4 mvPosition=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*scale/max(0.5,-mvPosition.z);gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}',
+    fragmentShader:'varying float vA;varying vec3 vC;uniform float lum;\n#include <fog_pars_fragment>\nvoid main(){vec2 d=gl_PointCoord-0.5;float r=length(d)*2.0;if(r>1.0)discard;float a=vA*(1.0-r*r)*(0.75+0.25*sin(d.x*9.0+d.y*7.0));gl_FragColor=vec4(vC*lum,a);\n#include <fog_fragment>\n}'});
+  const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=5;scene.add(pts);
+  const V=new THREE.Vector3();let acc={tyre:0,exh:0};
+  function emit(x,y,z,vx,vy,vz,life,s0,s1,a0,c){const p=P[head],i=head;head=(head+1)%N;Object.assign(p,{t:0,life,vx,vy,vz,s0,s1,a0});pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;col[i*3]=c;col[i*3+1]=c;col[i*3+2]=c*1.03;}
+  // quantità di fumo dello scarico per mezzo (la Panda poco, Volvo e Wagoneer molto, il camion moltissimo)
+  const EXH={utilitaria:0.3,volvo:1,wagoneer:1,hellcat:0.6,zil:1.7,taxi:0.6};
+  function update(dt){if(!pl.P||!pl.mesh||!started){return;}const M=pl.mesh,T=pl.T,v=Math.abs(pl.vx),ch=Math.cos(pl.h),sh=-Math.sin(pl.h),rx=Math.sin(pl.h),rz=Math.cos(pl.h);
+    const air=WX==='rain'?0.5:1,sf=pl.surfR||'asphalt',ud=M.userData;
+    // gomme: pattinamento in accelerazione, bloccaggio in frenata, derapata laterale; sull'asfalto fumo bianco, sullo sterrato polvere
+    if(!pl.air&&sf!=='water'){const W=ud.wheels||[],lat=Math.max(0,(pl.slip||0)-0.11)*Math.min(1,v/7),sp=pl.spinA||[],lk=pl.lockA||[];
+      for(let j=0;j<4&&j<W.length;j++){let k=lat*2.2;if(sp[j])k+=0.9*Math.min(1,Math.abs(pl.rpm||0)/3000+0.3);if(lk[j]&&v>4)k+=0.7;if(k<0.05)continue;
+        acc.tyre+=k*dt*(sf==='asphalt'?38:26)*air;W[j].getWorldPosition(V);
+        while(acc.tyre>=1){acc.tyre-=1;const c=sf==='asphalt'?0.86:0.62;emit(V.x+(Math.random()-0.5)*0.3,pl.terrH+0.25,V.z+(Math.random()-0.5)*0.3,-ch*v*0.25+(Math.random()-0.5)*1.2,0.5+Math.random()*0.6,-sh*v*0.25+(Math.random()-0.5)*1.2,1.6+Math.random()*1.2,0.6,3.4+Math.random()*1.5,0.5*Math.min(1,k),sf==='asphalt'?c:0.55);}}}
+    // scarico: più fumo col gas e ai bassi giri, il diesel più scuro (sbuffi neri quando il camion spinge)
+    const ex=EXH[selKey]??0.5,thr=pl.thrIn||0,rpm=pl.rpm||800,dz=pl.P.truck?-0.9:-0.42;
+    let rate=ex*(1.2+thr*7*(1-Math.min(1,v/25)*0.6))*(pl.engineOn===false?0:1);acc.exh+=rate*dt*air;
+    if(acc.exh>=1){const ox=-T.L/2-0.05,oy=pl.P.truck?0.75:0.28;M.localToWorld(V.set(ox,oy,dz));}
+    while(acc.exh>=1){acc.exh-=1;const dark=pl.P.diesel?(0.32+0.25*(1-thr)):0.78,c=dark-(pl.P.diesel&&thr>0.7&&rpm<1800?0.18:0);
+      emit(V.x,V.y,V.z,-ch*(1.5+v*0.15)+(Math.random()-0.5)*0.5,0.25+Math.random()*0.35,-sh*(1.5+v*0.15)+(Math.random()-0.5)*0.5,0.9+Math.random()*0.8,0.12,0.9+ex*0.6,0.16+0.12*ex*Math.min(1,0.3+thr),c);}
+    // invecchiamento: salgono, si allargano, si diradano; il vento le porta via
+    const wx=0.6,wz=0.3;for(let i=0;i<N;i++){const p=P[i];if(p.t>=p.life){if(alp[i]){alp[i]=0;}continue;}p.t+=dt;const f=p.t/p.life,dr=Math.exp(-dt*1.6);
+      p.vx=p.vx*dr+wx*dt;p.vz=p.vz*dr+wz*dt;p.vy=p.vy*Math.exp(-dt*0.8)+0.25*dt;pos[i*3]+=p.vx*dt;pos[i*3+1]+=p.vy*dt;pos[i*3+2]+=p.vz*dt;
+      siz[i]=p.s0+(p.s1-p.s0)*Math.sqrt(f);alp[i]=p.a0*Math.min(1,f*6)*(1-f)*(1-f);}
+    g.attributes.position.needsUpdate=g.attributes.alpha.needsUpdate=g.attributes.size.needsUpdate=g.attributes.color.needsUpdate=true;
+    pts.visible=true;m.uniforms.scale.value=innerHeight*0.6;m.uniforms.lum.value=Math.min(1,0.18+0.82*ENVB.sun/1.75)*(1-0.6*(TUNL.k||0))+0.15*(TUNL.k||0);}
+  return{update,live:()=>P.filter(p=>p.t<p.life).length};})();window.__smoke=()=>SMOKE;
+
 function fmtT(x){return Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0')+'.'+Math.floor(x*10%10);}
 
 // ================= PATTUGLIA: più punti persi, più è probabile che arrivi =================
@@ -3489,7 +3523,7 @@ function loop(now){
     simT+=dt;updateLights(simT);if(!NWT){updateTraffic(dt);updatePeds(dt);updateAnimals(dt);}
     const a=simT*0.05;camera.position.set(Math.cos(a)*70,40,Math.sin(a)*70);camera.lookAt(0,0,0);sun.position.set(-60,90,40);sun.target.position.set(0,0,0);
   }
-  if(PHOTO.on)photoUpdate(dt);envTick(dt);chTick(dt);recTick();CAR.tick(dt);JOB.tick(dt);POL.tick(dt);EVT.tick(dt);
+  if(PHOTO.on)photoUpdate(dt);envTick(dt);chTick(dt);recTick();SMOKE.update(dt);CAR.tick(dt);JOB.tick(dt);POL.tick(dt);EVT.tick(dt);
   sky.position.copy(camera.position);skyMat.uniforms.uT.value=simT;clouds.forEach(c=>{c.position.x+=dt*3;if(NWT){const cx=camera.position.x,cz=camera.position.z;if(c.position.x-cx>2800)c.position.x-=5600;if(c.position.x-cx<-2800)c.position.x+=5600;if(c.position.z-cz>2800)c.position.z-=5600;if(c.position.z-cz<-2800)c.position.z+=5600;}else if(c.position.x>3400)c.position.x-=5600;});
   if(pl.ck&&pl.ck.mirrors)pl.ck.mirrors.forEach(m=>m.visible=CFG.mir!==false);
   if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir===1?2:QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
