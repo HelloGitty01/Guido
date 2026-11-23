@@ -102,6 +102,7 @@
   #sum td{border-color:var(--line)!important}#ctrlBody td{border-color:var(--line)!important}
   #sum button,#credClose,#ctrlClose{background:var(--red)!important;color:#fff!important;border:0!important;border-radius:22px!important;padding:9px 20px!important;font:800 15px Nunito,sans-serif;margin-right:8px;cursor:pointer}
   #ctrlOv .sm,#ctrlBody button{background:#fff;color:var(--wine);border:2px solid var(--line);border-radius:8px}
+  #steerInd{position:fixed;bottom:48px;left:50%;transform:translateX(-50%);z-index:3;display:none;text-align:center;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}#steerInd svg{display:block;margin:0 auto;transition:none}#steerInd b{color:#fff;font:800 12px Nunito,sans-serif}
   #cashHud{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:rgba(94,21,17,.78);color:#fff;border-radius:16px;padding:4px 14px;font:800 14px Nunito,sans-serif;z-index:3;display:none;white-space:nowrap}
   #cashTag{position:fixed;top:84px;left:50%;transform:translateX(-50%);border-radius:14px;padding:4px 12px;font:800 15px Nunito,sans-serif;z-index:3;display:none}#cashTag.pos{background:#2f9e44;color:#fff}#cashTag.neg{background:#c8202a;color:#fff}
   #jobOv{position:fixed;inset:0;background:rgba(8,10,14,.6);display:none;align-items:center;justify-content:center;z-index:9}#jobOv>div{background:#fff;color:#2a1a18;border-radius:18px;padding:16px 18px;max-width:560px;width:92%;max-height:86vh;overflow:auto;font:15px Nunito,sans-serif}
@@ -175,7 +176,7 @@
 
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
 <button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
-<div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
+<div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
 <div id="jobOv"><div></div></div>
 <button id="radioBtn" title="Autoradio (tasto M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">♪ Radio</button><div id="radioTag"></div>
 <div id="navBox" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(10,30,60,.82);color:#fff;padding:8px 16px;border-radius:12px;font-size:17px;display:none;pointer-events:none;z-index:3"></div>
@@ -2139,7 +2140,8 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   pl.spinW=spin.some(Boolean)?0.6:0;
   // sterzo, con assistenza che non lascia superare il limite di aderenza delle gomme anteriori
   const v=Math.hypot(pl.vx,pl.vy),maxD=0.6/(1+v*v/115)*(P.truck?0.85:1),avx=Math.max(Math.abs(pl.vx),0.5);   // sterzo progressivo: in velocità serve più volante per lo stesso angolo
-  const si=pl.steerIn;let tgtD=Math.sign(si)*Math.pow(Math.abs(si),pl.steerAnalog?1.2+0.5*CFG.prec:1+0.15*CFG.prec)*maxD;
+  const si=pl.steerIn;// risposta progressiva: un tocco di tasto o un filo di levetta = poco sterzo; il pieno arriva solo tenendo premuto (o a fondo corsa)
+  let tgtD=Math.sign(si)*Math.pow(Math.abs(si),pl.steerAnalog?(touch.on?1.2+0.5*CFG.prec:1.6+0.5*CFG.prec):2.0+0.3*CFG.prec)*maxD;
   if(AID>0&&avx>7&&pl.vx>0){const bF=Math.atan2(pl.vy+pl.r*a,avx),lim=AID===2?0.19:0.24;tgtD=Math.max(bF-lim,Math.min(bF+lim,tgtD));}
   const dd=tgtD-pl.delta,rateD=0.9*CFG.rap*(P.steerRate||1)/(1+v/13);
   pl.delta+=Math.sign(dd)*Math.min(Math.abs(dd),rateD*dt);
@@ -2448,6 +2450,7 @@ function tick(hi){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g
   o.type='square';o.frequency.value=hi?1300:950;gg.gain.setValueAtTime(0.18,t);gg.gain.exponentialRampToValueAtTime(0.001,t+0.035);o.connect(f).connect(gg).connect(ACOUT());o.start(t);o.stop(t+0.05);}
 function manualBlink(dir){if(pl.blink===dir){pl.blink=0;}else{pl.blink=dir;pl.blinkMan=true;pl.blinkArmed=false;}}
 function updateBlinker(dt){const wa=pl.delta*pl.P.ratio*57.3,v=Math.abs(pl.vx);
+  {const e=document.getElementById('steerInd');if(e){const on=started&&!pl.ended&&view!=='cockpit'&&CFG.steerInd!==false;e.style.display=on?'block':'none';if(on){e.firstElementChild.style.transform='rotate('+wa.toFixed(1)+'deg)';e.lastElementChild.textContent=Math.abs(wa)<4?'0°':Math.round(Math.abs(wa))+'°'+(wa<0?' ◀':' ▶');}}}
   // automatica: solo svolte vere (volante oltre 100° sotto i 35 km/h); si spegne quando il volante torna dritto
   if(!pl.blink&&Math.abs(wa)>100&&v<9.7&&v>0.5){pl.blink=Math.sign(wa);pl.blinkMan=false;pl.blinkArmed=true;}
   if(pl.blink&&Math.abs(wa)>100&&Math.sign(wa)===pl.blink)pl.blinkArmed=true;
