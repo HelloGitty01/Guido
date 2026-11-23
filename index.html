@@ -146,6 +146,10 @@
   body.mob #navBox{top:54px!important;font-size:14px!important;padding:5px 12px!important}
   body.mob #cashHud{top:auto;bottom:8px;left:12px;transform:none;pointer-events:none;font-size:13px}body.mob #cashTag{top:96px}
   body.mob.photo #mobTop,body.mob.photo #mobL,body.mob.photo #mobR,body.mob.photo #mobW,body.mob.photo #mobP,body.mob.photo #mobT{display:none!important}
+  #ckOv{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;overflow:hidden}#ckImg{position:absolute;left:0;top:0;user-select:none}
+  #ckOv b,#ckOv i{position:absolute;transform:translate(-50%,-50%);font-style:normal;line-height:1}
+  #ckSpd{color:#ffb24a;font-family:'DS-Digital','Share Tech Mono',ui-monospace,monospace;font-weight:700;text-shadow:0 0 4px rgba(255,150,40,.7);opacity:.92;letter-spacing:.02em}
+  #ckTL,#ckTR{color:#2bd34f;text-shadow:0 0 6px #2bd34f;opacity:0}#ckBeam{color:#3d8bff;text-shadow:0 0 6px #3d8bff;opacity:0}
   #cashHud{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:rgba(94,21,17,.78);color:#fff;border-radius:16px;padding:4px 14px;font:800 14px Nunito,sans-serif;z-index:3;display:none;white-space:nowrap}
   #cashTag{position:fixed;top:84px;left:50%;transform:translateX(-50%);border-radius:14px;padding:4px 12px;font:800 15px Nunito,sans-serif;z-index:3;display:none}#cashTag.pos{background:#2f9e44;color:#fff}#cashTag.neg{background:#c8202a;color:#fff}
   #jobOv{position:fixed;inset:0;background:rgba(8,10,14,.6);display:none;align-items:center;justify-content:center;z-index:9}#jobOv>div{background:#fff;color:#2a1a18;border-radius:18px;padding:16px 18px;max-width:560px;width:92%;max-height:86vh;overflow:auto;font:15px Nunito,sans-serif}
@@ -219,7 +223,7 @@
 
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
 <button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
-<div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
+<div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><b id="ckSpd">0</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
 <div id="jobOv"><div></div></div>
 <button id="radioBtn" title="Autoradio (tasto M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">♪ Radio</button><div id="radioTag"></div>
 <div id="navBox" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(10,30,60,.82);color:#fff;padding:8px 16px;border-radius:12px;font-size:17px;display:none;pointer-events:none;z-index:3"></div>
@@ -1750,7 +1754,7 @@ function buildCockpit(T,P){
     const bz=new THREE.Mesh(rbox(0.03,0.072,0.15,0.012),new THREE.MeshStandardMaterial({color:0x151517,roughness:0.6}));bz.position.set(O.spd[0]+0.016,O.spd[1],O.spd[2]);bz.rotation.z=-0.35;g.add(bz);spd.userData.bz=bz;}
   if(O.model){const keep=O.speedOnly?[pivot,rm,...sms,spd,spd&&spd.userData.bz]:[pivot,cl,scr,scrF,rm,...sms,pod];g.children.forEach(c=>{if(!keep.includes(c))c.visible=false;});wipers.length=0;}
   // occhi più in alto rispetto all'abitacolo (come alzare il sedile): plancia e volante scendono nell'inquadratura, più strada davanti
-  const lift=O.model?0:(O.lift??(T.big||van?0.26:0.22));
+  const lift=(O.model||CKIMG[selKey])?0:(O.lift??(T.big||van?0.26:0.22));
   [rm,...sms].forEach(o=>o.position.y+=lift*0.8);g.children.forEach(o=>{if(o.material===frM)o.position.y+=lift*0.8;});
   g.visible=false;
   return {g,spd,spin,tex,cv,stex,scv,gtex,gcv,wipers,eye:new THREE.Vector3(eyeX,eyeY+lift,drvZ),wsx,model:!!O.model,mirrors:[rm,...sms]};
@@ -1765,6 +1769,8 @@ function drawScreen(ck,st){
   const q=ck.gcv.getContext('2d');q.fillStyle='#111';q.fillRect(0,0,128,128);q.font='bold 26px system-ui';q.textAlign='center';
   ['P','R','N','D'].forEach((c,i)=>{q.fillStyle=(pl.sel===c)?'#ffffff':'#555';q.fillText(c,24+i*27,74);});ck.gtex.needsUpdate=true;}
 function drawCluster(ck,P,st){
+  if(CKO.on){document.getElementById('ckSpd').textContent=Math.round(st.kmh);const bl=(pl.blink||pl.hazard)&&pl.blinkOn;
+    document.getElementById('ckTL').style.opacity=bl&&(pl.blink===-1||pl.hazard)?1:0;document.getElementById('ckTR').style.opacity=bl&&(pl.blink===1||pl.hazard)?1:0;document.getElementById('ckBeam').style.opacity=pl.lights?1:0;}
   if(ck.spd){const c=ck.spd.userData.cv,g=c.getContext('2d');g.fillStyle='#07090b';g.fillRect(0,0,256,112);g.fillStyle='#ffb347';g.font='bold 72px system-ui';g.textAlign='right';g.fillText(String(Math.round(st.kmh)),178,82);
     g.font='bold 22px system-ui';g.fillStyle='#c98a3a';g.textAlign='left';g.fillText('km/h',184,82);g.fillText(pl.sel==='D'?'D'+pl.gear:pl.sel,190,40);ck.spd.userData.tex.needsUpdate=true;return;}
   const g=ck.cv.getContext('2d'),W=1024,H=384;g.textBaseline='middle';
@@ -2597,8 +2603,28 @@ function updateBlinker(dt){const wa=pl.delta*pl.P.ratio*57.3,v=Math.abs(pl.vx);
   const ud=pl.mesh.userData;ud.indL.emissiveIntensity=(on&&(pl.blink<0||pl.hazard))?3:0;ud.indR.emissiveIntensity=(on&&(pl.blink>0||pl.hazard))?3:0;}
 function toggleView(){view=view==='cockpit'?'chase':'cockpit';applyView();}
 function applyView(){if(!pl.ck)return;pl.camInit=false;pl.ck.g.visible=view==='cockpit';pl.mesh.userData.body.visible=view!=='cockpit';pl.bodyClip.visible=view==='cockpit';if(pl.mesh.userData.cabx){pl.mesh.userData.cabx.visible=view!=='cockpit';pl.mesh.userData.ckx.visible=view==='cockpit';pl.bodyClip.visible=false;}if(pl.mesh.userData.glb){const ck=view==='cockpit';(pl.mesh.userData.cage||[]).forEach(o=>o.visible=!ck);pl.mesh.userData.allMats.forEach(m=>{const G=m.userData.glass;if(G){m.transparent=true;m.opacity=ck?Math.min(G.op,0.14):G.op;}});pl.mesh.userData.body.visible=true;pl.mesh.userData.allMats.forEach(m=>{m.clippingPlanes=view==='cockpit'?pl.clipPlanes:null;m.clipIntersection=true;m.needsUpdate=true;});}(pl.mesh.userData.mir||[]).forEach(m=>m.visible=view!=='cockpit');document.getElementById('ext').style.display=view==='chase'?'block':'none';
-  camera.fov=view==='cockpit'?72:58;camera.updateProjectionMatrix();}
+  camera.fov=view==='cockpit'?72:58;camera.updateProjectionMatrix();ckOverlay();}
 const tmpV=new THREE.Vector3(),camLook=new THREE.Vector3(),CAMS={y:0,vy:0,ax:0,ay:0};
+// abitacoli disegnati (immagini scelte da Giorgio): i vetri sono trasparenti e mostrano il mondo vero, gli specchi mostrano la vista dietro
+const CKIMG={volvo:{src:'cockpit/volvo.webp',size:[1024,572],glass:{C:[647,73,815,121],L:[143,296,240,348]},spd:[481,366],fs:9,turnL:[447,342],turnR:[515,342],beam:[481,343]},
+  utilitaria:{src:'cockpit/panda.webp',size:[1024,503],glass:{C:[592,64,743,115],L:[172,272,244,304]},spd:[519,322],fs:9,turnL:[405,305],turnR:[552,305],beam:[466,305]}};
+const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
+function ckQuad(k,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}const m=new THREE.Mesh(g,mirrorM);CKO.hud.add(m);CKO.q[k]=m;return m;}
+ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
+function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();return;}
+  const W=innerWidth,H=innerHeight,[iw,ih]=C.size,s=Math.max(W/iw,H/ih),w=iw*s,h=ih*s,l=(W-w)/2,t=H-h;Object.assign(CKO,{s,l,t});
+  const img=document.getElementById('ckImg');img.style.width=w+'px';img.style.height=h+'px';img.style.left=l+'px';img.style.top=t+'px';
+  const at=(id,p,fs)=>{const e=document.getElementById(id);e.style.left=(l+p[0]*s)+'px';e.style.top=(t+p[1]*s)+'px';if(fs)e.style.fontSize=(fs*s)+'px';};
+  at('ckSpd',C.spd,C.fs);at('ckTL',C.turnL,7);at('ckTR',C.turnR,7);at('ckBeam',C.beam,6);
+  // la telecamera inquadra come nella foto: stesso campo visivo riferito all'immagine intera, poi ritagliato come lo schermo
+  camera.aspect=w/h;camera.setViewOffset(w,h,-l,-t,W,H);camera.updateProjectionMatrix();
+  CKO.cam.left=0;CKO.cam.right=W;CKO.cam.top=H;CKO.cam.bottom=0;CKO.cam.updateProjectionMatrix();
+  ['C','L','R'].forEach(k=>{const q=CKO.q[k],g=C.glass[k];q.visible=!!g;if(!g)return;const x0=l+g[0]*s,x1=l+g[2]*s,y0=t+g[1]*s,y1=t+g[3]*s;q.position.set((x0+x1)/2,H-(y0+y1)/2,0);q.scale.set(x1-x0,y1-y0,1);});}
+function ckOverlay(){const C=(view==='cockpit'&&pl.P&&!PHOTO.on)?CKIMG[selKey]:null;CKO.on=!!C;CKO.cfg=C||null;const ov=document.getElementById('ckOv');ov.style.display=C?'block':'none';
+  if(C){const img=document.getElementById('ckImg');if(img.dataset.src!==C.src){img.src=C.src;img.dataset.src=C.src;}}
+  if(pl.mesh&&C)pl.mesh.children.forEach(c=>{if(c!==rearCam)c.visible=false;});
+  ckLayout();}
+addEventListener('resize',()=>setTimeout(ckLayout,0));
 function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
   const m=pl.mesh,S=pl.susp;if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
@@ -3556,9 +3582,11 @@ function loop(now){
   sky.position.copy(camera.position);skyMat.uniforms.uT.value=simT;clouds.forEach(c=>{c.position.x+=dt*3;if(NWT){const cx=camera.position.x,cz=camera.position.z;if(c.position.x-cx>2800)c.position.x-=5600;if(c.position.x-cx<-2800)c.position.x+=5600;if(c.position.z-cz>2800)c.position.z-=5600;if(c.position.z-cz<-2800)c.position.z+=5600;}else if(c.position.x>3400)c.position.x-=5600;});
   if(pl.ck&&pl.ck.mirrors)pl.ck.mirrors.forEach(m=>m.visible=CFG.mir!==false);
   if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir===1?2:QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
-    scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=true;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
+    scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
   frameN++;updateMaples();updateCarLOD();if(NWT)NWT.update(dt);
-  renderer.render(scene,camera);requestAnimationFrame(loop);
+  renderer.render(scene,camera);
+  if(CKO.on){renderer.autoClear=false;renderer.clearDepth();renderer.render(CKO.hud,CKO.cam);renderer.autoClear=true;}
+  requestAnimationFrame(loop);
 }
 // ---- webapp installabile: icona sul telefono, schermo intero, funziona anche offline ----
 {const ib=document.getElementById('instBtn');let dp=null;const standalone=matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||navigator.standalone;
