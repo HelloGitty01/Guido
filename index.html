@@ -1448,7 +1448,11 @@ const PPL=(()=>{const G=MODELS.people;if(!G||!THREE.SkeletonUtils||!G.scenes||G.
     if(angry){set(R,'UpperArmR',[[Z,1.1],[X,-2.3+Math.sin(t*16)*0.25]]);set(R,'LowerArmR',[[X,-0.9]]);}else{set(R,'UpperArmR',[[Z,1.22],[X,-aa*s]]);set(R,'LowerArmR',[[X,-0.25-0.15*mv]]);}
     set(R,'Torso',[[X,P.old?0.28:0.03*mv]]);set(R,'Neck',[[X,P.old?-0.18:0]]);P.w.position.y=Math.abs(c)*0.025*mv;}
   function wave(P,t){pose(P,0,0,false,t);set(P.R,'UpperArmR',[[Z,1.0],[X,-2.6+Math.sin(t*5)*0.3]]);set(P.R,'LowerArmR',[[X,-0.35]]);}
-  return{make,pose,wave};})();
+  // al telefono: mano all'orecchio; chiacchiere: le mani accompagnano le parole
+  function phone(P,t){set(P.R,'UpperArmR',[[Z,0.55],[X,-1.25]]);set(P.R,'LowerArmR',[[X,-2.25]]);}
+  function talk(P,t){set(P.R,'UpperArmR',[[Z,1.05],[X,-0.55+Math.sin(t*2.3)*0.22]]);set(P.R,'LowerArmR',[[X,-1.25+Math.sin(t*3.1)*0.4]]);
+    set(P.R,'UpperArmL',[[Z,-1.1],[X,-0.35+Math.sin(t*1.7+1)*0.18]]);set(P.R,'LowerArmL',[[X,-0.9+Math.sin(t*2.6)*0.3]]);}
+  return{make,pose,wave,phone,talk};})();
 function attachHi(m,kind){if(!PPL||m.userData.hiP||kind==='dog')return;const P=PPL.make(kind),lo=new THREE.Group();[...m.children].forEach(c=>lo.add(c));m.add(lo);m.add(P.w);P.w.visible=false;
   m.userData.hiP=P;m.userData.loP=lo;m.userData.loHand=m.userData.hand;if(m.userData.hi){m.userData.hi.visible=false;}m.userData.mixer=null;}
 function makePed(){const g=new THREE.Group(),h=1.6+Math.random()*0.25,sk=mat(skinC[(Math.random()*5)|0]),top=mat(clothC[(Math.random()*10)|0]),bot=mat(clothC[(Math.random()*10)|0]);
@@ -3262,7 +3266,7 @@ const JOB={cur:null,offers:[],pax:null,
 window.__c={get CAR(){return CAR;},get JOB(){return JOB;},get POL(){return POL;},get EVT(){return EVT;},get DJ(){return DJ;}};
 
 // ================= FUMO: gomme che sgommano o slittano, e gas di scarico (quantità diversa per ogni mezzo) =================
-const SMOKE=(()=>{const N=QG.lo?160:420,pos=new Float32Array(N*3),col=new Float32Array(N*3),siz=new Float32Array(N),alp=new Float32Array(N),P=[];let head=0;
+const SMOKE=(()=>{const N=QG.lo?220:650,pos=new Float32Array(N*3),col=new Float32Array(N*3),siz=new Float32Array(N),alp=new Float32Array(N),P=[];let head=0;
   for(let i=0;i<N;i++){P.push({t:9,life:1,vx:0,vy:0,vz:0,s0:1,s1:2,a0:0});alp[i]=0;}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('size',new THREE.BufferAttribute(siz,1));g.setAttribute('alpha',new THREE.BufferAttribute(alp,1));
   const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:true,uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{scale:{value:innerHeight*0.6},lum:{value:1}}]),
@@ -3292,7 +3296,7 @@ const SMOKE=(()=>{const N=QG.lo?160:420,pos=new Float32Array(N*3),col=new Float3
       siz[i]=p.s0+(p.s1-p.s0)*Math.sqrt(f);alp[i]=p.a0*Math.min(1,f*6)*(1-f)*(1-f);}
     g.attributes.position.needsUpdate=g.attributes.alpha.needsUpdate=g.attributes.size.needsUpdate=g.attributes.color.needsUpdate=true;
     pts.visible=true;m.uniforms.scale.value=innerHeight*0.6;m.uniforms.lum.value=Math.min(1,0.18+0.82*ENVB.sun/1.75)*(1-0.6*(TUNL.k||0))+0.15*(TUNL.k||0);}
-  return{update,live:()=>P.filter(p=>p.t<p.life).length};})();window.__smoke=()=>SMOKE;
+  return{update,emit,live:()=>P.filter(p=>p.t<p.life).length};})();window.__smoke=()=>SMOKE;
 
 function fmtT(x){return Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0')+'.'+Math.floor(x*10%10);}
 
@@ -4502,7 +4506,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     function makeOne(){let c=pool.pop();if(!c){const k=randTrafType(),T=TYPES[k];c={T,m:(PHYS[k]&&PHYS0[k]?PHYS0[k].m:T.truck?3800:1250),mesh:makeCar(k,randColor()),honkCd:0,flashT:0,hold:0,a:0,horn:{f:300+Math.random()*340,ratio:1.26,wave:'square',cut:1500+Math.random()*2000,single:Math.random()<0.25,det:0}};scene.add(c.mesh);made++;}c.mesh.visible=true;return c;}
     function place(c,k,s){c.k=k;c.s=s;let l=onE.get(k);if(!l)onE.set(k,l=[]);l.push(c);}
     function unplace(c){const l=onE.get(c.k);if(l){const i=l.indexOf(c);if(i>=0)l.splice(i,1);}}
-    function despawn(c){unplace(c);c.kn=null;c.mesh.visible=false;const i=list.indexOf(c);if(i>=0)list.splice(i,1);const j=cars.indexOf(c);if(j>=0)cars.splice(j,1);pool.push(c);}
+    function despawn(c){unplace(c);c.kn=null;c.distract=null;c.dbl=null;c.stuckT=0;c.rt=0;c.brk=0;if(c.mesh.userData.indL)hazards(c.mesh.userData,false);c.mesh.visible=false;const i=list.indexOf(c);if(i>=0)list.splice(i,1);const j=cars.indexOf(c);if(j>=0)cars.splice(j,1);pool.push(c);}
     function turnR(e,dir,en,ndir){const a=roadPos(e,dir,e.len,0),b=roadPos(en,ndir,0,0),cs=a.dx*b.dx+a.dz*b.dz;if(cs>0.985)return 0;const r=Math.min(cs<-0.5?5:9,e.len*0.42,en.len*0.42);return r<1.5?0:r;}
     function arcPos(A,B,u){u=u<0?0:u>1?1:u;const k=Math.hypot(B.x-A.x,B.z-A.z)*1.05,u2=u*u,u3=u2*u,h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=-2*u3+3*u2,h11=u3-u2,d00=6*u2-6*u,d10=3*u2-4*u+1,d01=-d00,d11=3*u2-2*u;
       const x=h00*A.x+h10*A.dx*k+h01*B.x+h11*B.dx*k,z=h00*A.z+h10*A.dz*k+h01*B.z+h11*B.dz*k;let dx=d00*A.x+d10*A.dx*k+d01*B.x+d11*B.dx*k,dz=d00*A.z+d10*A.dz*k+d01*B.z+d11*B.dz*k;const l=Math.hypot(dx,dz)||1;
@@ -4531,28 +4535,148 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     function tlUpdate(){const cx=camera.position.x,cz=camera.position.z;TLS.forEach(T=>{if(Math.abs(T.x-cx)+Math.abs(T.z-cz)>700)return;[0,1].forEach(g=>{const s=tlState(T,g);if(s===T.st[g])return;T.st[g]=s;T.heads[g].forEach(L=>{L[0].material=s==='R'?LON.R:LOFF;L[1].material=s==='Y'?LON.Y:LOFF;L[2].material=s==='G'?LON.G:LOFF;});});});
       // passaggio col rosso del giocatore
       TLS.forEach(T=>{if(Math.abs(T.x-pl.x)+Math.abs(T.z-pl.z)>40)return;const d=Math.hypot(T.x-pl.x,T.z-pl.z),inside=d<7;if(inside&&!T.in&&Math.abs(pl.vx)>2){const fx=Math.cos(pl.h),fz=-Math.sin(pl.h),s=tlState(T,tlGroup(T,fx,fz));if(s==='R'){pl.infr.rosso++;pl.infrMsg='Passato col rosso!';pl.infrT=3;ding(2);penalty('rosso');}}T.in=inside;});}
+    // ---- strisce pedonali: agli incroci delle vie di città, qualche metro prima del centro dell'incrocio ----
+    const DEG=new Uint8Array(NN);E.forEach(e=>{DEG[e.a]++;DEG[e.b]++;});
+    const CWE=new Map(),CWR=new Map(),CWL=[];
+    E.forEach((e,ek)=>{const R=NW.roads[e.ri];if(R.c<2||R.c>7||R.b||R.t||R.priv||e.len<24)return;
+      for(const end of [0,1]){const node=end?e.b:e.a;if(DEG[node]<3)continue;const d=Math.min(e.len*0.3,5.4+R.w*0.12),s=end?e.len-d:d,q=roadPos(e,0,s,0);if(!NW.cityAt(q.x,q.z))continue;
+        const w={ek,s,end,R,cum:R.cum[e.i0]+s,x:q.x,z:q.z,h:q.h,dx:q.dx,dz:q.dz,w:R.w,occT:-9,waitT:-9};CWL.push(w);
+        if(!CWE.has(ek))CWE.set(ek,[]);CWE.get(ek).push(w);if(!CWR.has(R))CWR.set(R,[]);CWR.get(R).push(w);}});
+    const ZB=(()=>{const MAXI=MOBILE?1600:3200,g=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),m=new THREE.MeshStandardMaterial({color:0xe6e6e0,roughness:0.85,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
+      const im=new THREE.InstancedMesh(g,m,MAXI);im.count=0;im.receiveShadow=true;im.frustumCulled=false;scene.add(im);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S=new THREE.Vector3(2.6,1,0.5),Y=new THREE.Vector3(0,1,0);let bx=1e9,bz=1e9;
+      function upd(){if(Math.abs(pl.x-bx)+Math.abs(pl.z-bz)<150)return;bx=pl.x;bz=pl.z;let n=0;
+        for(const w of CWL){if(Math.abs(w.x-bx)+Math.abs(w.z-bz)>560)continue;const nx=-w.dz,nz=w.dx;Q.setFromAxisAngle(Y,Math.atan2(-w.dz,w.dx));const half=w.w/2-0.6;
+          for(let l=-half;l<=half+0.01&&n<MAXI;l+=1.0){{const sx=w.x+nx*l,sz=w.z+nz*l;V.set(sx,Math.max(w.h,NW.H(sx,sz))+0.025,sz);}M.compose(V,Q,S);im.setMatrixAt(n++,M);}}
+        im.count=n;im.instanceMatrix.needsUpdate=true;}
+      return{upd,im};})();
+    const cwEnd=(c,dir)=>{const l=CWE.get(c.k>>1);return !!l&&l.some(w=>w.end===(dir?0:1));};
+    // ---- persone (autisti degli incidenti): stesso aspetto dei pedoni ----
+    const mkP=kind=>{const m=kind==='man'?makePed():makeHuman(kind);m.userData.kind=kind;attachHi(m,kind);scene.add(m);return m;};
+    function animP(m,ph,mv,act,angry){const u=m.userData,near=Math.abs(m.position.x-camera.position.x)+Math.abs(m.position.z-camera.position.z)<(MOBILE?40:70);
+      if(u.hiP){u.hiP.w.visible=near;u.loP.visible=!near;if(near){PPL.pose(u.hiP,ph,mv,!!angry,simT);if(act==='phone')PPL.phone(u.hiP,simT);else if(act==='talk'&&mv<0.05)PPL.talk(u.hiP,simT+ph);}return;}
+      if(u.human)u.anim(ph);}
+    const _cd=new THREE.Vector3();
+    function camSees(x,z,maxD){const dx=x-camera.position.x,dz=z-camera.position.z,d=Math.hypot(dx,dz);if(d>maxD)return false;camera.getWorldDirection(_cd);return (dx*_cd.x+dz*_cd.z)/(d||1)>0.5;}
+    // ---- incidenti fra auto del traffico: tamponamenti, rottami sull'asfalto, fumo dal cofano, a volte un incendio ----
+    const WRECKS=[],crashQ=[];let crashT=110+Math.random()*120,dblT=40+Math.random()*50;
+    const FIRET=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,42,2,32,34,30);gr.addColorStop(0,'rgba(255,248,200,1)');gr.addColorStop(0.3,'rgba(255,170,50,0.95)');gr.addColorStop(0.65,'rgba(225,70,10,0.55)');gr.addColorStop(1,'rgba(120,20,0,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+    function tryCrash(force){if(WRECKS.length>=4)return false;const cand=[];
+      for(const c of list){if(c.v<(force?4:7)||c.kn||c.dbl||c.distract||!c.mesh.visible)continue;const p=c.mesh.position,d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<45||d>(force?400:240)||!camSees(p.x,p.z,force?420:260))continue;
+        const R=NW.roads[E[c.k>>1].ri];if(R.c<=1)continue;const l=onE.get(c.k)||[];
+        for(const o of l){if(o===c)continue;const g=o.s-c.s-(o.T.L+c.T.L)/2;if(g>4&&g<120&&(!R.o||R.w<9||o.lane===c.lane)&&!o.dbl){cand.push({c,o,d});break;}}
+        if(c.nk!=null&&!cand.some(q=>q.c===c)){const rem=E[c.k>>1].len-c.s;for(const o of onE.get(c.nk)||[]){const g=rem+o.s-(o.T.L+c.T.L)/2;if(g>4&&g<120&&!o.dbl){cand.push({c,o,d});break;}}}}
+      if(!cand.length)return false;cand.sort((a,b)=>a.d-b.d);const b=cand[0];b.c.distract={o:b.o,t:16};return true;}
+    function tryDbl(){for(const c of list){if(c.v<3||c.kn||c.distract||c.dbl)continue;const p=c.mesh.position,d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<45||d>230)continue;
+        const e=E[c.k>>1],R=NW.roads[e.ri];if(R.c<4||R.c>7||!NW.cityAt(p.x,p.z))continue;if(e.len-c.s<35||c.s<12)continue;c.dbl={t:10+Math.random()*18,st:0};return true;}return false;}
+    function hazards(ud,on){if(ud.indL){ud.indL.emissiveIntensity=on?3:0;ud.indR.emissiveIntensity=on?3:0;}}
+    function toWreck(c,v,vl,spin,part,dv){unplace(c);c.distract=null;c.dbl=null;c.kn=null;const i=list.indexOf(c);if(i>=0)list.splice(i,1);const j=cars.indexOf(c);if(j>=0)cars.splice(j,1);
+      const M=c.mesh,ry=M.rotation.y,fx=Math.cos(ry),fz=-Math.sin(ry),ud=M.userData,map=new Map(),mats=[];
+      // materiali propri (quelli del modello sono condivisi con le altre auto), un po' più scuri: ammaccature, polvere, vetri rotti
+      M.traverse(o=>{if(!o.isMesh||!o.material)return;const cl=q=>{if(!map.has(q)){const n=q.clone();map.set(q,n);mats.push(n);if(n.color&&!(n.emissiveIntensity>0.05)&&n!==ud.tailM){n.color.multiplyScalar(0.84);if(n.roughness!=null)n.roughness=Math.min(1,n.roughness+0.15);}}return map.get(q);};
+        o.material=Array.isArray(o.material)?o.material.map(cl):cl(o.material);});
+      ['tailM','headM','indL','indR','revM','paint'].forEach(k=>{if(ud[k]&&map.has(ud[k]))ud[k]=map.get(ud[k]);});if(ud.headM)ud.headM.emissiveIntensity=part==='front'&&dv>5?0:ud.headM.emissiveIntensity;
+      const nx=-fz,nz=fx;const W={c,M,T:c.T,x:M.position.x,z:M.position.z,y:M.position.y,yaw:ry,vx:fx*v+nx*vl,vz:fz*v+nz*vl,r:spin,t:0,rest:0,part,dv,mats,ud,objs:[],ppl:[],phase:'slide',steam:Math.min(1,dv/6),fire:null,fireIn:null};
+      M.rotation.z=part==='front'?-0.02:0.015;WRECKS.push(W);return W;}
+    function debris(x,y,z,a,W,dv){let pc=0x777777;W.M.traverse(o=>{if(o.isMesh&&o.material&&/body|paint/.test(o.material.name||'')&&o.material.color)pc=o.material.color.getHex();});
+      const n=Math.min(26,8+dv*1.8|0);for(let i=0;i<n;i++){const r=Math.random(),col=r<0.4?pc:r<0.75?0x161616:0x9fc3d6,sz=r<0.75?0.08+Math.random()*0.22:0.05+Math.random()*0.08;
+        const m=new THREE.Mesh(new THREE.BoxGeometry(sz,0.02+Math.random()*0.04,sz*(0.5+Math.random())),new THREE.MeshStandardMaterial({color:col,roughness:r>=0.75?0.1:0.7,metalness:r>=0.75?0.4:0.1,transparent:r>=0.75,opacity:0.8}));
+        const a2=Math.random()*6.28,d=Math.random()*(1.2+dv*0.25),px=x+Math.cos(a2)*d,pz=z+Math.sin(a2)*d;m.position.set(px,NW.H(px,pz)+0.03,pz);m.rotation.set(0,Math.random()*6,0);scene.add(m);W.objs.push(m);}
+      if(dv>4){const b=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.2,0.14),new THREE.MeshStandardMaterial({color:0x1b1b1b,roughness:0.6}));const a2=Math.random()*6.28,px=x+Math.cos(a2)*1.5,pz=z+Math.sin(a2)*1.5;b.position.set(px,NW.H(px,pz)+0.08,pz);b.rotation.set(0,Math.random()*6,0.08);scene.add(b);W.objs.push(b);}}
+    function crash(a,b){if(!list.includes(a)||!list.includes(b))return;const ma=a.m||1300,mb=b.m||1300,va=Math.max(a.v,b.v+3),vb=b.v,e=0.15,dv=va-vb;
+      const va2=(ma*va+mb*vb-mb*e*dv)/(ma+mb),vb2=(ma*va+mb*vb+ma*e*dv)/(ma+mb),k=Math.min(1,dv/8);
+      const x=(a.mesh.position.x+b.mesh.position.x)/2,z=(a.mesh.position.z+b.mesh.position.z)/2,y=(a.mesh.position.y+b.mesh.position.y)/2;
+      const Wa=toWreck(a,va2,(Math.random()-0.5)*1.2*k,(Math.random()-0.5)*1.6*k,'front',dv),Wb=toWreck(b,vb2,(Math.random()-0.5)*0.8*k,(Math.random()-0.5)*1.0*k,'rear',dv);
+      Wa.mate=Wb;Wb.mate=Wa;debris(x,y,z,a,Wa,dv);if(Math.random()<(dv>10?0.55:dv>6?0.28:0.12))Wa.fireIn=5+Math.random()*12;
+      {const d=Math.hypot(x-camera.position.x,z-camera.position.z),rt=new THREE.Vector3();camera.getWorldDirection(_cd);rt.set(-_cd.z,0,_cd.x);const pan=Math.max(-0.8,Math.min(0.8,((x-camera.position.x)*rt.x+(z-camera.position.z)*rt.z)/(d||1)));
+        crashSound(Math.max(0.6,dv*0.9*Math.max(0.15,1-d/280)),'front',pan);}
+      // i passanti vicini si fermano a guardare, qualcuno riprende col telefono
+      for(const P of peds2){if(P.down||P.cross)continue;const d=Math.hypot(P.m.position.x-x,P.m.position.z-z);if(d<50){P.look={x,z,t:12+Math.random()*30};P.stopT=0;if(Math.random()<0.45)P.actL='phone';}}
+      if(Math.hypot(x-pl.x,z-pl.z)<300&&Math.random()<0.5){pl.navMsg='💥 Incidente qui vicino';pl.navMsgT=3;}}
+    function startPush(W){const q=NW.roadAt(W.x,W.z,14);if(!q||q.R.b||q.R.t){W.phase='still';return;}const R=q.R,i=Math.min(q.i,R.N-2);let tx=R.X[i+1]-R.X[i],tz=R.Z[i+1]-R.Z[i];const l=Math.hypot(tx,tz)||1;tx/=l;tz/=l;const nx=-tz,nz=tx;
+      const lat=(W.x-R.X[i])*nx+(W.z-R.Z[i])*nz,sd=lat>=0?1:-1,tl=sd*(R.w/2+0.35),mv=Math.max(-6,Math.min(6,tl-lat));
+      const ry=Math.atan2(-tz,tx),c1=Math.cos(W.yaw-ry),ty=c1>=0?ry:ry+Math.PI;let dy=ty-W.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));
+      Object.assign(W,{phase:'push',tx:W.x+nx*mv,tz:W.z+nz*mv,tyaw:W.yaw+dy*0.85});}
+    function addPeople(W){const side=Math.random()<0.5?1:-1,fx=Math.cos(W.yaw),fz=-Math.sin(W.yaw),nx=-fz*side,nz=fx*side;
+      const kind=['man','man','woman','oldm','woman'][(Math.random()*5)|0],m=mkP(kind),sx=W.x+nx*(W.T.W/2+0.4),sz=W.z+nz*(W.T.W/2+0.4),far=W.fire||W.fireIn!=null;
+      m.position.set(sx,NW.H(sx,sz),sz);const off=far?9:2.6,tx=W.x+nx*(W.T.W/2+off)+fx*(W.part==='front'?2.5:-2.5),tz=W.z+nz*(W.T.W/2+off)+fz*(W.part==='front'?2.5:-2.5);
+      W.ppl.push({m,tx,tz,ph:Math.random()*6,act:W.part==='front'?'phone':'talk',angry:W.part==='rear'?6+Math.random()*6:0});}
+    function ignite(W){const g=new THREE.Group();scene.add(g);W.objs.push(g);const sp=[];for(let i=0;i<8;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:FIRET,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0}));g.add(s);sp.push({s,u:Math.random(),v:(Math.random()-0.5),ph:Math.random()*6});}
+      const gl=new THREE.Mesh(new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:FIRET,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:0.5}));scene.add(gl);W.objs.push(gl);
+      W.fire={g,sp,gl,t:0};W.fireIn=null;hazards(W.ud,false);}
+    function wreckStep(dt){const night=NIGHT||WX!=='clear';
+      for(let i=WRECKS.length-1;i>=0;i--){const W=WRECKS[i],M=W.M,fx=Math.cos(W.yaw),fz=-Math.sin(W.yaw);W.t+=dt;
+        if(W.phase==='slide'){const sp=Math.hypot(W.vx,W.vz);if(sp>0.01){const d=Math.min(sp,6.5*dt);W.vx-=W.vx/sp*d;W.vz-=W.vz/sp*d;}W.r-=Math.sign(W.r)*Math.min(Math.abs(W.r),2.2*dt);W.x+=W.vx*dt;W.z+=W.vz*dt;W.yaw+=W.r*dt;
+          if(sp<0.05&&Math.abs(W.r)<0.03){W.rest+=dt;if(W.rest>(W.fireIn!=null?2:5))startPush(W);}}
+        else if(W.phase==='push'){const dx=W.tx-W.x,dz=W.tz-W.z,d=Math.hypot(dx,dz),st=Math.min(d,0.8*dt);if(d>0.02){W.x+=dx/d*st;W.z+=dz/d*st;}W.yaw+=(W.tyaw-W.yaw)*Math.min(1,dt*0.5);
+          if(d<=0.02){W.phase='still';const hl=W.T.L/2,hw=W.T.W/2,c=Math.cos(W.yaw),s2=-Math.sin(W.yaw),P=[[-hl,-hw],[hl,-hw],[hl,hw],[-hl,hw]].map(([a,b])=>[W.x+a*c-b*s2,W.z+a*s2+b*c]),sg=[];for(let q=0;q<4;q++)sg.push([P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]]);W.dyn=addDyn(sg);}}
+        W.y=NW.H(W.x,W.z);M.position.set(W.x,W.y+0.02,W.z);M.rotation.y=W.yaw;
+        if(!W.fire)hazards(W.ud,(simT*1.5)%1<0.5);if(W.ud.tailM)W.ud.tailM.emissiveIntensity=night?0.8:0.1;
+        // vapore dal radiatore che si spegne piano
+        if(W.part==='front'&&!W.fire&&W.steam>0.05&&W.t<150&&Math.random()<dt*W.steam*9*(1-W.t/150)){const L=W.T.L/2-0.5;SMOKE.emit(W.x+fx*L+(Math.random()-0.5)*0.5,W.y+(W.T.hb||0.9)+0.1,W.z+fz*L+(Math.random()-0.5)*0.5,(Math.random()-0.5)*0.3,0.55+Math.random()*0.4,(Math.random()-0.5)*0.3,2.2+Math.random(),0.35,1.6,0.32,0.86);}
+        if(W.fireIn!=null&&W.phase==='still'){W.fireIn-=dt;if(W.part==='front'&&Math.random()<dt*6)SMOKE.emit(W.x+fx*(W.T.L/2-0.6),W.y+(W.T.hb||0.9),W.z+fz*(W.T.L/2-0.6),0,0.7,0,2.5,0.4,1.8,0.4,0.35);if(W.fireIn<=0)ignite(W);}
+        if(W.fire){const F=W.fire;F.t+=dt;const grow=Math.min(1,F.t/18),spread=Math.min(1,F.t/55),L=W.T.L,H=(W.T.hb||0.9);
+          F.sp.forEach((o,k)=>{const u=W.part==='front'?0.5-o.u*(0.25+0.75*spread):o.u-0.5,x=W.x+fx*u*L*0.85+(-fz)*o.v*W.T.W*0.7,z=W.z+fz*u*L*0.85+fx*o.v*W.T.W*0.7,fl=0.75+0.25*Math.sin(simT*11+o.ph)+0.15*Math.sin(simT*23+o.ph*2),sc=(0.5+1.6*grow*(k<3||spread>k/8?1:0.2))*fl;
+            o.s.position.set(x,W.y+H*0.7+sc*0.45,z);o.s.scale.set(sc*0.9,sc*1.3,1);o.s.material.opacity=Math.min(1,grow*1.4)*(0.75+0.25*fl);});
+          F.gl.position.set(W.x,W.y+0.05,W.z);const gs=(2+3*grow)*(0.9+0.1*Math.sin(simT*9));F.gl.scale.set(gs*1.6,1,gs);F.gl.material.opacity=0.35+0.15*Math.sin(simT*13);
+          if(Math.random()<dt*(6+16*grow)){const u=(Math.random()-0.5)*L*(0.3+0.6*spread);SMOKE.emit(W.x+fx*u,W.y+H+0.6,W.z+fz*u,0.25+(Math.random()-0.5)*0.4,1.6+Math.random()*1.2,(Math.random()-0.5)*0.4,4+Math.random()*2.5,0.9,4.2,0.55,0.1+Math.random()*0.08);}
+          // la carrozzeria brucia: diventa nera piano piano
+          if(F.t<90)W.mats.forEach(m=>{if(m.color&&!(m.emissiveIntensity>0.05))m.color.lerp(_burnt,dt*0.012*(0.4+spread));});
+          if(F.t>200){F.sp.forEach(o=>o.s.material.opacity*=0.98);}}
+        // gli autisti scendono: uno telefona, l'altro discute; con l'incendio si allontanano
+        if(W.t>2.5&&!W.ppl.length&&W.phase!=='slide')addPeople(W);
+        for(const Pp of W.ppl){const m=Pp.m,dx=Pp.tx-m.position.x,dz=Pp.tz-m.position.z,d=Math.hypot(dx,dz);let mv=0;
+          if(d>0.15){const v=(W.fire?2.2:1.1)*dt;m.position.x+=dx/d*Math.min(d,v);m.position.z+=dz/d*Math.min(d,v);m.rotation.y=Math.atan2(-dz,dx);mv=1;Pp.ph+=dt*6;}
+          else{const o=W.mate&&W.mate.ppl[0]&&W.mate.ppl[0]!==Pp?W.mate.ppl[0].m.position:{x:W.x,z:W.z};m.rotation.y=Math.atan2(-(o.z-m.position.z),o.x-m.position.x);if(Pp.angry>0)Pp.angry-=dt;}
+          m.position.y=NW.H(m.position.x,m.position.z);animP(m,Pp.ph,mv,mv?null:(Pp.angry>0?null:Pp.act),Pp.angry>0&&!mv);}
+        const far=Math.hypot(W.x-pl.x,W.z-pl.z);
+        if((W.t>(W.fire?320:220)&&!camSees(W.x,W.z,220))||far>950){scene.remove(M);W.objs.forEach(o=>scene.remove(o));W.ppl.forEach(Pp=>scene.remove(Pp.m));if(W.dyn)remDyn(W.dyn);WRECKS.splice(i,1);}}}
+    const _burnt=new THREE.Color(0x141110);
     function step(dt){
+      ZB.upd();wreckStep(dt);
+      crashT-=dt;if(crashT<=0)crashT=tryCrash()?150+Math.random()*210:12;
+      dblT-=dt;if(dblT<=0){dblT=40+Math.random()*60;tryDbl();}
       spT-=dt;if(spT<=0){spT=0.18;const def=target()-list.length;for(let n=0;n<(def>10?8:def>0?1:0);n++)spawnNear(def>10);}
       for(let i=list.length-1;i>=0;i--){const c=list[i],p=c.mesh.position;if(Math.abs(p.x-pl.x)+Math.abs(p.z-pl.z)>780||list.length>target()+12)despawn(c);}
       // abbaglianti: chi è davanti sulla stessa carreggiata a due corsie si sposta a destra
       if(pl.flash){const fx=Math.cos(pl.h),fz=-Math.sin(pl.h);for(const c of list){const p=c.mesh.position,dx=p.x-pl.x,dz=p.z-pl.z,al=dx*fx+dz*fz,lt=Math.abs(-dx*fz+dz*fx);if(al>3&&al<70&&lt<3.5&&(c.dx*fx+c.dz*fz)>0.8){const R=NW.roads[E[c.k>>1].ri];if(R.o&&R.w>=9)c.lane=1;}}}
+      const despQ=[];
       for(const c of list){const e=E[c.k>>1],R=NW.roads[e.ri],L=e.len,dir=c.k&1,urb=NW.cityAt(c.mesh.position.x,c.mesh.position.z);
-        let v0=v0of(R,c.mesh.position.x,c.mesh.position.z,urb)*(c.T.truck?0.85:1);
+        // carattere dell'autista: chi va un po' più forte, chi tiene più distanza, chi parte in ritardo al verde
+        c.honkCd=(c.honkCd||0)-dt;
+        if(c.vk==null){c.vk=0.9+Math.random()*0.22;c.react=0.35+Math.random()*Math.random()*2.2;c.hw=0.85+Math.random()*0.45;c.rt=0;c.stuckT=0;}
+        let v0=v0of(R,c.mesh.position.x,c.mesh.position.z,urb)*(c.T.truck?0.85:1)*c.vk,red=false,lead=null,gapP=1e9;const D=c.distract;
+        if(D&&(!list.includes(D.o)||(D.o.k!==c.k&&D.o.k!==c.nk)||(D.t-=dt)<0))c.distract=null;
         // capofila sullo stesso tratto
-        let gap=1e9,vl=0;const l=onE.get(c.k)||[];for(const o of l){if(o===c)continue;const d=o.s-c.s;if(d>0&&d<gap&&(!R.o||R.w<9||o.lane===c.lane)){gap=d-(o.T.L+c.T.L)/2;vl=o.v;}}
+        let gap=1e9,vl=0;const l=onE.get(c.k)||[];for(const o of l){if(o===c)continue;const d=o.s-c.s;if(d>0&&d<gap&&(!R.o||R.w<9||o.lane===c.lane)){if(c.distract&&o===c.distract.o){if(d-(o.T.L+c.T.L)/2<0.15)crashQ.push([c,o]);continue;}gap=d-(o.T.L+c.T.L)/2;vl=o.v;lead=o;}}
         if(c.nk==null)c.nk=nextEdge(c);
         const rem=L-c.s;
-        if(gap>rem){const l2=onE.get(c.nk)||[];for(const o of l2){const d=rem+o.s;if(d<gap){gap=d-(o.T.L+c.T.L)/2;vl=o.v;}}}
+        if(c.distract&&c.distract.o.k===c.nk&&rem+c.distract.o.s-(c.distract.o.T.L+c.T.L)/2<0.15)crashQ.push([c,c.distract.o]);
+        if(gap>rem&&c.stuckT<15){const l2=onE.get(c.nk)||[];for(const o of l2){if(c.distract&&o===c.distract.o)continue;const d=rem+o.s;if(d<gap){gap=d-(o.T.L+c.T.L)/2;vl=o.v;}}}
         // curva all'incrocio
         if(rem<40){const e2=E[c.nk>>1],R2=NW.roads[e2.ri];if(R2!==R){const pa=roadPos(e,dir,Math.max(0,L-6),0),pb=roadPos(e2,c.nk&1,Math.min(6,e2.len),0),cs=pa.dx*pb.dx+pa.dz*pb.dz;if(cs<0.7)v0=Math.min(v0,4+(rem/40)*v0*0.6+(cs+1)*3);}}
         // incrocio occupato: precedenza a chi arriva prima
-        const node=dir?e.a:e.b,TL=nodeTL.get(node);if(TL&&rem<32){const st=tlState(TL,tlGroup(TL,c.dx||0,c.dz||0));if(st==='R'||(st==='Y'&&rem>7)){gap=Math.min(gap,rem-6);vl=0;}}
-        else if(rem<12&&R.c>1){const lk=lock.get(node);if(lk&&lk.c!==c&&simT-lk.t<4&&list.includes(lk.c)){gap=Math.min(gap,rem-3);vl=0;c.wait+=dt;}else lock.set(node,{c,t:simT});}
+        const node=dir?e.a:e.b,TL=nodeTL.get(node);if(TL&&rem<32){const st=tlState(TL,tlGroup(TL,c.dx||0,c.dz||0));if(st==='R'||(st==='Y'&&rem>7)){gap=Math.min(gap,rem-(cwEnd(c,dir)?9.2:6));vl=0;red=true;}}
+        else if(rem<12&&R.c>1){const lk=lock.get(node);if(lk&&lk.c!==c&&simT-lk.t<4&&list.includes(lk.c)&&(lk.c.stuckT||0)<4&&c.stuckT<10){gap=Math.min(gap,rem-3);vl=0;c.wait+=dt;}else if(c.stuckT<4||!lk||lk.c===c)lock.set(node,{c,t:simT});}
         // l'auto del giocatore davanti
-        {const fx=c.dx||1,fz=c.dz||0,dx=pl.x-p0(c).x,dz=pl.z-p0(c).z,al=dx*fx+dz*fz,lt=Math.abs(-dx*fz+dz*fx);if(al>0&&al<45&&lt<2.6){gap=Math.min(gap,al-(pl.T.L+c.T.L)/2);vl=Math.max(0,pl.vx);}}
+        {const fx=c.dx||1,fz=c.dz||0,dx=pl.x-p0(c).x,dz=pl.z-p0(c).z,al=dx*fx+dz*fz,lt=Math.abs(-dx*fz+dz*fx);if(al>0&&al<45&&lt<2.6){gapP=al-(pl.T.L+c.T.L)/2;gap=Math.min(gap,gapP);vl=Math.max(0,pl.vx);}}
+        // strisce pedonali: ci si ferma per chi attraversa (e per chi aspetta, se c'è spazio per frenare)
+        {const chk=(k,base)=>{const cl=CWE.get(k>>1);if(!cl)return;for(const w of cl){const cs=(k&1)?E[k>>1].len-w.s:w.s,d=base+cs-c.s-c.T.L/2;if(d<0.5||d>38)continue;const cl2=((k&1)?-1:1)*(c.lofs||0),occ=simT-w.occT<0.3&&cl2>w.occA-3&&cl2<w.occB+3,wt=simT-w.waitT<0.3;if(occ||(wt&&d>c.v*c.v/7+3)){gap=Math.min(gap,d-1.6);vl=0;}}};
+          chk(c.k,0);if(rem<38&&c.nk!=null)chk(c.nk,rem);}
+        // incidenti a bordo strada: si rallenta per guardare, e se un rottame occupa la corsia ci si ferma
+        for(const W of WRECKS){const fx=c.dx||1,fz=c.dz||0,dx=W.x-p0(c).x,dz=W.z-p0(c).z,al=dx*fx+dz*fz,lt=Math.abs(-dx*fz+dz*fx);
+          if(al>0&&al<40&&lt<(W.T.W+c.T.W)/2+0.2){gap=Math.min(gap,al-(W.T.L+c.T.L)/2-1.2);vl=0;}if(al>-8&&al<70&&lt<16)v0=Math.min(v0,W.fire?4:6);}
+        // doppia fila: frecce d'emergenza, chi è dietro aspetta (e suona)
+        if(c.dbl){const B=c.dbl;if(B.st===0){v0=Math.min(v0,c.v);if(c.v<0.25)B.st=1;}else{B.t-=dt;gap=Math.min(gap,0.1);if(B.t<=0){c.dbl=null;hazards(c.mesh.userData,false);}}if(c.dbl)hazards(c.mesh.userData,(simT*1.5)%1<0.5);}
+        if(lead&&c.v<0.3&&lead.v<0.3&&gap<7&&c.honkCd<=0&&((lead.dbl&&lead.dbl.st===1&&c.stuckT>4)||(lead.rt>1.5&&lead.rt<lead.react&&!red))&&Math.random()<dt*0.8)aiHonk(c,0.25);
+        // mai fermi per sempre: dopo un po' si ignorano le precedenze bloccate; se nessuno guarda l'auto sparisce, altrimenti passa piano
+        if(c.stuckT>45){gap=gapP;vl=0;v0=Math.min(v0,3.5);}
+        if(c.distract){const D2=c.distract,gd=(D2.o.k===c.k?D2.o.s-c.s:rem+D2.o.s)-(D2.o.T.L+c.T.L)/2;if(gd<45&&!D2.bk&&D2.o.v>3){D2.bk=1;D2.o.brk=1.3+Math.random()*1.2;}gap=1e9;v0=Math.max(v0,c.v+2,12);}
         if(EVT.acc){const ex=EVT.acc.x-p0(c).x,ez=EVT.acc.z-p0(c).z,ed=Math.abs(ex)+Math.abs(ez);if(ed<320)v0=Math.min(v0,3.5+ed*0.035);}
         if(c.hold>0){c.hold-=dt;}
-        const ss=2.2+c.v*1.3+c.v*(c.v-vl)/(2*Math.sqrt(1.6*2.4)),g=Math.max(0.3,gap);let a=1.6*(1-Math.pow(c.v/Math.max(1,v0),4)-Math.pow(ss/g,2));a=Math.max(-8,Math.min(2.2,a));if(c.hold>0)a=Math.min(a,-3);
+        const ss=(2.2+c.v*1.3)*c.hw+c.v*(c.v-vl)/(2*Math.sqrt(1.6*2.4)),g=Math.max(0.3,gap);let a=1.6*(1-Math.pow(c.v/Math.max(1,v0),4)-Math.pow(ss/g,2));a=Math.max(-8,Math.min(2.2,a));if(c.hold>0)a=Math.min(a,-3);if(c.brk>0){c.brk-=dt;a=Math.min(a,-6.5);}if(c.distract)a=Math.max(a,0.3);
+        if(c.v<0.3&&a>0.3){c.rt+=dt;if(c.rt<c.react)a=0;}else if(c.v>1)c.rt=0;
+        if(c.v<0.3&&!red&&!(c.hold>0)&&!c.kn&&!c.dbl&&!(lead&&lead.dbl)&&gapP>40)c.stuckT+=dt;else if(c.v>1.5)c.stuckT=0;else if(c.v>=0.3)c.stuckT=Math.max(0,c.stuckT-dt*2);
+        if(c.stuckT>25&&!camSees(p0(c).x,p0(c).z,150)&&Math.hypot(p0(c).x-pl.x,p0(c).z-pl.z)>45)despQ.push(c);
         c.v=Math.max(0,c.v+a*dt);if(gap<0.5||!isFinite(c.v))c.v=0;c.a=a;c.s+=c.v*dt;
         if(c.s>=L){unplace(c);const ns=c.s-L,nk=c.nk;c.nk=null;if(lock.get(node)&&lock.get(node).c===c)lock.delete(node);c.pr=turnR(e,dir,E[nk>>1],nk&1);c.pk=c.pr>0?c.k:null;c.plofs=c.lofs;place(c,nk,ns);
           const R2=NW.roads[E[nk>>1].ri];if(!(R2.o&&R2.w>=9))c.lane=0;else if(!(R.o&&R.w>=9))c.lane=1;}
@@ -4560,7 +4684,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         // curve raccordate: negli ultimi/primi metri di ogni tratto l'auto segue un arco (curva di Hermite) invece di girare a 90°
         if(c.pk!=null&&c.s<c.pr){const ep=E[c.pk>>1],A=roadPos(ep,c.pk&1,ep.len-c.pr,c.plofs),B=roadPos(e2,c.k&1,c.pr,c.lofs);q=arcPos(A,B,(c.pr+c.s)/(2*c.pr));}
         else{c.pk=null;if(c.nk!=null){const en=E[c.nk>>1],r=turnR(e2,c.k&1,en,c.nk&1),rm=e2.len-c.s;if(r>0&&rm<r){const A=roadPos(e2,c.k&1,e2.len-r,c.lofs),B=roadPos(en,c.nk&1,r,laneOff(NW.roads[en.ri],c));q=arcPos(A,B,(r-rm)/(2*r));}}}
-        if(!q)q=roadPos(e2,c.k&1,c.s,c.lofs);c.dx=q.dx;c.dz=q.dz;c.mesh.position.set(q.x,q.h+0.02,q.z);c.mesh.rotation.y=Math.atan2(-q.dz,q.dx);knock(c,dt);}
+        if(!q)q=roadPos(e2,c.k&1,c.s,c.lofs+(c.dbl?Math.min(0.8,(c.dblO=(c.dblO||0)+dt*0.5)):(c.dblO=Math.max(0,(c.dblO||0)-dt*0.5))));c.dx=q.dx;c.dz=q.dz;c.mesh.position.set(q.x,q.h+0.02,q.z);c.mesh.rotation.y=Math.atan2(-q.dz,q.dx);knock(c,dt);}
+      despQ.forEach(c=>{if(list.includes(c))despawn(c);});while(crashQ.length){const[a,b]=crashQ.pop();crash(a,b);}
       tlUpdate();
       // pedoni sui marciapiedi delle città e dei paesi: uomini, donne, anziani, bambini per mano, cani al guinzaglio
       pT-=dt;const inTown=NW.cityAt(pl.x,pl.z),pTarget=inTown?Math.round((MOBILE?22:40)*Math.min(1.4,CFG.traf??1)):0;
@@ -4573,11 +4698,16 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             if(kind==='child'){P.v=1.25;}
             else if(Math.random()<0.22){const k=getM('child'),C={m:k,kind:'child',lead:P,lat:0.85,down:false,t:0,ph:P.ph+1};P.kids.push(C);peds.push(C);P.v=Math.min(P.v,1.15);}
             if(kind!=='child'&&Math.random()<0.18){const dg=getM('dog'),ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0x222222}));scene.add(ln);P.dog={m:dg,ln,ph:0};}
-            peds2.push(P);peds.push(P);}}}}
+            if(kind!=='child'&&!P.kids.length&&!P.dog){const r2=Math.random();if(r2<0.12){P.act='phone';P.v*=0.8;}else if(r2<0.2&&(kind==='man'||kind==='woman')){P.act='jog';P.v=2.5+Math.random()*0.7;}}
+            peds2.push(P);peds.push(P);
+            // due conoscenti fermi a chiacchierare sul marciapiede
+            if(kind!=='child'&&!P.kids.length&&!P.dog&&!P.act&&Math.random()<0.1){const k2=['man','woman','oldw','oldm'][(Math.random()*4)|0],m2=getM(k2),st=18+Math.random()*40;
+              const P2={m:m2,kind:k2,R,c:Math.min(R.cum[R.N-1]-1,P.c+0.95),side:P.side,dir:-P.dir,v:(1.05+Math.random()*0.4)*(m2.userData.speed||1),down:false,t:0,ph:Math.random()*6,lat:P.lat,kids:[]};
+              P.stopT=P2.stopT=st;P.act=P2.act='talk';P.pair=P2;P2.pair=P;peds2.push(P2);peds.push(P2);}}}}}
       const sideOf=(R,c,lat,side)=>{let lo=0,hi=R.N-1;while(hi-lo>1){const md=(lo+hi)>>1;if(R.cum[md]<=c)lo=md;else hi=md;}const sl=R.cum[lo+1]-R.cum[lo]||1,t=(c-R.cum[lo])/sl;let dx=R.X[lo+1]-R.X[lo],dz=R.Z[lo+1]-R.Z[lo];const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;
         const off=side*(R.w/2+lat),x=R.X[lo]+(R.X[lo+1]-R.X[lo])*t-dz*off,z=R.Z[lo]+(R.Z[lo+1]-R.Z[lo])*t+dx*off;return {x,z,dx,dz,y:R.Hh[lo]+(R.Hh[lo+1]-R.Hh[lo])*t+(NW.nearJ(x,z,11)?0.05:NW.SWH)};};
       const animH=(P,m,v,x,z)=>{const near=Math.abs(x-camera.position.x)+Math.abs(z-camera.position.z)<(MOBILE?40:70),u=m.userData;
-        if(u.hiP){u.hiP.w.visible=near;u.loP.visible=!near;if(near){PPL.pose(u.hiP,P.ph,v>0.05?1:0,!!P.angry,simT);u.hand=u.hiP.R.HandR?u.hiP.R.HandR.b:u.loHand;return;}u.hand=u.loHand;}
+        if(u.hiP){u.hiP.w.visible=near;u.loP.visible=!near;if(near){PPL.pose(u.hiP,P.ph,v>0.05?(P.act==='jog'?1.35:1):0,!!P.angry,simT);const A=P.actL||P.act;if(A==='phone')PPL.phone(u.hiP,simT);else if(A==='talk'&&v<0.05)PPL.talk(u.hiP,simT+P.ph);u.hand=u.hiP.R.HandR?u.hiP.R.HandR.b:u.loHand;return;}u.hand=u.loHand;}
         if(P.angry&&u.human){u.anim(0);return;}
         if(m.userData.human){m.userData.anim(P.ph);return;}
         if(m.userData.mixer){m.userData.hi.visible=near;m.userData.lo.visible=!near;if(near){m.userData.mixer.update(dt*v/1.25);return;}}
@@ -4587,13 +4717,33 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         const q0=sideOf(R,P.c,P.lat,P.side),far=Math.abs(q0.x-pl.x)+Math.abs(q0.z-pl.z)>420||!NW.cityAt(q0.x,q0.z)&&Math.abs(q0.x-pl.x)+Math.abs(q0.z-pl.z)>150;
         if(far){putM(m);P.kids.forEach(C=>{putM(C.m);const j=peds.indexOf(C);if(j>=0)peds.splice(j,1);});if(P.dog){putM(P.dog.m);scene.remove(P.dog.ln);}peds2.splice(i,1);const j=peds.indexOf(P);if(j>=0)peds.splice(j,1);continue;}
         if(P.down){pedDown(P,dt);P.kids.forEach(C=>{if(C.down)pedDown(C,dt);});continue;}
-        P.c+=P.dir*P.v*dt;if(P.c<1||P.c>R.cum[R.N-1]-1){P.dir=-P.dir;P.c=Math.max(1,Math.min(R.cum[R.N-1]-1,P.c));}
-        const q=sideOf(R,P.c,P.lat,P.side);pedDodge(P,q,dt);m.position.set(q.x+(P.ox||0),q.y,q.z+(P.oz||0));m.rotation.y=Math.atan2(-q.dz*P.dir,q.dx*P.dir);if(P.dodgeT>0)m.rotation.y+=Math.sin(P.dodgeT*8)*0.3;P.ph+=P.v*dt*5.5;animH(P,m,P.angry?0:P.v,q.x,q.z);
-        P.kids.forEach(C=>{if(C.down){pedDown(C,dt);return;}const k=sideOf(R,P.c+P.dir*0.15,C.lat,P.side);pedDodge(C,k,dt);C.m.position.set(k.x+(C.ox||0),k.y,k.z+(C.oz||0));C.m.rotation.y=m.rotation.y;C.ph+=P.v*dt*7;animH(C,C.m,P.v,k.x,k.z);});
-        if(P.dog){const D=P.dog,k=sideOf(R,P.c+P.dir*1.3,P.lat-0.55,P.side);D.m.position.set(k.x,k.y,k.z);D.m.rotation.y=m.rotation.y;D.ph+=P.v*dt*9;D.m.userData.anim(D.ph,simT);
+        // soste: chiacchiere, vetrine, curiosi davanti a un incidente
+        if(P.look){P.look.t-=dt;if(P.look.t<=0){P.look=null;P.actL=null;}}
+        if(P.stopT>0){P.stopT-=dt;if(P.stopT<=0){P.shop=false;if(P.act==='talk')P.act=null;P.pair=null;}}
+        else if(!P.cross&&!P.look&&P.act!=='jog'&&!P.kids.length&&Math.random()<dt*0.012){P.stopT=3+Math.random()*7;P.shop=true;}
+        const still=P.stopT>0||!!P.look;
+        // strisce pedonali: chi ci passa davanti a volte attraversa
+        if(!P.cross&&!still){const cl=CWR.get(R);if(cl){const nc=P.c+P.dir*P.v*dt;for(const w of cl){if((P.c-w.cum)*(nc-w.cum)<=0&&P.lastCW!==w){P.lastCW=w;if(Math.random()<0.35){P.cross={w,u:0,wt:0};P.c=w.cum;}break;}}}}
+        let q,vEff=P.v;
+        if(P.cross){const X=P.cross,w=X.w,Wd=w.w+2*P.lat;let wait=false;
+          if(X.u===0){w.waitT=simT;X.wt+=dt;if(X.wt<9){for(const c of list){const p=c.mesh.position,dx=w.x-p.x,dz=w.z-p.z,al=dx*(c.dx||0)+dz*(c.dz||0);if(c.v>2.5&&al>0&&al<10+c.v*1.6&&Math.abs(-dx*(c.dz||0)+dz*(c.dx||0))<w.w/2+1.5){wait=true;break;}}
+              {const fx=Math.cos(pl.h),fz=-Math.sin(pl.h),dx=w.x-pl.x,dz=w.z-pl.z,al=dx*fx+dz*fz;if(Math.abs(pl.vx)>2.5&&al>0&&al<12+Math.abs(pl.vx)*1.6&&Math.abs(-dx*fz+dz*fx)<w.w/2+2)wait=true;}}}
+          const Lt=P.side*(w.w/2+P.lat)*(1-2*X.u);if(!wait){X.u=Math.min(1,X.u+P.v*1.25*dt/Wd);if(simT-w.occT>0.1){w.occA=w.occB=Lt;}else{w.occA=Math.min(w.occA,Lt);w.occB=Math.max(w.occB,Lt);}w.occT=simT;}q=sideOf(R,w.cum,Lt-w.w/2,1);if(Math.abs(Lt)<w.w/2)q.y=w.h+0.02;
+          const mvx=q.dz*P.side,mvz=-q.dx*P.side;m.position.set(q.x,q.y,q.z);m.rotation.y=Math.atan2(-mvz,mvx);vEff=wait?0:P.v;
+          if(X.u>=1){P.side=-P.side;P.cross=null;}}
+        else{if(!still){P.c+=P.dir*P.v*dt;if(P.c<1||P.c>R.cum[R.N-1]-1){P.dir=-P.dir;P.c=Math.max(1,Math.min(R.cum[R.N-1]-1,P.c));}}else vEff=0;
+          q=sideOf(R,P.c,P.lat,P.side);pedDodge(P,q,dt);m.position.set(q.x+(P.ox||0),q.y,q.z+(P.oz||0));
+          if(P.look)m.rotation.y=Math.atan2(-(P.look.z-q.z),P.look.x-q.x);
+          else if(P.stopT>0&&P.pair)m.rotation.y=Math.atan2(-(P.pair.m.position.z-q.z),P.pair.m.position.x-q.x);
+          else if(P.stopT>0&&P.shop){const nx=-q.dz*P.side,nz=q.dx*P.side;m.rotation.y=Math.atan2(-nz,nx);}
+          else m.rotation.y=Math.atan2(-q.dz*P.dir,q.dx*P.dir);
+          if(P.dodgeT>0)m.rotation.y+=Math.sin(P.dodgeT*8)*0.3;}
+        P.ph+=vEff*dt*5.5;animH(P,m,P.angry?0:vEff,q.x,q.z);
+        P.kids.forEach(C=>{if(C.down){pedDown(C,dt);return;}const k=P.cross?{x:m.position.x+Math.sin(m.rotation.y)*0.5,y:m.position.y,z:m.position.z+Math.cos(m.rotation.y)*0.5,dx:1,dz:0}:sideOf(R,P.c+P.dir*0.15,C.lat,P.side);if(!P.cross)pedDodge(C,k,dt);C.m.position.set(k.x+(P.cross?0:C.ox||0),k.y,k.z+(P.cross?0:C.oz||0));C.m.rotation.y=m.rotation.y;C.ph+=vEff*dt*7;animH(C,C.m,vEff,k.x,k.z);});
+        if(P.dog){const D=P.dog,k=P.cross?{x:m.position.x+Math.cos(m.rotation.y)*1.1,y:m.position.y,z:m.position.z-Math.sin(m.rotation.y)*1.1}:sideOf(R,P.c+P.dir*1.3,P.lat-0.55,P.side);D.m.position.set(k.x,k.y,k.z);D.m.rotation.y=m.rotation.y;D.ph+=vEff*dt*9;D.m.userData.anim(D.ph,simT);
           const pa=D.ln.geometry.attributes.position;if(m.userData.hand){m.userData.hand.getWorldPosition(_hp);}else{_hp.set(q.x,q.y+0.85,q.z);}pa.setXYZ(0,_hp.x,_hp.y,_hp.z);D.m.userData.collar.getWorldPosition(_hp);pa.setXYZ(1,_hp.x,_hp.y,_hp.z);pa.needsUpdate=true;D.ln.geometry.computeBoundingSphere();}}}
     function p0(c){return c.mesh.position;}
-    return {step,list,peds:peds2,made:()=>made,spawnNear};})();
+    return {step,list,peds:peds2,made:()=>made,spawnNear,crash:tryCrash,dbl:tryDbl,wrecks:WRECKS,cw:CWL,ZB};})();
   return {VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
 })();
 
