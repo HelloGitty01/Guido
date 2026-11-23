@@ -108,8 +108,23 @@
   body.mob.run #mobTop{display:flex;position:fixed;left:8px;top:8px;gap:6px;z-index:4}
   #mobTop button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(94,21,17,.62);color:#fff;font-size:18px;padding:0;line-height:1}
   #mobTop button.off{display:none}
-  body.mob.run #mobL{display:block;position:fixed;left:0;bottom:0;width:34vw;height:78vh;z-index:3;touch-action:none}
-  body.mob.run #mobR{display:block;position:fixed;right:0;bottom:0;width:46vw;height:56vh;z-index:3;touch-action:none}
+  #mobW,#mobP,#mobT{display:none}
+  body.mob.run.c-volante #mobW{display:block;position:fixed;left:2vw;bottom:3vh;width:min(46vh,42vw);height:min(46vh,42vw);z-index:3;touch-action:none}
+  #mobW svg{width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+  body.mob.run.c-volante #mobP,body.mob.run.c-tilt #mobP{display:flex;position:fixed;right:2vw;bottom:3vh;gap:10px;align-items:flex-end;z-index:3;touch-action:none}
+  body.mob.run.c-tilt #mobT{display:flex;flex-direction:column;gap:8px;position:fixed;left:3vw;bottom:5vh;z-index:3}
+  #mobT button{border-radius:22px;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.4);color:#fff;font:700 15px Nunito,sans-serif;padding:10px 14px}
+  .ped{position:relative;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:linear-gradient(#55575c,#2c2d31);overflow:hidden;touch-action:none}
+  .ped span{position:absolute;left:0;right:0;top:8px;text-align:center;color:rgba(255,255,255,.6);font:800 11px Nunito,sans-serif;letter-spacing:1px}
+  .ped b{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(255,255,255,.22)}
+  .ped::after{content:"";position:absolute;inset:26px 10px 10px;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 4px,transparent 4px 11px);border-radius:8px}
+  #mpBrk{width:96px;height:30vh}#mpGas{width:62px;height:44vh}
+  .ped.act{border-color:#fff}#mpBrk.act b{background:rgba(255,80,60,.35)}#mpGas.act b{background:rgba(80,220,120,.35)}
+  #mpGear{display:flex;flex-direction:column;gap:6px;margin-right:4px}
+  #mpGear button{width:44px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.35);color:#fff;font:800 17px Nunito,sans-serif;padding:0}
+  #mpGear button.on{background:#c8202a;border-color:#fff}
+  body.mob.run.c-cursori #mobL{display:block;position:fixed;left:0;bottom:0;width:34vw;height:78vh;z-index:3;touch-action:none}
+  body.mob.run.c-cursori #mobR{display:block;position:fixed;right:0;bottom:0;width:46vw;height:56vh;z-index:3;touch-action:none}
   #mobL .trk{position:absolute;left:36px;bottom:5vh;width:58px;height:58vh;border-radius:29px;background:rgba(0,0,0,.22);border:2px solid rgba(255,255,255,.28)}
   #mobR .trk{position:absolute;right:6vw;bottom:7vh;width:34vw;height:58px;border-radius:29px;background:rgba(0,0,0,.22);border:2px solid rgba(255,255,255,.28)}
   .trk .kn{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 2px 6px rgba(0,0,0,.4)}
@@ -130,7 +145,7 @@
   body.mob #radioTag{bottom:auto;top:96px}
   body.mob #navBox{top:54px!important;font-size:14px!important;padding:5px 12px!important}
   body.mob #cashHud{top:auto;bottom:8px;left:12px;transform:none;pointer-events:none;font-size:13px}body.mob #cashTag{top:96px}
-  body.mob.photo #mobTop,body.mob.photo #mobL,body.mob.photo #mobR{display:none!important}
+  body.mob.photo #mobTop,body.mob.photo #mobL,body.mob.photo #mobR,body.mob.photo #mobW,body.mob.photo #mobP,body.mob.photo #mobT{display:none!important}
   #cashHud{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:rgba(94,21,17,.78);color:#fff;border-radius:16px;padding:4px 14px;font:800 14px Nunito,sans-serif;z-index:3;display:none;white-space:nowrap}
   #cashTag{position:fixed;top:84px;left:50%;transform:translateX(-50%);border-radius:14px;padding:4px 12px;font:800 15px Nunito,sans-serif;z-index:3;display:none}#cashTag.pos{background:#2f9e44;color:#fff}#cashTag.neg{background:#c8202a;color:#fff}
   #jobOv{position:fixed;inset:0;background:rgba(8,10,14,.6);display:none;align-items:center;justify-content:center;z-index:9}#jobOv>div{background:#fff;color:#2a1a18;border-radius:18px;padding:16px 18px;max-width:560px;width:92%;max-height:86vh;overflow:auto;font:15px Nunito,sans-serif}
@@ -183,7 +198,7 @@
     <section class="card"><h2>Volante, cabina e autoradio</h2>
       <div class="row"><label>Rapidità sterzo <input type="range" id="cfgRap" min="0.5" max="2" step="0.1"></label><label>Precisione al centro <input type="range" id="cfgPrec" min="0.5" max="2" step="0.1"></label></div>
       <div class="row"><label>Ritorno al centro <input type="range" id="cfgRit" min="0.3" max="2" step="0.1"></label><label>Specchietti in cabina <input type="checkbox" id="cfgMir"></label></div>
-      <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label><label>Qualità grafica <select id="cfgQ"><option value="bassa">Bassa (più fluida)</option><option value="media">Media</option><option value="alta">Alta</option></select></label></div>
+      <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label><label>Comandi su smartphone <select id="cfgTouch"><option value="volante">Volante e pedali</option><option value="tilt">Inclina il telefono e pedali</option><option value="cursori">Due cursori</option></select></label><label>Qualità grafica <select id="cfgQ"><option value="bassa">Bassa (più fluida)</option><option value="media">Media</option><option value="alta">Alta</option></select></label></div>
       <div class="row"><label>Volume autoradio <input type="range" id="cfgVol" min="0" max="1" step="0.05"></label></div>
       <div class="row"><b>Stazioni radio</b><span class="note">(indirizzi di flussi audio MP3/AAC; funzionano nella versione su GitHub)</span></div><div id="radioList"></div><div class="row"><button id="radioAdd" class="sm">Aggiungi stazione</button><button id="radioDef" class="sm">Ripristina predefinite</button><span class="note" id="radioNote"></span></div>
     </section>
@@ -213,6 +228,9 @@
 <button id="tFix" style="display:none">Raddrizza</button><div id="tbtn"><button id="tGear">R</button><button id="tView">Vista</button><button id="tHorn">Clacson</button><button id="tMenu">Menu</button></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="mobTop"><button data-p="endBtn" title="Fine corsa">⏹</button><button data-p="pauseBtn" title="Pausa">⏸</button><button data-p="tView" title="Vista">👁</button><button data-p="carBtn" title="Cambia auto">⇄</button><button data-p="radioBtn" title="Radio">♪</button><button data-p="jobBtn" title="Lavori" id="mJob">💼</button><button data-p="mapBtn" title="Mappa">🗺</button><button data-p="photoBtn" title="Foto">📷</button></div>
+<div id="mobW"><svg viewBox="-100 -100 200 200"><g id="mwG"><circle r="86" fill="none" stroke="#2a2a2e" stroke-width="20"/><circle r="86" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/><path d="M-80 8 L-26 8 L0 30 L26 8 L80 8 M0 30 L0 80" stroke="#2a2a2e" stroke-width="16" fill="none" stroke-linecap="round"/><rect x="-6" y="-100" width="12" height="20" rx="3" fill="#ff5a3c"/></g><circle id="mwHorn" r="27" fill="#3a3a40" stroke="rgba(255,255,255,.4)" stroke-width="2"/><text y="9" text-anchor="middle" font-size="24">📯</text></svg></div>
+<div id="mobT"><button id="mtHorn">📯</button><button id="mtZero">⟲ centra</button></div>
+<div id="mobP"><div id="mpGear"><button data-g="D">D</button><button data-g="N">N</button><button data-g="R">R</button></div><div id="mpBrk" class="ped"><span>FRENO</span><b></b></div><div id="mpGas" class="ped"><span>GAS</span><b></b></div></div>
 <div id="mobL"><div class="trk"><div class="kn"></div><i>▲</i><i>▼</i></div><div id="mGear"><button data-g="D">D</button><button data-g="N">N</button><button data-g="R">R</button></div></div>
 <div id="mobR"><button id="mHorn">📯</button><div class="trk"><div class="kn"></div><i>◀</i><i>▶</i></div></div>
 <div id="hint">Tieni il dito sullo schermo e trascina:<br>↑ su = acceleratore · ↓ giù = freno<br>← → = sterzo<br>Meglio con il telefono in orizzontale</div>
@@ -1973,11 +1991,41 @@ function mzSync(){touch.on=MZ.L.id!=null||MZ.R.id!=null;touch.thr=Math.max(0,MZ.
   el.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===Z.id)set(t);e.preventDefault();},{passive:false});
   const end=e=>{for(const t of e.changedTouches)if(t.identifier===Z.id){Z.id=null;Z.v=0;kn.style.transform='';trk.classList.remove('act');mzSync();}};
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);});
+// ---- volante a schermo: si gira col pollice attorno al centro (mezzo giro = tutto sterzo), lasciato torna dritto; al centro il clacson ----
+const MW={ang:0,id:null,last:0},MP={gas:{id:null,v:0},brk:{id:null,v:0}},TL={z:null,v:0};
+function mobCtl(){const c=CFG.touchCtl||'volante';document.body.classList.remove('c-volante','c-tilt','c-cursori');document.body.classList.add('c-'+c);}
+if(MOB)mobCtl();
+function mobSync(){const c=CFG.touchCtl||'volante';if(c==='cursori')return;
+  touch.on=true;touch.thr=MP.gas.v;touch.brk=MP.brk.v;touch.steer=c==='tilt'?TL.v:Math.max(-1,Math.min(1,MW.ang/180));}
+{const el=document.getElementById('mobW'),g=document.getElementById('mwG');
+  const ctr=()=>{const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2,r.width/2];};
+  el.addEventListener('touchstart',e=>{if(paused)return;for(const t of e.changedTouches){const[cx,cy,R0]=ctr(),dx=t.clientX-cx,dy=t.clientY-cy;
+      if(Math.hypot(dx,dy)<R0*0.3){MW.hornId=t.identifier;setHorn(true);continue;}if(MW.id!=null)continue;MW.id=t.identifier;MW.last=Math.atan2(dy,dx);}AC&&AC.resume();e.preventDefault();},{passive:false});
+  el.addEventListener('touchmove',e=>{for(const t of e.changedTouches){if(t.identifier!==MW.id)continue;const[cx,cy]=ctr(),a=Math.atan2(t.clientY-cy,t.clientX-cx);let d=a-MW.last;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;MW.last=a;
+      MW.ang=Math.max(-200,Math.min(200,MW.ang+d*57.3));}e.preventDefault();},{passive:false});
+  const end=e=>{for(const t of e.changedTouches){if(t.identifier===MW.id)MW.id=null;if(t.identifier===MW.hornId){MW.hornId=null;setHorn(false);}}};
+  el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);
+  let tp=performance.now();(()=>{const mwLoop=()=>{const now=performance.now(),dt=Math.min(0.05,(now-tp)/1000);tp=now;
+    if(MW.id==null&&MW.ang!==0){const k=Math.min(Math.abs(MW.ang),dt*(260+Math.abs(pl.vx||0)*12));MW.ang-=Math.sign(MW.ang)*k;}   // lasciato, il volante torna dritto da solo (più in fretta in velocità)
+    g.setAttribute('transform','rotate('+MW.ang.toFixed(1)+')');try{if(MOB&&started&&!paused)mobSync();}catch(e){}requestAnimationFrame(mwLoop);};requestAnimationFrame(mwLoop);})();}
+// ---- pedali: più in alto appoggi il dito, più premi ----
+[['gas','mpGas'],['brk','mpBrk']].forEach(([k,id])=>{const el=document.getElementById(id),bar=el.querySelector('b'),Z=MP[k];
+  const set=t=>{const r=el.getBoundingClientRect(),f=Math.max(0,Math.min(1,(r.bottom-t.clientY)/r.height));Z.v=0.25+0.75*Math.min(1,f*1.15);bar.style.height=(Z.v*100).toFixed(0)+'%';};
+  el.addEventListener('touchstart',e=>{if(paused)return;for(const t of e.changedTouches){if(Z.id!=null)continue;Z.id=t.identifier;el.classList.add('act');set(t);}AC&&AC.resume();e.preventDefault();e.stopPropagation();},{passive:false});
+  el.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===Z.id)set(t);e.preventDefault();},{passive:false});
+  const end=e=>{for(const t of e.changedTouches)if(t.identifier===Z.id){Z.id=null;Z.v=0;bar.style.height='0';el.classList.remove('act');}};el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);});
+document.querySelectorAll('#mpGear button').forEach(b=>b.addEventListener('touchstart',e=>{selectGear(b.dataset.g);e.preventDefault();e.stopPropagation();},{passive:false}));
+// ---- inclinazione: il telefono in orizzontale si gira come un volante (30° = tutto sterzo); "centra" azzera la posizione di guida ----
+function tiltAsk(){try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)DeviceOrientationEvent.requestPermission().catch(()=>{});}catch(e){}}
+addEventListener('deviceorientation',e=>{if(e.beta==null)return;const ang=(screen.orientation&&screen.orientation.angle)||window.orientation||0,raw=ang===90?e.beta:(ang===270||ang===-90)?-e.beta:e.gamma;
+  if(TL.z==null)TL.z=raw;let d=raw-TL.z;if(d>180)d-=360;if(d<-180)d+=360;TL.raw=raw;const a=Math.max(0,Math.abs(d)-1.5);TL.v=Math.max(-1,Math.min(1,Math.sign(d)*a/30));});
+document.getElementById('mtZero').onclick=()=>{if(TL.raw!=null)TL.z=TL.raw;};
+{const h=document.getElementById('mtHorn');h.addEventListener('touchstart',e=>{setHorn(true);e.preventDefault();},{passive:false});h.addEventListener('touchend',()=>setHorn(false));}
 document.querySelectorAll('#mGear button').forEach(b=>b.addEventListener('touchstart',e=>{selectGear(b.dataset.g);e.preventDefault();e.stopPropagation();},{passive:false}));
 {const h=document.getElementById('mHorn');h.addEventListener('touchstart',e=>{setHorn(true);e.preventDefault();e.stopPropagation();},{passive:false});h.addEventListener('touchend',()=>setHorn(false));h.addEventListener('touchcancel',()=>setHorn(false));}
 document.querySelectorAll('#mobTop button').forEach(b=>b.onclick=e=>{e.currentTarget.blur();const t=document.getElementById(b.dataset.p);if(t)t.click();});
 setInterval(()=>{if(!MOB)return;const run=started&&!pl.ended&&menu.style.display!=='flex';document.body.classList.toggle('run',run);if(!run)return;
-  document.querySelectorAll('#mGear button').forEach(b=>b.classList.toggle('on',pl.sel===b.dataset.g));document.getElementById('mJob').classList.toggle('off',MODE!=='career');
+  document.querySelectorAll('#mGear button,#mpGear button').forEach(b=>b.classList.toggle('on',pl.sel===b.dataset.g));document.getElementById('mJob').classList.toggle('off',MODE!=='career');
   const pb=document.querySelector('#mobTop [data-p="pauseBtn"]');pb.textContent=paused?'▶':'⏸';},250);
 function touchEnd(e){for(const t of e.changedTouches){if(t.identifier===touch.id){touch.on=false;touch.id=null;touch.steer=touch.thr=touch.brk=0;stickEl.style.display='none';}}}
 renderer.domElement.addEventListener('touchend',touchEnd);renderer.domElement.addEventListener('touchcancel',touchEnd);
@@ -2770,6 +2818,7 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
     const u=document.createElement('input');u.value=st.u||'';u.placeholder='https://…';u.size=34;const x=document.createElement('button');x.className='sm';x.textContent='Togli';
     const up=()=>{const L=RADIO.user();L[k]={n:n.value.trim(),u:u.value.trim()};save(L);};n.onchange=up;u.onchange=up;x.onclick=()=>{const L=RADIO.user();L.splice(k,1);save(L);draw();};r.append(n,u,x);box.appendChild(r);});};
   draw();document.getElementById('radioAdd').onclick=()=>{const L=RADIO.user();L.push({n:'Nuova stazione',u:''});save(L);draw();};document.getElementById('radioDef').onclick=()=>{save(RADIO.DEF.slice());draw();};}
+{const e=document.getElementById('cfgTouch');e.value=CFG.touchCtl||'volante';e.onchange=()=>{CFG.touchCtl=e.value;savePrefs();mobCtl();if(e.value==='tilt')tiltAsk();};}
 {const e=document.getElementById('cfgQ');e.value=QG.q;e.onchange=()=>{CFG.q=e.value;savePrefs();if(confirm('La qualità grafica si applica ricaricando la pagina. Ricaricare adesso?'))location.reload();};}
 {const e=document.getElementById('cfgEng');e.value=CFG.engVol??1;e.oninput=()=>{CFG.engVol=+e.value;};e.onchange=()=>savePrefs();}
 {const v=document.getElementById('cfgVol');v.value=CFG.vol??0.6;v.oninput=()=>{CFG.vol=+v.value;RADIO.setVol(CFG.vol);const h=document.getElementById('radioVolHud');if(h)h.value=CFG.vol;};v.onchange=()=>savePrefs();
@@ -2817,7 +2866,7 @@ function startDrive(){runStart=simT;
   if(MODE==='career')setTimeout(()=>say('Carriera: hai '+CAR.fmt(CAR.s.money)+'. Premi K, o il tasto Lavori, per vedere le offerte.'),1500);
   startGhost();if(ghost)setTimeout(()=>{pl.navMsg='Auto fantasma: il tuo record';pl.navMsgT=3;},2500);
 }
-document.getElementById('go').onclick=()=>{startRun();
+document.getElementById('go').onclick=()=>{if(MOB&&CFG.touchCtl==='tilt'){tiltAsk();TL.z=null;}startRun();
   if(isTouch){[['pauseBtn',12],['carBtn',104],['radioBtn',242]].forEach(([id,x])=>{const b=document.getElementById(id);b.style.left=x+'px';b.style.top='58px';});document.getElementById('tbtn').style.display='flex';const h=document.getElementById('hint');h.style.display='block';setTimeout(()=>h.style.display='none',5000);}};
 
 let last=performance.now(),clusterT=0,physAcc=0,frameN=0,screenT=0;const PH=1/240;
