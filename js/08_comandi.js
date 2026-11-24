@@ -105,9 +105,9 @@ function mzSync(){touch.on=MZ.L.id!=null||MZ.R.id!=null;touch.thr=Math.max(0,MZ.
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);});
 // ---- volante a schermo: si gira col pollice attorno al centro (mezzo giro = tutto sterzo), lasciato torna dritto; al centro il clacson ----
 const MW={ang:0,id:null,last:0},MP={gas:{id:null,v:0},brk:{id:null,v:0}},TL={z:null,v:0};
-function mobCtl(){const c=CFG.touchCtl||'volante';document.body.classList.remove('c-volante','c-tilt','c-cursori');document.body.classList.add('c-'+c);}
+function mobCtl(){const c=CFG.touchCtl||'arco';document.body.classList.remove('c-volante','c-tilt','c-cursori','c-arco');document.body.classList.add('c-'+c);}
 if(MOB)mobCtl();
-function mobSync(){const c=CFG.touchCtl||'volante';if(c==='cursori')return;
+function mobSync(){const c=CFG.touchCtl||'arco';if(c==='cursori')return;if(c==='arco'){MA.sync();return;}
   touch.on=true;touch.thr=MP.gas.v;touch.brk=MP.brk.v;touch.steer=c==='tilt'?TL.v:Math.max(-1,Math.min(1,MW.ang/180));}
 {const el=document.getElementById('mobW'),g=document.getElementById('mwG');
   const ctr=()=>{const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2,r.width/2];};
@@ -199,3 +199,35 @@ function readInput(dt){
   pl.thrIn+=((pl.fuel!=null&&pl.fuel<=0&&(CFG.fuel??1))?0-pl.thrIn:(pl.P.gov&&Math.abs(pl.vx)*3.6>pl.P.gov?0:thr)-pl.thrIn)*Math.min(1,dt*(thr>pl.thrIn?3:8));pl.brkIn+=(brk-pl.brkIn)*Math.min(1,dt*(brk>pl.brkIn?4:10));
 }
 
+
+// ---- comandi "velocità e arco": a sinistra il pallino fissa la velocità voluta e resta lì (l'auto ci arriva e la tiene),
+//      il freno è un pulsante; a destra lo sterzo si trascina lungo un arco e lasciato torna dritto ----
+const MA={tgt:0,thrId:null,brkId:null,arcId:null,steer:0,vmax:130,
+  sync(){const P=pl.P||{};this.vmax=Math.min(170,P.vmax||150);const v=Math.abs(pl.vx||0)*3.6,t=this.tgt*this.vmax;let thr=0,brk=0;
+    if(this.brkId!=null)brk=1;else if(t>1){const e=t-v;thr=e>0?Math.min(1,0.25+e/14):Math.max(0,0.15+e/20);if(e<-12)brk=Math.min(0.5,(-e-12)/30);}
+    else if(v>2)brk=0.35;
+    touch.on=true;touch.thr=thr;touch.brk=brk;touch.steer=this.steer;
+    const sp=document.getElementById('maSpd');if(sp){const s=Math.round(t);if(sp.textContent!==String(s))sp.textContent=s;}}};
+{const el=document.getElementById('maThr'),kn=el&&el.querySelector('.kn');
+  if(el){const set=t=>{const r=el.getBoundingClientRect();MA.tgt=Math.max(0,Math.min(1,(r.bottom-t.clientY)/r.height));if(MA.tgt<0.03)MA.tgt=0;kn.style.bottom=(MA.tgt*100).toFixed(1)+'%';};
+    el.addEventListener('touchstart',e=>{if(paused)return;for(const t of e.changedTouches){if(MA.thrId!=null)continue;MA.thrId=t.identifier;el.classList.add('act');set(t);}AC&&AC.resume();e.preventDefault();e.stopPropagation();},{passive:false});
+    el.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===MA.thrId)set(t);e.preventDefault();},{passive:false});
+    const end=e=>{for(const t of e.changedTouches)if(t.identifier===MA.thrId){MA.thrId=null;el.classList.remove('act');}};el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);
+    MA.reset=()=>{MA.tgt=0;kn.style.bottom='0%';};}}
+{const el=document.getElementById('maBrk');if(el){
+  el.addEventListener('touchstart',e=>{if(paused)return;for(const t of e.changedTouches)if(MA.brkId==null)MA.brkId=t.identifier;el.classList.add('act');AC&&AC.resume();e.preventDefault();e.stopPropagation();},{passive:false});
+  const end=e=>{for(const t of e.changedTouches)if(t.identifier===MA.brkId){MA.brkId=null;el.classList.remove('act');}};el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);}}
+document.querySelectorAll('#maGear button').forEach(b=>b.addEventListener('touchstart',e=>{selectGear(b.dataset.g);e.preventDefault();e.stopPropagation();},{passive:false}));
+{const el=document.getElementById('maArc'),kn=document.getElementById('maKn');
+  if(el){const R=110,CY=100;   // arco di raggio 110 con centro in (0,100) nelle coordinate dell'svg
+    const svgPt=t=>{const r=el.getBoundingClientRect(),k=Math.min(r.width,r.height)/200,cx=r.left+r.width/2,cy=r.top+r.height/2;return[(t.clientX-cx)/k,(t.clientY-cy)/k];};
+    const MAXA=0.73;   // circa 42° per parte = tutto sterzo
+    const put=a=>{kn.setAttribute('cx',(Math.sin(a)*R).toFixed(1));kn.setAttribute('cy',(CY-Math.cos(a)*R).toFixed(1));};
+    const set=t=>{const[x,y]=svgPt(t),aa=Math.max(-MAXA,Math.min(MAXA,Math.atan2(x,CY-y)));MA.steer=aa/MAXA;put(aa);};
+    el.addEventListener('touchstart',e=>{if(paused)return;for(const t of e.changedTouches){if(MA.arcId!=null)continue;MA.arcId=t.identifier;set(t);}AC&&AC.resume();e.preventDefault();e.stopPropagation();},{passive:false});
+    el.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===MA.arcId)set(t);e.preventDefault();},{passive:false});
+    const end=e=>{for(const t of e.changedTouches)if(t.identifier===MA.arcId)MA.arcId=null;};el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);
+    let tp=performance.now();const loop=()=>{const now=performance.now(),dt=Math.min(0.25,(now-tp)/1000);tp=now;
+      if(MA.arcId==null&&MA.steer!==0){const k=Math.min(Math.abs(MA.steer),dt*(3.2+Math.abs(pl.vx||0)*0.05));MA.steer-=Math.sign(MA.steer)*k;put(MA.steer*MAXA);}
+      document.querySelectorAll('#maGear button').forEach(b=>b.classList.toggle('on',b.dataset.g===(pl.sel||'D')));
+      requestAnimationFrame(loop);};requestAnimationFrame(loop);}}

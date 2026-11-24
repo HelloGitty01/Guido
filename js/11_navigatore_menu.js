@@ -211,7 +211,7 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
     const u=document.createElement('input');u.value=st.u||'';u.placeholder='https://…';u.size=34;const x=document.createElement('button');x.className='sm';x.textContent='Togli';
     const up=()=>{const L=RADIO.user();L[k]={n:n.value.trim(),u:u.value.trim()};save(L);};n.onchange=up;u.onchange=up;x.onclick=()=>{const L=RADIO.user();L.splice(k,1);save(L);draw();};r.append(n,u,x);box.appendChild(r);});};
   draw();document.getElementById('radioAdd').onclick=()=>{const L=RADIO.user();L.push({n:'Nuova stazione',u:''});save(L);draw();};document.getElementById('radioDef').onclick=()=>{save(RADIO.DEF.slice());draw();};}
-{const e=document.getElementById('cfgTouch');e.value=CFG.touchCtl||'volante';e.onchange=()=>{CFG.touchCtl=e.value;savePrefs();mobCtl();if(e.value==='tilt')tiltAsk();};}
+{const e=document.getElementById('cfgTouch');e.value=CFG.touchCtl||'arco';e.onchange=()=>{CFG.touchCtl=e.value;savePrefs();mobCtl();if(e.value==='tilt')tiltAsk();};}
 {const e=document.getElementById('cfgHd');if(e){e.checked=!!window.HDON;e.onchange=()=>{CFG.hd=e.checked;savePrefs();if(confirm('I modelli dettagliati si applicano ricaricando la pagina. Ricaricare adesso?'))location.reload();};}}
 {const e=document.getElementById('cfgQ');e.value=QG.q;e.onchange=()=>{CFG.q=e.value;savePrefs();if(confirm('La qualità grafica si applica ricaricando la pagina. Ricaricare adesso?'))location.reload();};}
 {const e=document.getElementById('cfgEng');e.value=CFG.engVol??1;e.oninput=()=>{CFG.engVol=+e.value;};e.onchange=()=>savePrefs();}
@@ -264,7 +264,7 @@ const RESUME={now:null,t:0,get(){try{return JSON.parse(localStorage.getItem('sim
 document.getElementById('contBtn').onclick=()=>{const r=RESUME.get();if(!r||!PHYS[r.k])return;selKey=r.k;[...document.getElementById('vehList').children].forEach((x,i)=>x.classList.toggle('sel',Object.keys(PHYS)[i]===r.k));
   document.getElementById('selMode').value='free';document.getElementById('selTime').value=r.time||'day';if(r.wx)document.getElementById('selWx').value=r.wx;RESUME.now=r;document.getElementById('go').click();};
 setTimeout(()=>RESUME.btn(),0);
-function startDrive(){runStart=simT;if(!RESUME.now)CINE.startIntro();
+function startDrive(){runStart=simT;if(MA.reset)MA.reset();if(!RESUME.now)CINE.startIntro();
   if(!FUEL.st.length)fuelInit();pl.fuel=tankOf(pl.P)*(MODE==='free'||MODE==='nav'?0.6:1);pl.fuelFor=selKey;pl.dry=false;FUEL.low=false;ORB.yaw=ORB.pitch=0;ORB.w=0;
   if(MODE==='nav'||MODE==='race'){route=buildRoute(document.getElementById('selDest').value);if(route){destMark.position.set(route.dest.x,TH(route.dest.x,route.dest.z)+30,route.dest.z);destMark.visible=true;
     say(MODE==='race'?'Gara verso '+document.getElementById('selDest').selectedOptions[0].textContent+'. Pronti...':'Percorso calcolato verso '+document.getElementById('selDest').selectedOptions[0].textContent);}}

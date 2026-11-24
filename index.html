@@ -62,6 +62,21 @@
   .credRoll{position:absolute;left:0;right:0;text-align:center;padding:0 18px;will-change:transform;font-size:14px;line-height:1.5}
   .credBox ul{list-style:none;padding:0!important;margin:0 0 10px!important}.credBox li{margin:8px 0;color:#d5d7da}.credBox h2{margin-top:30px!important;font-size:13px!important;letter-spacing:.3em;text-transform:uppercase;color:#9aa3ad!important}
   .credBox .studio{flex-direction:column;background:none!important;border:0!important;margin:20px 0 40px!important}.credBox .studio img{width:min(320px,62vw)!important}.credBox .studio .st{font-size:38px!important}
+  /* comandi "velocità e arco": pallino della velocità che resta dove lo lasci, freno a pulsante, sterzo ad arco */
+  #mobA{display:none}
+  body.mob.run.c-arco #mobA{display:block}
+  #maThr{position:fixed;left:3.5vw;bottom:9vh;width:64px;height:min(56vh,300px);z-index:3;touch-action:none}
+  #maThr .trk{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.35);border-radius:2px}
+  #maThr .trk::after{content:'';position:absolute;left:-9px;bottom:0;width:20px;height:2px;background:rgba(255,255,255,.5)}
+  #maThr .kn{position:absolute;left:50%;width:52px;height:52px;margin:0 0 -26px -26px;bottom:0;border-radius:50%;border:3px solid #fff;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font:600 13px Inter,system-ui;color:#fff;text-shadow:0 1px 3px #000}
+  #maThr.act .kn{background:rgba(255,255,255,.25)}
+  #maBrk{position:fixed;left:calc(3.5vw + 84px);bottom:7vh;width:min(19vh,110px);height:min(19vh,110px);border-radius:50%;border:3px solid rgba(255,255,255,.75);background:rgba(0,0,0,.12);color:#fff;display:flex;align-items:center;justify-content:center;font:600 14px Inter,system-ui;letter-spacing:.08em;z-index:3;touch-action:none;user-select:none}
+  #maBrk.act{background:rgba(200,40,40,.45);border-color:#fff}
+  #maGear{position:fixed;left:calc(3.5vw + 84px);bottom:calc(9vh + min(19vh,110px) + 12px);display:flex;gap:6px;z-index:3}
+  #maGear button{width:38px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.25);color:#fff;font:600 13px Inter}
+  #maGear button.on{background:rgba(255,255,255,.85);color:#111}
+  #maArc{position:fixed;right:0;bottom:-6vh;width:min(52vw,90vh);height:min(40vw,62vh);z-index:3;touch-action:none}
+  #maArc svg{width:100%;height:100%;overflow:visible}
 </style>
 <style>
   /* ===== identità di Guido: rosso del logo, vino scuro, cielo chiaro, verde colline ===== */
@@ -378,7 +393,7 @@
       <div class="row"><label>Rapidità sterzo <input type="range" id="cfgRap" min="0.5" max="2" step="0.1"></label><label>Precisione al centro <input type="range" id="cfgPrec" min="0.5" max="2" step="0.1"></label></div>
       <div class="row"><label>Zona morta joystick <input type="range" id="cfgJdz" min="0" max="0.3" step="0.01"></label><label>Sensibilità joystick <input type="range" id="cfgJgain" min="0.6" max="1.6" step="0.05"></label></div>
       <div class="row"><label>Ritorno al centro <input type="range" id="cfgRit" min="0.3" max="2" step="0.1"></label></div>
-      <div class="row"><label>Comandi su smartphone <select id="cfgTouch"><option value="volante">Volante e pedali</option><option value="tilt">Inclina il telefono e pedali</option><option value="cursori">Due cursori</option></select></label></div>
+      <div class="row"><label>Comandi su smartphone <select id="cfgTouch"><option value="arco">Velocità e arco (consigliato)</option><option value="volante">Volante e pedali</option><option value="tilt">Inclina il telefono e pedali</option><option value="cursori">Due cursori</option></select></label></div>
       <div class="row"><button id="ctrlBtn" class="sm">Tasti, gamepad e volante…</button></div>
     </section>
   <details class="keys"><summary>Come si guida</summary>
@@ -436,7 +451,7 @@
 <button id="tFix" style="display:none">Raddrizza</button><div id="tbtn"><button id="tGear">R</button><button id="tView">Vista</button><button id="tHorn">Clacson</button><button id="tMenu">Menu</button></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="mobTop"><button data-p="endBtn" title="Fine corsa"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button><button data-p="pauseBtn" title="Pausa"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></button><button data-p="tView" title="Vista"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg></button><button data-p="carBtn" title="Cambia auto"><svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg></button><button data-p="radioBtn" title="Radio"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button><button data-p="jobBtn" title="Lavori" id="mJob"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12h18"/></svg></button><button data-p="mapBtn" title="Mappa"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg></button><button data-p="photoBtn" title="Foto"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button></div>
-<div id="mobW"><svg viewBox="-100 -100 200 200"><g id="mwG"><circle r="86" fill="none" stroke="#2a2a2e" stroke-width="20"/><circle r="86" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/><path d="M-80 8 L-26 8 L0 30 L26 8 L80 8 M0 30 L0 80" stroke="#2a2a2e" stroke-width="16" fill="none" stroke-linecap="round"/><rect x="-6" y="-100" width="12" height="20" rx="3" fill="#ff5a3c"/></g><circle id="mwHorn" r="27" fill="#3a3a40" stroke="rgba(255,255,255,.4)" stroke-width="2"/><text y="9" text-anchor="middle" font-size="24">📯</text></svg></div>
+<div id="mobA"><div id="maThr"><div class="trk"></div><div class="kn"><span id="maSpd">0</span></div></div><div id="maBrk">FRENO</div><div id="maGear"><button data-g="D">D</button><button data-g="R">R</button></div><div id="maArc"><svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid meet"><path d="M-73.4 18 A 110 110 0 0 1 73.4 18" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="3" stroke-linecap="round"/><line x1="0" y1="-24" x2="0" y2="4" stroke="rgba(255,255,255,.35)" stroke-width="2"/><circle id="maKn" cx="0" cy="-10" r="17" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="3"/></svg></div></div><div id="mobW"><svg viewBox="-100 -100 200 200"><g id="mwG"><circle r="86" fill="none" stroke="#2a2a2e" stroke-width="20"/><circle r="86" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/><path d="M-80 8 L-26 8 L0 30 L26 8 L80 8 M0 30 L0 80" stroke="#2a2a2e" stroke-width="16" fill="none" stroke-linecap="round"/><rect x="-6" y="-100" width="12" height="20" rx="3" fill="#ff5a3c"/></g><circle id="mwHorn" r="27" fill="#3a3a40" stroke="rgba(255,255,255,.4)" stroke-width="2"/><text y="9" text-anchor="middle" font-size="24">📯</text></svg></div>
 <div id="mobT"><button id="mtHorn">📯</button><button id="mtZero">⟲ centra</button></div>
 <div id="mobP"><div id="mpGear"><button data-g="D">D</button><button data-g="R">R</button></div><div id="mpBrk" class="ped"><span>FRENO</span><b></b></div><div id="mpGas" class="ped"><span>GAS</span><b></b></div></div>
 <div id="mobL"><div class="trk"><div class="kn"></div><i>▲</i><i>▼</i></div><div id="mGear"><button data-g="D">D</button><button data-g="R">R</button></div></div>

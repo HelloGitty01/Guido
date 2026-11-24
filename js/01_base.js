@@ -7,6 +7,7 @@ if(!SEED){SEED=1+Math.floor(Math.random()*99999);try{localStorage.setItem('sim_s
 const CFG={rap:1,prec:1,rit:1};try{Object.assign(CFG,JSON.parse(localStorage.getItem('sim_cfg')||'{}'));}catch(e){}
 /* sempre: voce del navigatore di sistema, motore audio semplice */
 CFG.voce='sys';CFG.wg=false;
+if(!CFG.tc2){CFG.tc2=1;CFG.touchCtl='arco';}
 /* v48: nuove impostazioni predefinite (una volta sola): tutti i dettagli, qualità media, automatica */
 if(CFG.dv!==48){CFG.dv=48;CFG.q='media';CFG.autoQ=true;CFG.hd=true;CFG.blur=true;CFG.shake=true;CFG.mir=true;try{localStorage.setItem('sim_cfg',JSON.stringify(CFG));}catch(e){}}
 const PREF=(()=>{try{return JSON.parse(localStorage.getItem('sim_pref')||'{}');}catch(e){return{};}})();
