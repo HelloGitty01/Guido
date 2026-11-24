@@ -394,6 +394,11 @@ class EngineSoundGenerator extends AudioWorkletProcessor {
       for (let i=0; i<this.chunkSize; i++) {
          channelEngineBlockVibrations[i] = this.engineLowPassFilter.getFilteredValue(this.sound[i]);
       }
+      // protezione (Guido): se il modello diventa instabile si tace invece di gracchiare
+      for (const ch of [channelIntake, channelEngineBlockVibrations, channelOutlet]) {
+         for (let i=0; i<this.chunkSize; i++) { const v = ch[i]; if (!(Math.abs(v) < 60)) { this.dead = true; break; } }
+      }
+      if (this.dead) { channelIntake.fill(0); channelEngineBlockVibrations.fill(0); channelOutlet.fill(0); }
       return true;
    }
 

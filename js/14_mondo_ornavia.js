@@ -767,9 +767,9 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         // negozi sul fronte (lato 0)
         if(shopF&&n===4){const ax=ring[0],az=ring[1],bx=ring[2],bz=ring[3],L=Math.hypot(bx-ax,bz-az),tx=(bx-ax)/L,tz=(bz-az)/L;let nx=-tz,nz=tx;const mx=(ax+bx)/2,mz=(az+bz)/2;if((mx-cx)*nx+(mz-cz)*nz<0){nx=-nx;nz=-nz;}
           const rx=nz,rz=-nx,k=Math.max(1,Math.round(L/6.2)),seg=L/k,gy=gnd+0.02;
-          for(let q=0;q<k;q++){const cell=(hsh(bi,q)*8)|0,u0=(cell%4)/4,v1=1-(cell>>2)/2,v0=v1-0.5,c0=-L/2+q*seg+0.15,c1=c0+seg-0.3,ox=mx+nx*0.05,oz=mz+nz*0.05;
-            const Lx=ox+rx*c0,Lz=oz+rz*c0,Rx=ox+rx*c1,Rz=oz+rz*c1,s0=SP.length/3;SP.push(Lx-x0,gy,Lz-z0,Rx-x0,gy,Rz-z0,Lx-x0,gy+3.6,Lz-z0,Rx-x0,gy+3.6,Rz-z0);SU.push(u0,v0,u0+0.25,v0,u0,v1,u0+0.25,v1);SI.push(s0,s0+1,s0+2,s0+1,s0+3,s0+2);
-            if(cell<7&&hsh(bi,q+50)<0.55){const ac=new THREE.Color([0xb8312f,0x2e6e3e,0xc9a227,0x1f4f8a,0x7a3b6b,0xd8d2c4][(hsh(bi,q+9)*6)|0]).convertSRGBToLinear(),s1=AP.length/3,ex=nx*1.4,ez=nz*1.4,y=gnd+3.25;
+          for(let q=0;q<k;q++){const cell=(hsh(bi,q)*SHOPS.length)|0,[u0,v0,u1s,v1]=shopUV(cell),c0=-L/2+q*seg+0.15,c1=c0+seg-0.3,ox=mx+nx*0.05,oz=mz+nz*0.05;
+            const Lx=ox+rx*c0,Lz=oz+rz*c0,Rx=ox+rx*c1,Rz=oz+rz*c1,s0=SP.length/3;SP.push(Lx-x0,gy,Lz-z0,Rx-x0,gy,Rz-z0,Lx-x0,gy+3.6,Lz-z0,Rx-x0,gy+3.6,Rz-z0);SU.push(u0,v0,u1s,v0,u0,v1,u1s,v1);SI.push(s0,s0+1,s0+2,s0+1,s0+3,s0+2);
+            if(['bar','food','sweet','moda','shop','pub'].includes(SHOPS[cell][3])&&hsh(bi,q+50)<0.55){const ac=new THREE.Color([0xb8312f,0x2e6e3e,0xc9a227,0x1f4f8a,0x7a3b6b,0xd8d2c4][(hsh(bi,q+9)*6)|0]).convertSRGBToLinear(),s1=AP.length/3,ex=nx*1.4,ez=nz*1.4,y=gnd+3.25;
               AP.push(Lx-x0,y+0.6,Lz-z0,Rx-x0,y+0.6,Rz-z0,Lx+ex-x0,y,Lz+ez-z0,Rx+ex-x0,y,Rz+ez-z0);for(let t=0;t<4;t++)AC.push(ac.r,ac.g,ac.b);AI.push(s1,s1+2,s1+1,s1+1,s1+2,s1+3);}}}
         // tetto
         if((roof===1||roof===2)&&n===4&&!church){const c=[0,1,2,3].map(q=>[ring[q*2],ring[q*2+1]]),ov=roof===2?0.9:0.35;

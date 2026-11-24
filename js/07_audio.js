@@ -8,8 +8,8 @@ function engineParams(k,P){const base={cylinders:P.cyl||4,intakeWaveguideLength:
     volvo:{exhaustWaveguideLength:110,straightPipeWaveguideLength:160,mufflerElementsLength:[12,18,24,30],action:0.15},
     wagoneer:{exhaustWaveguideLength:140,extractorWaveguideLength:120,straightPipeWaveguideLength:200,mufflerElementsLength:[14,20,28,36],action:0.08,ignitionTime:0.02,offsets:[0,0,0.03,-0.03,0,0,0.03,-0.03]},
     hellcat:{exhaustWaveguideLength:100,extractorWaveguideLength:90,straightPipeWaveguideLength:150,mufflerElementsLength:[10,15,20,25],action:0.05,ignitionTime:0.013,offsets:[0,0,0.035,-0.035,0,0,0.035,-0.035]},
-    zil:{exhaustWaveguideLength:180,extractorWaveguideLength:150,straightPipeWaveguideLength:260,mufflerElementsLength:[20,28,36,44],action:0.2},
-    taxi:{exhaustWaveguideLength:130,straightPipeWaveguideLength:190,mufflerElementsLength:[14,22,30,38],action:0.14,offsets:[0,0,0.02,-0.02,0,0,0.02,-0.02]},
+    zil:{exhaustWaveguideLength:150,extractorWaveguideLength:125,straightPipeWaveguideLength:210,mufflerElementsLength:[14,20,28,36],action:0.07,ignitionTime:0.02,offsets:[0,0,0.025,-0.025,0,0,0.025,-0.025]},
+    taxi:{exhaustWaveguideLength:125,extractorWaveguideLength:110,straightPipeWaveguideLength:180,mufflerElementsLength:[12,18,26,34],action:0.06,offsets:[0,0,0.02,-0.02,0,0,0.02,-0.02]},
     daily:{exhaustWaveguideLength:100,straightPipeWaveguideLength:150,mufflerElementsLength:[12,18,24,30],action:0.15}};
   return Object.assign(base,T[k]||{});}
 function initAudio(){

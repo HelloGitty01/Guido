@@ -108,26 +108,42 @@ const fTexB=facadeTex2(1),fTexC=facadeTex2(2);
 const tileTex=canvasTex(128,(g,n)=>{g.fillStyle='#9e4f35';g.fillRect(0,0,n,n);for(let y=0;y<n;y+=10){for(let x=(y/10)%2*8;x<n;x+=16){g.fillStyle=`rgb(${150+Math.random()*30|0},${70+Math.random()*20|0},${45+Math.random()*15|0})`;g.fillRect(x,y,14,8);}g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,y+8,n,2);}});
 const roofTileM=mat(0xffffff,{map:tileTex});
 // negozi al piano terra: atlante di 8 vetrine in un'unica texture e un'unica mesh
-const SHOPS=[['BAR','#7a1e1e','#f3d6a0'],['FARMACIA','#1c7a3c','#ffffff'],['TABACCHI','#1f3d8a','#ffffff'],['PIZZERIA','#8a3b16','#ffe0a0'],['ALIMENTARI','#2d5a2d','#ffffff'],['MODA','#222222','#e8e0d0'],['BANCA','#3a4a5a','#ffffff'],['','#4a3a2a','#000']];
-const shopTex=(()=>{const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
-  SHOPS.forEach(([name,bg,fg],k)=>{const x0=(k%4)*256,y0=(k>>2)*256;g.fillStyle='#8f8676';g.fillRect(x0,y0,256,256);
+// insegne: 62 attività con nomi inventati (più due portoni), atlante 8×8 di vetrine
+const SHOPS=(()=>{const C={bar:['#7a1e1e','#f3d6a0'],food:['#8a3b16','#ffe0a0'],pub:['#141414','#e8c36a'],shop:['#2d5a2d','#ffffff'],moda:['#222222','#e8e0d0'],bank:['#3a4a5a','#ffffff'],farm:['#1c7a3c','#ffffff'],tab:['#1f3d8a','#ffffff'],serv:['#5a3a6a','#ffffff'],sweet:['#b0567a','#fff2f6'],blue:['#1d4f7a','#ffffff']};
+  const L=[['Bar Centrale','bar'],['Caffè Roma','bar'],['Bar Sport','bar'],['Caffè Ornavia','bar'],['Bar Stazione','bar'],['Ristorante da Gino','food'],['Trattoria Il Mulino','food'],['Osteria del Ponte','food'],['Pizzeria Vesuvio','food'],['Pizzeria da Totò','food'],
+   ['Ristorante La Pergola','food'],['Trattoria Nonna Rina','food'],['Kebab Istanbul','food'],['Sushi Hana','food'],['Black Cat Pub','pub'],['Irish Pub Dublino','pub'],['Birreria Luppolo','pub'],['Enoteca Il Calice','pub'],['Gelateria Polare','sweet'],['Pasticceria Dolce Vita','sweet'],
+   ['Panificio Rossi','sweet'],['Cioccolateria Fondente','sweet'],['Alimentari Bruni','shop'],['Macelleria Bianchi','shop'],['Frutta e Verdura Sole','shop'],['Pescheria Il Gabbiano','blue'],['Supermercato Orna','shop'],['Drogheria Conti','shop'],['Farmacia Comunale','farm'],['Farmacia San Marco','farm'],
+   ['Erboristeria Salvia','farm'],['Tabacchi n. 12','tab'],['Tabacchi Edicola','tab'],['Ferramenta Ghidini','serv'],['Libreria Il Segnalibro','serv'],['Cartoleria Matita','serv'],['Ottica Ferri','blue'],['Fiori di Lucia','farm'],['Parrucchiere Stile','sweet'],['Barbiere Tonino','moda'],
+   ['Lavanderia Bolle','blue'],['Calzature Passo','moda'],['Boutique Elena','moda'],['Abbigliamento Sartoria','moda'],['Gioielleria Aurea','moda'],['Profumeria Iris','sweet'],['Banca di Ornavia','bank'],['Cassa Rurale','bank'],['Assicurazioni Orna','bank'],['Immobiliare Casa Mia','serv'],
+   ['Viaggi Altrove','blue'],['Telefonia Pronto','blue'],['Elettronica Volt','blue'],['Ciclo Sport Guido','serv'],['Giocattoli Trottola','sweet'],['Animali Fido','farm'],['Mobili Rovere','serv'],['Foto Ottica Lampo','blue'],['Dentista Dr. Sorriso','bank'],['Palestra Forza','pub'],
+   ['Videogiochi Pixel','pub'],['Ricambi Auto Turbo','serv']];
+  const out=L.map(([n,c])=>[n,C[c][0],C[c][1],c]);out.push(['','#4a3a2a','#000',''],['','#4a3a2a','#000','']);return out;})();
+const SHOP_COLS=8,SHOP_ROWS=8,shopUV=k=>{const u0=(k%SHOP_COLS)/SHOP_COLS,v1=1-((k/SHOP_COLS)|0)/SHOP_ROWS;return[u0,v1-1/SHOP_ROWS,u0+1/SHOP_COLS,v1];};
+const shopTex=(()=>{const c=document.createElement('canvas');c.width=256*SHOP_COLS;c.height=256*SHOP_ROWS;const g=c.getContext('2d');
+  SHOPS.forEach(([name,bg,fg,cat],k)=>{const x0=(k%SHOP_COLS)*256,y0=((k/SHOP_COLS)|0)*256;g.fillStyle='#8f8676';g.fillRect(x0,y0,256,256);
     if(!name){g.fillStyle='#5a3e28';g.fillRect(x0+80,y0+70,96,186);g.fillStyle='#3a2818';g.fillRect(x0+127,y0+70,2,186);g.fillStyle='#b89a5a';g.fillRect(x0+112,y0+160,6,6);g.fillRect(x0+138,y0+160,6,6);g.fillStyle='#d8d0c0';g.fillRect(x0+70,y0+60,116,10);return;}
-    g.fillStyle=bg;g.fillRect(x0+8,y0+30,240,44);g.fillStyle=fg;g.font='bold 30px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(name,x0+128,y0+53);
-    if(name==='FARMACIA'){g.fillStyle='#2bd35a';g.fillRect(x0+214,y0+36,10,32);g.fillRect(x0+203,y0+47,32,10);}
-    if(name==='TABACCHI'){g.fillStyle='#fff';g.font='bold 34px Arial';g.fillText('T',x0+30,y0+54);}
+    g.fillStyle=bg;g.fillRect(x0+8,y0+26,240,52);g.fillStyle=fg;g.textAlign='center';g.textBaseline='middle';
+    // il nome su una o due righe, rimpicciolito finché ci sta
+    const up=name.toUpperCase(),w=228,fit=(t,max)=>{let s=max;g.font='bold '+s+'px Arial';while(g.measureText(t).width>w&&s>10){s--;g.font='bold '+s+'px Arial';}return s;};
+    if(fit(up,30)>=19||up.indexOf(' ')<0){fit(up,30);g.fillText(up,x0+128,y0+53);}
+    else{const ws=up.split(' ');let best=1,bd=1e9;for(let i=1;i<ws.length;i++){const a=ws.slice(0,i).join(' ').length,b=ws.slice(i).join(' ').length;if(Math.abs(a-b)<bd){bd=Math.abs(a-b);best=i;}}
+      const l1=ws.slice(0,best).join(' '),l2=ws.slice(best).join(' '),fs=Math.min(fit(l1,24),fit(l2,24));g.font='bold '+fs+'px Arial';g.fillText(l1,x0+128,y0+40);g.fillText(l2,x0+128,y0+66);}
+    if(cat==='farm'&&/FARMACIA/.test(up)){g.fillStyle='#2bd35a';g.fillRect(x0+226,y0+34,8,26);g.fillRect(x0+217,y0+43,26,8);}
+    if(cat==='pub'&&/BLACK CAT/.test(up)){g.fillStyle='#e8c36a';g.beginPath();g.arc(x0+24,y0+52,9,0,6.3);g.fill();g.beginPath();g.moveTo(x0+16,y0+46);g.lineTo(x0+18,y0+36);g.lineTo(x0+23,y0+44);g.moveTo(x0+32,y0+46);g.lineTo(x0+30,y0+36);g.lineTo(x0+25,y0+44);g.fill();}
     const gr=g.createLinearGradient(x0,y0+90,x0+256,y0+256);gr.addColorStop(0,'#28323c');gr.addColorStop(0.5,'#4f6070');gr.addColorStop(1,'#1d252d');g.fillStyle=gr;g.fillRect(x0+14,y0+90,150,160);g.fillRect(x0+178,y0+90,64,166);
     g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.moveTo(x0+14,y0+250);g.lineTo(x0+90,y0+90);g.lineTo(x0+120,y0+90);g.lineTo(x0+44,y0+250);g.fill();
-    g.fillStyle='#d8d0c0';for(let i=0;i<6;i++){g.fillStyle=['#c9a',' #9ac','#ca9','#acc','#cc9','#9c9'][i];g.fillRect(x0+24+i*22,y0+200+Math.random()*20,14,30);}
+    const pal={food:['#e8c9a0','#c33','#fff'],bar:['#c9a','#9ac','#fff'],sweet:['#f6c','#fc9','#fff'],moda:['#a96','#69a','#ccc'],shop:['#9c6','#cc6','#c96']}[cat]||['#c9a','#9ac','#ca9'];
+    for(let i=0;i<6;i++){g.fillStyle=pal[i%3];g.fillRect(x0+24+i*22,y0+200+((k*7+i*13)%20),14,30);}
     g.strokeStyle='#cfc6b4';g.lineWidth=6;g.strokeRect(x0+14,y0+90,150,160);g.strokeRect(x0+178,y0+90,64,166);});
   const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t;})();
 const shopQ={pos:[],uv:[],idx:[]},awnQ={pos:[],col:[],idx:[]};
 function addQuad(Q,ax,az,bx,bz,y0,y1,u0,v0,u1,v1,nx,nz){const k=Q.pos.length/3;Q.pos.push(ax,y0,az,bx,y0,bz,ax,y1,az,bx,y1,bz);if(Q.uv)Q.uv.push(u0,v0,u1,v0,u0,v1,u1,v1);Q.idx.push(k,k+1,k+2,k+1,k+3,k+2);}
 function shopFront(cx,cz,fw,nx,nz){const tx=-nz,tz=nx,n=Math.max(1,Math.round(fw/6.2)),seg=fw/n;
-  for(let i=0;i<n;i++){const k=(Math.random()*SHOPS.length)|0,u0=(k%4)/4,v1=1-(k>>2)/2,v0=v1-0.5;
+  for(let i=0;i<n;i++){const k=(Math.random()*SHOPS.length)|0,[u0,v0,u1x,v1]=shopUV(k);
     const a=-fw/2+i*seg+0.15,b=a+seg-0.3,ox=cx+nx*0.03,oz=cz+nz*0.03;
     // il verso dei vertici dipende dalla normale: si ordinano in modo che la faccia guardi fuori
-    addQuad(shopQ,ox+tx*b,oz+tz*b,ox+tx*a,oz+tz*a,CURB,CURB+3.6,u0,v0,u0+0.25,v1);
-    if(SHOPS[k][0]&&['BAR','PIZZERIA','ALIMENTARI','MODA'].includes(SHOPS[k][0])&&Math.random()<0.8){const c=new THREE.Color(['#b8312f','#2e6e3e','#c9a227','#1f4f8a','#7a3b6b'][(Math.random()*5)|0]);
+    addQuad(shopQ,ox+tx*b,oz+tz*b,ox+tx*a,oz+tz*a,CURB,CURB+3.6,u0,v0,u1x,v1);
+    if(SHOPS[k][0]&&['bar','food','sweet','moda','shop'].includes(SHOPS[k][3])&&Math.random()<0.8){const c=new THREE.Color(['#b8312f','#2e6e3e','#c9a227','#1f4f8a','#7a3b6b'][(Math.random()*5)|0]);
       const k2=awnQ.pos.length/3,y=CURB+3.2,ax=ox+tx*a,az=oz+tz*a,bx=ox+tx*b,bz=oz+tz*b,ex=nx*1.3,ez=nz*1.3;
       awnQ.pos.push(ax,y+0.6,az,bx,y+0.6,bz,ax+ex,y,az+ez,bx+ex,y,bz+ez);for(let q=0;q<4;q++)awnQ.col.push(c.r,c.g,c.b);awnQ.idx.push(k2,k2+2,k2+1,k2+1,k2+2,k2+3);}}}
 
