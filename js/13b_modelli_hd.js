@@ -20,7 +20,7 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
   if(MODELS.hd_bus)try{const G=MODELS.hd_bus,M=measure(G.scene,{len:TYPES.bus.L,mirror:true}),dc=clip(G,/door/i);
     G.scene.traverse(o=>{if(o.isMesh&&o.material){const m=o.material;if(m.transparent){m.depthWrite=true;m.alphaTest=Math.max(m.alphaTest||0,0.05);}m.roughness=Math.min(m.roughness,0.5);}});
     X.bus=()=>{const{g,inner}=place(G.scene,M,false),T=TYPES.bus,hl=T.L/2;g.rotation.order='YZX';
-      const hM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15}),tM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15});
+      const hM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15}),tM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15,toneMapped:false});
       const indL=new THREE.MeshStandardMaterial({color:0x6b3a00,emissive:0xff8a00,emissiveIntensity:0}),indR=indL.clone();
       [1,-1].forEach(sd=>{const im=sd>0?indR:indL;[[hl+0.02,0.95,0.2],[-hl-0.02,1.2,0.15]].forEach(([x,y,o])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.1,0.12),im);b.position.set(x,y,sd*(T.W/2-o));g.add(b);});
         const t=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.3,0.16),tM);t.position.set(-hl-0.03,1.0,sd*(T.W/2-0.25));g.add(t);});
