@@ -17,6 +17,16 @@ function asphaltTex(){const c=document.createElement('canvas');c.width=c.height=
   for(let k=0;k<2;k++){g.fillStyle='rgba(30,31,34,.12)';const x=Math.random()*400,y=Math.random()*400;g.fillRect(x,y,60+Math.random()*80,40+Math.random()*60);}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return t;}
 const aTex=asphaltTex();
+// normal map dalla luminosità di una texture disegnata su canvas: le parti chiare sporgono, le scure rientrano
+const _nmC=new Map();
+function reliefOf(tex,str){if(!tex||!tex.image||!tex.image.getContext||QG.lo)return null;const key=tex.uuid+str;if(_nmC.has(key))return _nmC.get(key);
+  const c=tex.image,W=c.width,H=c.height;let d;try{d=c.getContext('2d').getImageData(0,0,W,H).data;}catch(e){return null;}
+  const L=new Float32Array(W*H);for(let i=0;i<W*H;i++)L[i]=(d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11)/255;
+  const o=document.createElement('canvas');o.width=W;o.height=H;const g=o.getContext('2d'),im=g.createImageData(W,H),q=im.data;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const l=L[y*W+(x-1+W)%W],r=L[y*W+(x+1)%W],u=L[((y-1+H)%H)*W+x],b=L[((y+1)%H)*W+x];let nx=(l-r)*str,ny=(b-u)*str,nz=1;const n=Math.hypot(nx,ny,nz);const j=(y*W+x)*4;
+    q[j]=(nx/n*0.5+0.5)*255;q[j+1]=(ny/n*0.5+0.5)*255;q[j+2]=(nz/n*0.5+0.5)*255;q[j+3]=255;}
+  g.putImageData(im,0,0);const t=new THREE.CanvasTexture(o);t.wrapS=tex.wrapS;t.wrapT=tex.wrapT;t.repeat.copy(tex.repeat);t.anisotropy=tex.anisotropy;_nmC.set(key,t);return t;}
+function addRelief(m,str,ns){if(!m||!m.map||m.normalMap)return m;const t=reliefOf(m.map,str);if(t){m.normalMap=t;m.normalScale=new THREE.Vector2(ns||0.7,ns||0.7);m.needsUpdate=true;}return m;}
 function canvasTex(size,draw){const c=document.createElement('canvas');c.width=c.height=size;draw(c.getContext('2d'),size);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t;}
 const grassTex=canvasTex(512,(g,n)=>{g.fillStyle='#6a8644';g.fillRect(0,0,n,n);
   for(let i=0;i<60;i++){const x=Math.random()*n,y=Math.random()*n,r=20+Math.random()*60,gr=g.createRadialGradient(x,y,0,x,y,r),c=Math.random()<0.5?'94,122,52':'120,140,66';gr.addColorStop(0,`rgba(${c},.45)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r);}

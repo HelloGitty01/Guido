@@ -249,6 +249,16 @@ let pools=null;
 function nightCube(){const f=(top)=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle=top?'#0b1426':'#06080c';g.fillRect(0,0,32,32);return c;};
   const t=new THREE.CubeTexture([f(1),f(1),f(1),f(0),f(1),f(1)]);t.needsUpdate=true;return t;}
 const dayEnv=scene.environment,nightEnv=nightCube();
+// riflessi di vernici e vetri presi dal cielo del momento (colori del cielo, sole, terreno), rifatti quando cambia l'ora
+const ENVGEN=(()=>{if(QG.lo)return null;let cur=null,last='';const hex=c=>'#'+c.getHexString();
+  const face=(k,sunOn)=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),U=skyMat.uniforms,gc=scene.fog.color.clone().multiplyScalar(0.42);
+    if(k==='up'){g.fillStyle=hex(U.top.value);g.fillRect(0,0,64,64);}else if(k==='down'){g.fillStyle=hex(gc);g.fillRect(0,0,64,64);}
+    else{const gr=g.createLinearGradient(0,0,0,64);gr.addColorStop(0,hex(U.top.value));gr.addColorStop(0.3,hex(U.mid.value));gr.addColorStop(0.49,hex(U.bot.value));gr.addColorStop(0.51,hex(gc.clone().multiplyScalar(1.3)));gr.addColorStop(1,hex(gc));g.fillStyle=gr;g.fillRect(0,0,64,64);}
+    if(sunOn){const y=32-Math.max(-0.2,SUNOFF.clone().normalize().y)*30,sg=g.createRadialGradient(32,y,0,32,y,30),sc=sun.color;sg.addColorStop(0,'rgba('+(sc.r*255|0)+','+(sc.g*255|0)+','+(sc.b*255|0)+',1)');sg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sg;g.fillRect(0,0,64,64);}
+    return c;};
+  return{make(force){const key=SUNOFF.x.toFixed(0)+SUNOFF.y.toFixed(0)+WX+TIME;if(!force&&key===last&&cur)return cur;last=key;const d=SUNOFF.clone().normalize(),ax=Math.abs(d.x)>Math.abs(d.z)?(d.x>0?0:1):(d.z>0?4:5);
+    const F=['px','nx','up','down','pz','nz'].map((k,i)=>face(k==='px'||k==='nx'||k==='pz'||k==='nz'?'side':k,i===ax));const cb=new THREE.CubeTexture(F);cb.encoding=THREE.sRGBEncoding;cb.needsUpdate=true;
+    if(cur&&cur!==dayEnv)setTimeout((o=>()=>o.dispose())(cur),2000);cur=cb;return cb;}};})();
 // pioggia
 const RN=MOBILE?900:2200,rainPos=new Float32Array(RN*6);for(let i=0;i<RN;i++){const x=(Math.random()-0.5)*50,y=Math.random()*25,z=(Math.random()-0.5)*50;rainPos.set([x,y,z,x,y-0.5,z],i*6);}
 const rainGeo=new THREE.BufferGeometry();rainGeo.setAttribute('position',new THREE.BufferAttribute(rainPos,3));
@@ -279,14 +289,14 @@ function applyEnv(tick){
   if(TIME==='cycle')sunFor(CLOCK);else if(TIME==='sunset')SUNOFF.set(-110,30,30);else SUNOFF.set(-60,90,40);
   skyMat.uniforms.uCov.value=WX==='rain'?0.3:WX==='fog'?0.35:0.56;skyMat.uniforms.uDay.value=K.day;const chg=!tick||lastNight!==NIGHT;if(NWT&&NWT.setNight&&chg)NWT.setNight(NIGHT);
   const U=skyMat.uniforms,fog=scene.fog;let sunI=K.sunI,sunC=K.sunC,hemiI=K.hemiI,fogC=K.fogC,fogN=260,fogF=K.fogF,exp=K.exp,clouds_c=K.cl;
-  U.top.value.copy(K.top);U.mid.value.copy(K.mid);U.bot.value.copy(K.bot);{const en=NIGHT?nightEnv:dayEnv;if(scene.environment!==en)scene.environment=en;}
+  U.top.value.copy(K.top);U.mid.value.copy(K.mid);U.bot.value.copy(K.bot);if(NIGHT||!ENVGEN){const en=NIGHT?nightEnv:dayEnv;if(scene.environment!==en)scene.environment=en;}
   if(WX==='rain'){U.top.value.multiplyScalar(0.55).add(new THREE.Color(0x30353c));U.mid.value.lerp(new THREE.Color(0x6f7782),0.7);U.bot.value.lerp(new THREE.Color(0x8a9199),0.7);sunI*=0.4;hemiI*=1.1;fogC=new THREE.Color(0x0c1016).lerp(new THREE.Color(0x8a9199),Math.min(1,K.day*1.15));fogN=60;fogF=650;clouds_c=new THREE.Color(0x222831).lerp(new THREE.Color(0x8f969e),Math.min(1,K.day*1.15));}
   if(WX==='fog'){U.mid.value.lerp(new THREE.Color(0xc3c8cc),0.8);U.bot.value.lerp(new THREE.Color(0xc3c8cc),0.9);sunI*=0.5;fogC=new THREE.Color(0x10151d).lerp(new THREE.Color(0xc3c8cc),Math.min(1,K.day*1.15));fogN=8;fogF=170;}
   if(NW&&WX!=='fog'){fogN*=2.5;fogF*=WX==='rain'?2.5:4.4;}
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
    if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(0xa4abb3).multiplyScalar(0.25+0.75*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}
-  sun.intensity=sunI;sun.color.set(sunC);hemiL.intensity=hemiI;ENVB.sun=sunI;ENVB.hemi=hemiI;ENVB.exp=exp;fog.color.set(fogC);fog.near=fogN*QG.fog;fog.far=fogF*QG.fog;scene.background.set(fogC);renderer.toneMappingExposure=exp;
+  sun.intensity=sunI;sun.color.set(sunC);hemiL.intensity=hemiI;U.uSun.value.copy(SUNOFF).normalize();U.uSunC.value.set(sunC).multiplyScalar(WX==='clear'?1:0.35);if(!NIGHT&&ENVGEN&&(!tick||(frameN%600===0))){const t=ENVGEN.make(!tick);if(t&&scene.environment!==t)scene.environment=t;}ENVB.sun=sunI;ENVB.hemi=hemiI;ENVB.exp=exp;fog.color.set(fogC);fog.near=fogN*QG.fog;fog.far=fogF*QG.fog;scene.background.set(fogC);renderer.toneMappingExposure=exp;
   clouds.forEach(c=>{c.material.color.set(clouds_c);c.visible=WX!=='fog';});
   const night=NIGHT;if(chg)facadeMats.forEach(m=>{m.emissive.set(0xffffff);m.emissiveMap=night?litTex:null;m.emissiveIntensity=night?0.85:0;m.needsUpdate=true;});
   headM.emissive.set(0xffd9a0);headM.emissiveIntensity=night?2.5:0;lastNight=NIGHT;

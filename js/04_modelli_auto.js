@@ -13,6 +13,7 @@ const TYPES={
   zil:{L:8.76,W:2.2,hb:1.3,H:3.09,fleet:true,big:true,camL:12,camH:5.6,gh:[[2.4,1.6],[2.4,2.6],[3.0,2.6],[3.3,1.6]]},
   daily:{L:5.6,W:2.0,hb:1.15,H:2.4,fleet:true,gh:[[-2.7,1.2],[-2.7,2.3],[1.5,2.3],[2.0,1.2]]},
   taxi:{L:5.35,W:2.0,hb:0.95,H:1.5,fleet:true,gh:[[-1.9,0.95],[-1.55,1.45],[0.55,1.45],[1.1,0.95]]},
+  bus:{L:11.2,W:2.5,hb:1.1,H:3.05,bus:true,gh:[[-5,1.2],[-5,2.7],[5,2.7],[5.4,1.2]]},
   furgone:{L:5.0,W:2.0,hb:1.05,H:2.25,gh:[[0.95,1.2],[0.95,2.0],[1.42,2.0],[1.91,1.2]],van:true}
 };
 const COLORS=[0xe9e9e6,0xbfc3c7,0x8e9399,0x2a2d31,0x1c2a44,0x6b1d22,0x3e4a3b,0x5d6f84,0xd9d4c7,0x7a2f22];
@@ -68,6 +69,27 @@ function taper(geo,f){const p=geo.attributes.position;for(let i=0;i<p.count;i++)
 const cl01=v=>Math.max(0,Math.min(1,v));
 const rimG=new THREE.CylinderGeometry(0.2,0.2,0.02,16);rimG.rotateX(Math.PI/2);
 const hubM=mat(0x55595e,{metalness:0.5,roughness:0.5});
+// autobus urbano: cassa lunga, fascia vetrata continua, porte a destra, due assi
+function makeBus(){const g=new THREE.Group();g.rotation.order='YZX';const T=TYPES.bus,hl=T.L/2,W=T.W;
+  const col=[0xe07b1a,0x2f6fb0,0x3f8f4a,0xd8d8d2][(Math.random()*4)|0],paint=new THREE.MeshStandardMaterial({color:col,roughness:0.32,metalness:0.25});
+  const lowM=new THREE.MeshStandardMaterial({color:0xe9e9e4,roughness:0.4,metalness:0.2});
+  const body=new THREE.Mesh(rbox(T.L,2.75,W,0.18),paint);body.position.set(0,0.3+1.375,0);body.castShadow=true;g.add(body);
+  const skirt=new THREE.Mesh(rbox(T.L+0.02,0.55,W+0.02,0.08),lowM);skirt.position.set(0,0.62,0);g.add(skirt);
+  const band=new THREE.Mesh(new THREE.BoxGeometry(T.L-1.3,1.05,W+0.03),glassM);band.position.set(-0.45,2.15,0);g.add(band);
+  const ws=new THREE.Mesh(new THREE.BoxGeometry(0.04,1.75,W-0.18),glassM);ws.position.set(hl+0.01,1.85,0);g.add(ws);
+  const rw=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.9,W-0.4),glassM);rw.position.set(-hl-0.01,2.2,0);g.add(rw);
+  const dsp=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.28,1.5),new THREE.MeshStandardMaterial({color:0x111,emissive:0xffa21a,emissiveIntensity:0.9}));dsp.position.set(hl+0.02,2.88,0);g.add(dsp);
+  const doorM=new THREE.MeshStandardMaterial({color:0x1a1d20,roughness:0.15,metalness:0.6});
+  [hl-1.3,0.2].forEach(x=>{const d=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.4,0.04),doorM);d.position.set(x,1.55,W/2+0.02);g.add(d);});
+  const roof=new THREE.Mesh(rbox(3.2,0.3,1.6,0.08),lowM);roof.position.set(-1.5,3.2,0);g.add(roof);
+  g.userData.wheels=[];[hl-2.5,-hl+2.9].forEach(x=>[1,-1].forEach(sd=>{const w=new THREE.Mesh(wheelG,tyreM);w.scale.set(1.55,1.55,1.15);w.position.set(x,0.48,sd*(W/2-0.22));const r=new THREE.Mesh(rimG,rimMat);r.position.z=sd*0.1;w.add(r);g.add(w);g.userData.wheels.push(w);}));
+  const hM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15}),tM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15});
+  const indL=new THREE.MeshStandardMaterial({color:0x6b3a00,emissive:0xff8a00,emissiveIntensity:0}),indR=indL.clone();
+  [1,-1].forEach(sd=>{const h=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.16,0.4),hM);h.position.set(hl+0.03,0.85,sd*(W/2-0.35));g.add(h);
+    const t=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.4,0.22),tM);t.position.set(-hl-0.03,1.0,sd*(W/2-0.2));g.add(t);
+    const im=sd>0?indR:indL;[[hl+0.03,0.85,0.66],[-hl-0.03,1.5,0.2]].forEach(([x,y,o])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.12,0.16),im);b.position.set(x,y,sd*(W/2-o));g.add(b);});});
+  const blob=new THREE.Mesh(new THREE.PlaneGeometry(T.L+0.8,W+0.7),blobM);blob.rotation.x=-Math.PI/2;blob.position.y=0.035;g.add(blob);
+  g.userData.tailM=tM;g.userData.headM=hM;g.userData.indL=indL;g.userData.indR=indR;g.userData.body=body;g.userData.paint=paint;return g;}
 function makeTruck(color){const g=new THREE.Group();g.rotation.order='YZX';const T=TYPES.camion,hl=T.L/2;
   const cabM=new THREE.MeshStandardMaterial({color,roughness:0.35,metalness:0.3});
   const cab=new THREE.Mesh(rbox(2.2,2.5,T.W,0.15),cabM);cab.position.set(hl-1.1,1.25+0.55,0);cab.castShadow=true;g.add(cab);
@@ -164,7 +186,7 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
     m.color=new THREE.Color({tail:0xb01008,head:0xf4f4ee,rev:0xf4f4f4,blinkL:0xff9a10,blinkR:0xff9a10}[kind]);if(kind==='tail'||kind==='blinkL'||kind==='blinkR'){m.map=null;}
     m.emissiveMap=null;m.emissiveIntensity=0;litC[key]=m;allMats.push(m);return m;};
   const anyC=new Map();const own=src=>{if(!fine)return src;if(!anyC.has(src)){const m=src.clone();anyC.set(src,m);allMats.push(m);}return anyC.get(src);};
-  const paintOf=src=>{if(!paintCache.has(src)){const m=src.clone();if(T.fleet){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color);if(k==='utilitaria')m.color.multiplyScalar(1.7);if(opt.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.3;m.roughness=0.32;}m.envMapIntensity=0.9;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
+  const paintOf=src=>{if(!paintCache.has(src)){let m=src.clone();if(fine&&!QG.lo&&m.isMeshStandardMaterial&&!m.isMeshPhysicalMaterial){const p=new THREE.MeshPhysicalMaterial();THREE.MeshStandardMaterial.prototype.copy.call(p,m);p.clearcoat=0.85;p.clearcoatRoughness=0.07;p.envMapIntensity=Math.max(1,m.envMapIntensity||1);m=p;}if(T.fleet){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color);if(k==='utilitaria')m.color.multiplyScalar(1.7);if(opt.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.3;m.roughness=0.32;}m.envMapIntensity=0.9;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
   const dress=obj=>{obj.traverse(o=>{if(!o.isMesh)return;const r=o.userData.role;
     if(r==='paint'){o.material=paintOf(o.material);o.castShadow=shadow;}
     else if(r==='tail'||r==='head'||r==='rev'||r==='blinkL'||r==='blinkR')o.material=lit(o.material,r);
@@ -223,6 +245,7 @@ function updateCarLOD(){if(!CARLOD.inst)buildCarLOD();const cx=camera.position.x
 function makeCar(k,color,shadow=true,fine=false,opt={}){
   if(CARX[k])return makeCarGLB(k,color,shadow,fine,opt);
   if(TYPES[k].truck)return makeTruck(color);
+  if(TYPES[k].bus)return makeBus();
   const T=TYPES[k],g=new THREE.Group(),hl=T.L/2,paint=new THREE.MeshStandardMaterial({color,roughness:0.28,metalness:0.3,envMapIntensity:0.9});
   g.rotation.order='YZX';
   // carrozzeria
@@ -292,7 +315,7 @@ function makeCar(k,color,shadow=true,fine=false,opt={}){
 const typeKeys=Object.keys(TYPES).filter(k=>k!=='camion'&&!TYPES[k].fleet),typeW=CARX.utilitaria?[0.26,0.26,0.2,0.17,0.11]:CARX.berlina?[0,0.36,0.28,0.24,0.12]:[0.32,0.2,0.2,0.2,0.08];
 // auto della flotta del giocatore anche nel traffico (il camion più di rado)
 const FLEET_TRAF=[['volvo',1],['wagoneer',0.5],['hellcat',0.8],['taxi',1.2],['zil',0.5],['daily',0.8]];
-function randTrafType(){if(Math.random()<(window.__fleetP??(MOBILE?0.1:0.15))){const ok=FLEET_TRAF.filter(([k])=>CARX[k]&&TYPES[k]);const tot=ok.reduce((a,[,w])=>a+w,0);let r=Math.random()*tot;for(const[k,w]of ok){if((r-=w)<=0)return k;}}return randType();}
+function randTrafType(){if(Math.random()<(window.__busP??0.05))return 'bus';if(Math.random()<(window.__fleetP??(MOBILE?0.1:0.15))){const ok=FLEET_TRAF.filter(([k])=>CARX[k]&&TYPES[k]);const tot=ok.reduce((a,[,w])=>a+w,0);let r=Math.random()*tot;for(const[k,w]of ok){if((r-=w)<=0)return k;}}return randType();}
 function randType(){let r=Math.random(),a=0;for(let i=0;i<5;i++){a+=typeW[i];if(r<a)return typeKeys[i];}return 'utilitaria';}
 const randColor=()=>COLORS[(Math.random()*COLORS.length)|0];
 

@@ -28,17 +28,21 @@ scene.fog = new THREE.Fog(HORIZON, 260, 1500);
 const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.08, 6000);
 // volta celeste a gradiente
 const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,fog:false,
-  uniforms:{top:{value:new THREE.Color(0x3f73c4)},mid:{value:new THREE.Color(0x8db6e3)},bot:{value:new THREE.Color(HORIZON)},uT:{value:0},uCov:{value:0.56},uDay:{value:1}},
+  uniforms:{top:{value:new THREE.Color(0x3f73c4)},mid:{value:new THREE.Color(0x8db6e3)},bot:{value:new THREE.Color(HORIZON)},uT:{value:0},uCov:{value:0.56},uDay:{value:1},uSun:{value:new THREE.Vector3(-0.5,0.7,0.4).normalize()},uSunC:{value:new THREE.Color(0xfff2dc)}},
   vertexShader:'varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:`uniform vec3 top,mid,bot;uniform float uT,uCov,uDay;varying vec3 vP;
+  fragmentShader:`uniform vec3 top,mid,bot,uSun,uSunC;uniform float uT,uCov,uDay;varying vec3 vP;
     float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float ns(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
     float fb(vec2 p){float s=0.0,a=0.5;for(int k=0;k<5;k++){s+=a*ns(p);p=p*2.03+vec2(1.7,9.2);a*=0.5;}return s;}
     void main(){float h=max(vP.y,0.0);vec3 c=mix(bot,mid,smoothstep(0.0,0.12,h));c=mix(c,top,smoothstep(0.12,0.65,h));
+      float sd=max(dot(normalize(vP),normalize(uSun)),0.0),low=1.0-smoothstep(0.0,0.45,max(uSun.y,0.0));
+      c+=uSunC*(pow(sd,6.0)*0.22+pow(sd,2.0)*0.06)*(0.5+low)*uDay;c=mix(c,uSunC*1.05,pow(sd,3.0)*(1.0-smoothstep(0.0,0.22,h))*0.55*low*uDay);float cl=0.0;
       if(vP.y>0.0){vec2 p=vP.xz/(vP.y+0.18)*1.4+vec2(uT*0.006,uT*0.0025);float n=fb(p),sh=fb(p*1.7+vec2(0.4,0.1));
-        float cl=smoothstep(uCov,uCov+0.22,n)*smoothstep(0.0,0.14,vP.y);vec3 cc=mix(vec3(0.66,0.69,0.74),vec3(1.0,0.99,0.97),clamp(sh*1.6-0.35,0.0,1.0));
+        cl=smoothstep(uCov,uCov+0.22,n)*smoothstep(0.0,0.14,vP.y);vec3 cc=mix(vec3(0.66,0.69,0.74),vec3(1.0,0.99,0.97),clamp(sh*1.6-0.35,0.0,1.0));
         cc=mix(top*1.35+vec3(0.03),cc,uDay);c=mix(c,cc,cl*0.92);
-        float ci=smoothstep(0.62,0.9,fb(vec2(p.x*0.35,p.y*2.2)+3.0))*smoothstep(0.1,0.5,vP.y)*0.35*uDay;c=mix(c,vec3(1.0),ci*(1.0-cl));}
+        float ci=smoothstep(0.62,0.9,fb(vec2(p.x*0.35,p.y*2.2)+3.0))*smoothstep(0.1,0.5,vP.y)*0.35*uDay;c=mix(c,vec3(1.0),ci*(1.0-cl));
+        c+=uSunC*pow(sd,24.0)*cl*0.35*uDay;}
+      c+=uSunC*(smoothstep(0.9993,0.9997,sd)*6.0+pow(sd,350.0)*1.2)*(1.0-cl)*uDay;
       gl_FragColor=vec4(c,1.0);}`});
 const sky=new THREE.Mesh(new THREE.SphereGeometry(4000,32,16),skyMat);sky.renderOrder=-1;scene.add(sky);
 // mappa d'ambiente per i riflessi (vernici, vetri, cromature): cubemap disegnata su canvas

@@ -1,6 +1,17 @@
 // Guido · 07 audio — parte del codice del gioco (i file in js/ condividono lo stesso spazio globale e vengono eseguiti in ordine)
 // ================= AUDIO =================
 let AC=null,eng=null;
+// parametri acustici di ogni motore: lunghezze dei tubi (in campioni), marmitta, durata dello scoppio (diesel = più secco)
+function engineParams(k,P){const base={cylinders:P.cyl||4,intakeWaveguideLength:90,exhaustWaveguideLength:100,extractorWaveguideLength:100,intakeOpenReflectionFactor:0.01,intakeClosedReflectionFactor:0.95,
+  exhaustOpenReflectionFactor:0.01,exhaustClosedReflectionFactor:0.95,ignitionTime:P.diesel?0.009:0.016,straightPipeWaveguideLength:128,straightPipeReflectionFactor:0.01,mufflerElementsLength:[10,15,20,25],action:0.1,outletWaveguideLength:5,outletReflectionFactor:0.01};
+  const T={utilitaria:{exhaustWaveguideLength:70,extractorWaveguideLength:80,straightPipeWaveguideLength:100,mufflerElementsLength:[8,12,16,20],action:0.12,ignitionTime:0.018},
+    volvo:{exhaustWaveguideLength:110,straightPipeWaveguideLength:160,mufflerElementsLength:[12,18,24,30],action:0.15},
+    wagoneer:{exhaustWaveguideLength:140,extractorWaveguideLength:120,straightPipeWaveguideLength:200,mufflerElementsLength:[14,20,28,36],action:0.08,ignitionTime:0.02,offsets:[0,0,0.03,-0.03,0,0,0.03,-0.03]},
+    hellcat:{exhaustWaveguideLength:100,extractorWaveguideLength:90,straightPipeWaveguideLength:150,mufflerElementsLength:[10,15,20,25],action:0.05,ignitionTime:0.013,offsets:[0,0,0.035,-0.035,0,0,0.035,-0.035]},
+    zil:{exhaustWaveguideLength:180,extractorWaveguideLength:150,straightPipeWaveguideLength:260,mufflerElementsLength:[20,28,36,44],action:0.2},
+    taxi:{exhaustWaveguideLength:130,straightPipeWaveguideLength:190,mufflerElementsLength:[14,22,30,38],action:0.14,offsets:[0,0,0.02,-0.02,0,0,0.02,-0.02]},
+    daily:{exhaustWaveguideLength:100,straightPipeWaveguideLength:150,mufflerElementsLength:[12,18,24,30],action:0.15}};
+  return Object.assign(base,T[k]||{});}
 function initAudio(){
   if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();}
   if(eng){eng.stopAll();}
@@ -48,6 +59,12 @@ function initAudio(){
   // riverbero della galleria: risposta all'impulso sintetica (2 s), dosata da tunnelUpdate
   const cv=AC.createConvolver();{const n=AC.sampleRate*2,b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.2)*(i<200?i/200:1);}cv.buffer=b;}
   const rvg=AC.createGain();rvg.gain.value=0;master.connect(cv).connect(rvg).connect(ACOUT());
+  // motore a guide d'onda (AudioWorklet): il suono nasce da cilindri, collettori e marmitta; gli oscillatori restano sotto come corpo
+  if(AC.audioWorklet&&CFG.wg!==false){const KP=P,mk=()=>{if(!eng||eng.P!==KP)return;try{const n=new AudioWorkletNode(AC,'engine-sound-processor',{numberOfInputs:0,numberOfOutputs:3,processorOptions:engineParams(selKey,P)});
+      const gI=AC.createGain(),gB=AC.createGain(),gO=AC.createGain();gI.gain.value=0.3;gB.gain.value=0.55;gO.gain.value=1;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=30;
+      const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;lp.Q.value=0.4;const g=AC.createGain();g.gain.value=0;n.connect(gI,0);n.connect(gB,1);n.connect(gO,2);[gI,gB,gO].forEach(x=>x.connect(hp));hp.connect(lp).connect(g).connect(master);
+      eng.wk={n,g,lp,rpm:n.parameters.get('rpm'),thr:n.parameters.get('throttle')};nodes.push({stop(){try{n.disconnect();g.disconnect();}catch(e){}}});}catch(e){console.warn('motore a guide d\'onda',e);}};
+    if(window.__wkReady)setTimeout(mk,0);else AC.audioWorklet.addModule('js/motore_worklet.js').then(()=>{window.__wkReady=1;mk();}).catch(e=>console.warn(e));}
   nz.start();
   eng={P,SN,bl,rvg,scf,scg,osc,cab,master,cbp,mod,cg,dmod,tg,sqg,sq,sq2,sqf,sqb1,sqb2,wg,wf,rg,rf,stopAll:()=>nodes.forEach(n=>{try{n.stop();}catch(e){}})};
   initTrafficVoices();initSirens();
@@ -55,9 +72,11 @@ function initAudio(){
 function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
   const f=Math.max(10,st.rpm/60*P.cyl/2),load=st.load,r=st.rpm/P.red;
   if(!isFinite(f)||!isFinite(load)||!isFinite(r))return;
-  eng.osc.forEach(x=>{x.os.frequency.setTargetAtTime(f*x.o,t,0.025);x.g.gain.setTargetAtTime(x.a*(x.o<=1?0.55:0.25+load*0.55+r*0.3),t,0.05);});
+  const wk=eng.wk,ok=wk?0.45:1;
+  if(wk){wk.rpm.setTargetAtTime(Math.max(300,st.rpm),t,0.02);wk.thr.setTargetAtTime(Math.max(0.06,load),t,0.05);wk.g.gain.setTargetAtTime(0.62*Math.pow(4/(P.cyl||4),0.6)*(0.55+load*0.65+r*0.25),t,0.05);wk.lp.frequency.setTargetAtTime((view==='cockpit'?850:1500)+load*1600+r*1400,t,0.06);}
+  eng.osc.forEach(x=>{x.os.frequency.setTargetAtTime(f*x.o,t,0.025);x.g.gain.setTargetAtTime(ok*x.a*(x.o<=1?0.55:0.25+load*0.55+r*0.3),t,0.05);});
   eng.mod.frequency.setTargetAtTime(f,t,0.025);eng.dmod.frequency.setTargetAtTime(f*0.5,t,0.03);
-  eng.cbp.frequency.setTargetAtTime(150+f*2.5+load*300,t,0.05);eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9),t,0.05);
+  eng.cbp.frequency.setTargetAtTime(150+f*2.5+load*300,t,0.05);eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9)*(wk?0.6:1),t,0.05);
   eng.cab.frequency.setTargetAtTime((P.diesel?420:520)+load*(P.diesel?500:900)+r*600,t,0.06);
   eng.master.gain.setTargetAtTime((0.10+load*0.10+r*0.07)*(eng.SN.exh||1)*(CFG.engVol??1),t,0.06);
   if(eng.bl){const bf=st.rpm/60*11.5;eng.bl.o1.frequency.setTargetAtTime(bf,t,0.03);eng.bl.o2.frequency.setTargetAtTime(bf*2.02,t,0.03);eng.bl.g.gain.setTargetAtTime(Math.min(0.06,(0.004+load*0.05)*r*r*1.6)*(CFG.engVol??1),t,0.05);}
