@@ -335,7 +335,7 @@ function updateRain(dt){if(!rain.visible)return;const c=camera.position;rain.pos
 let rainSnd=null;
 const ENVK={night:{top:0x03060f,mid:0x0a1428,bot:0x141d30,sunI:0.16,sunC:0x8fa6d8,hemiI:0.1,fogC:0x0e1524,fogF:900,cl:0x2a3242,exp:1.0,day:0.12},
   dawn:{top:0x2f4a80,mid:0xc59aa6,bot:0xf2c6a0,sunI:1.0,sunC:0xffc79e,hemiI:0.3,fogC:0xdcbcab,fogF:1500,cl:0xffd8cc,exp:0.95,day:0.7},
-  day:{top:0x3f73c4,mid:0x8db6e3,bot:HORIZON,sunI:1.75,sunC:0xfff0d8,hemiI:0.45,fogC:HORIZON,fogF:1500,cl:0xffffff,exp:0.88,day:1},
+  day:{top:0x5b8acb,mid:0xa6c4e2,bot:HORIZON,sunI:1.75,sunC:0xfff0d8,hemiI:0.45,fogC:HORIZON,fogF:1500,cl:0xffffff,exp:0.88,day:1},
   sunset:{top:0x2b4a86,mid:0xd9906a,bot:0xf3b47e,sunI:1.25,sunC:0xffa566,hemiI:0.35,fogC:0xe9b48a,fogF:1500,cl:0xffc9a0,exp:0.95,day:0.75}};
 const ENVSEQ=[[0,'night'],[5.1,'night'],[6.4,'dawn'],[8.3,'day'],[17.2,'day'],[19,'sunset'],[20.4,'night'],[24,'night']];
 let CLOCK=7,NIGHT=false,DUSK=false,envAcc=0,lastNight=null;const SUNOFF=new THREE.Vector3(-60,90,40);
@@ -360,12 +360,13 @@ function applyEnv(tick){
   U.top.value.copy(K.top);U.mid.value.copy(K.mid);U.bot.value.copy(K.bot);if(NIGHT||!ENVGEN){const en=NIGHT?nightEnv:dayEnv;if(scene.environment!==en)scene.environment=en;}
   if(WX==='rain'){U.top.value.multiplyScalar(0.55).add(new THREE.Color(0x30353c));U.mid.value.lerp(new THREE.Color(0x6f7782),0.7);U.bot.value.lerp(new THREE.Color(0x8a9199),0.7);sunI*=0.4;hemiI*=1.1;fogC=new THREE.Color(0x0c1016).lerp(new THREE.Color(0x8a9199),Math.min(1,K.day*1.15));fogN=60;fogF=650;clouds_c=new THREE.Color(0x222831).lerp(new THREE.Color(0x8f969e),Math.min(1,K.day*1.15));}
   if(WX==='fog'){U.mid.value.lerp(new THREE.Color(0xc3c8cc),0.8);U.bot.value.lerp(new THREE.Color(0xc3c8cc),0.9);sunI*=0.5;fogC=new THREE.Color(0x10151d).lerp(new THREE.Color(0xc3c8cc),Math.min(1,K.day*1.15));fogN=8;fogF=170;}
-  if(NW&&WX!=='fog'){fogN*=2.5;fogF*=WX==='rain'?2.5:4.4;}
+  if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=NIGHT?4.4:3.9;}}
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
    if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(0xa4abb3).multiplyScalar(0.25+0.75*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}
   sun.intensity=sunI;sun.color.set(sunC);hemiL.intensity=hemiI;U.uSun.value.copy(SUNOFF).normalize();U.uSunC.value.set(sunC).multiplyScalar(WX==='clear'?1:0.35);if(!NIGHT&&ENVGEN&&(!tick||(frameN%600===0))){const t=ENVGEN.make(!tick);if(t&&scene.environment!==t)scene.environment=t;}ENVB.sun=sunI;ENVB.hemi=hemiI;ENVB.exp=exp;fog.color.set(fogC);fog.near=fogN*QG.fog;fog.far=fogF*QG.fog;scene.background.set(fogC);renderer.toneMappingExposure=exp;
   clouds.forEach(c=>{c.material.color.set(clouds_c);c.visible=WX!=='fog';});
+  HZN.color(fog.color,K.day||0);
   const night=NIGHT;if(chg)facadeMats.forEach(m=>{m.emissive.set(0xffffff);m.emissiveMap=night?litTex:null;m.emissiveIntensity=night?0.85:0;m.needsUpdate=true;});
   headM.emissive.set(0xffd9a0);headM.emissiveIntensity=night?2.5:0;lastNight=NIGHT;
   if(!pools){pools=new THREE.InstancedMesh(new THREE.PlaneGeometry(11,11).rotateX(-Math.PI/2),poolM,lampPos.length);const o=new THREE.Object3D();lampPos.forEach(([x,z],i)=>{o.position.set(x,CURB+0.04,z);o.updateMatrix();pools.setMatrixAt(i,o.matrix);});scene.add(pools);}
@@ -380,3 +381,25 @@ function applyEnv(tick){
 }
 
 
+
+/* ---------- orizzonte a strati: tre catene di colline lontane, sempre più velate ----------
+   seguono il giocatore, si abbassano verso il mare e prendono il colore della foschia */
+const HZN={L:[],cx:null,cz:null,N:200,
+  init(){if(this.L.length||!NW)return;const N=this.N;
+    [[5500,0.56,680,11],[4500,0.4,500,23],[3600,0.26,340,37]].forEach(([R,hz,amp,sd],i)=>{const g=new THREE.BufferGeometry(),pos=new Float32Array((N+1)*2*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      const idx=[];for(let k=0;k<N;k++){const a=k*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}g.setIndex(idx);
+      const me=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x8899aa,fog:false,side:THREE.DoubleSide,depthWrite:false}));me.frustumCulled=false;me.renderOrder=-0.9+i*0.1;me.visible=false;scene.add(me);
+      this.L.push({me,R,hz,amp,sd});});},
+  ridge(a,sd){let r=0,am=1,f=3,t=0;for(let k=0;k<6;k++){r+=am*Math.sin(a*f+sd*(k+1)*2.3+Math.sin(a*f*0.5+sd)*1.3);t+=am;am*=0.55;f*=2.1;}r=0.5+0.5*r/t;return Math.max(0,Math.min(1,r))**1.6;},
+  build(px,pz){const N=this.N,gy=(pl.terrH||NW.Hg(px,pz)||0);
+    for(const Ly of this.L){const P=Ly.me.geometry.attributes.position.array;
+      for(let k=0;k<=N;k++){const a=k/N*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);let land=0,hm=-1e9,n=0;
+        for(let d=1200;d<=Ly.R;d+=700){const x=px+ca*d,z=pz+sa*d;n++;let w=null;try{w=waterLv(x,z);}catch(e){}const h=NW.Hg(x,z);if(w==null&&h>2){land++;hm=Math.max(hm,h);}}
+        const lf=land/n,base=Math.max(gy-30,hm*0.85),top=base+Ly.amp*(0.12+0.88*this.ridge(a,Ly.sd))*(0.12+0.88*lf);
+        P.set([ca*Ly.R,gy-600,sa*Ly.R,ca*Ly.R,Math.max(top,gy+25+Ly.amp*0.05),sa*Ly.R],k*6);}
+      Ly.me.geometry.attributes.position.needsUpdate=true;Ly.me.position.set(px,0,pz);}
+    this.cx=px;this.cz=pz;this.color();},
+  tick(){if(!NW||!started)return;this.init();if(!this.L.length)return;const x=camera.position.x,z=camera.position.z;
+    if(this.cx==null||Math.hypot(x-this.cx,z-this.cz)>350)this.build(x,z);else for(const Ly of this.L)Ly.me.position.set(this.cx,0,this.cz);},
+  color(fc,day){if(fc){this.fc=fc.clone();this.day=day;}if(!this.L.length||!this.fc)return;fc=this.fc;day=this.day;const base=fc.clone().multiplyScalar(0.42+0.06*day).lerp(new THREE.Color(DUSK?0x4d4a72:0x35506a),(DUSK?0.6:0.45)*day);
+    for(const Ly of this.L){Ly.me.material.color.copy(base).lerp(fc,Ly.hz);Ly.me.visible=WX!=='fog'&&this.cx!=null;}}};

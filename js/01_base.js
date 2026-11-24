@@ -26,9 +26,20 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.
 document.body.appendChild(renderer.domElement);
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);font-size:18px;z-index:9;text-align:center;padding:20px';d.textContent='La grafica si è interrotta (memoria del dispositivo esaurita). Ricarica la pagina.';document.body.appendChild(d);});
 const scene = new THREE.Scene();
-const HORIZON=0xc9dbe8;
+const HORIZON=0xd3e0e8;
 scene.background = new THREE.Color(HORIZON);
 scene.fog = new THREE.Fog(HORIZON, 260, 1500);
+/* foschia atmosferica: cresce in fretta nei primi chilometri e poi si stabilizza (prospettiva aerea),
+   più un ritocco colore leggero applicato prima della nebbia, così l'orizzonte resta identico al cielo */
+THREE.ShaderChunk.fog_fragment=`#ifdef USE_FOG
+{vec3 gq=gl_FragColor.rgb;float lq=dot(gq,vec3(0.299,0.587,0.114));gq=mix(vec3(lq),gq,0.84);gq=gq*vec3(1.025,1.0,0.965)+vec3(0.004,0.008,0.02)*(1.0-clamp(lq*2.0,0.0,1.0));gl_FragColor.rgb=gq;}
+#ifdef FOG_EXP2
+float fogFactor=1.0-exp(-fogDensity*fogDensity*fogDepth*fogDepth);
+#else
+float fT=clamp((fogDepth-fogNear)/(fogFar-fogNear),0.0,1.0);float fogFactor=(1.0-exp(-2.6*fT))/0.92573;
+#endif
+gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,clamp(fogFactor,0.0,1.0));
+#endif`;
 const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.08, 6000);
 // volta celeste a gradiente
 const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,fog:false,

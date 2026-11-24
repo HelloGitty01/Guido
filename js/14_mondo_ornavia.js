@@ -7,10 +7,12 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const hsh=(i,j)=>{let h=(i*374761393+j*668265263)|0;h=(h^(h>>>13))*1274126177|0;return ((h^(h>>>16))>>>0)/4294967295;};
   const vn=(x,z)=>{const i=Math.floor(x),j=Math.floor(z),u=x-i,v=z-j,su=u*u*(3-2*u),sv=v*v*(3-2*v);return (hsh(i,j)*(1-su)+hsh(i+1,j)*su)*(1-sv)+(hsh(i,j+1)*(1-su)+hsh(i+1,j+1)*su)*sv;};
   const fbm=(x,z,o)=>{let a=0,f=1,am=0.5;for(let k=0;k<o;k++){a+=am*vn(x*f,z*f);f*=2.03;am*=0.5;}return a;};
+  // boschetti: macchie d'alberi raggruppate invece di alberi sparsi uniformi
+  const CLUMP=(x,z,h)=>h<6?0:sstep(0.6,0.74,fbm(x/120+5.3,z/120-2.1,2)/0.75);
   const forestF=(x,z,h,sl)=>{if(h<85)return 0;const n=fbm(x/700+11,z/700,3);return sstep(0.42,0.6,n+sstep(110,260,h)*0.22+sl*0.5)*(1-sstep(950,1150,h));};
   // ---------- materiali ----------
   const ROCK=(()=>{const I=window.HDON&&window.HDIMG;if(!I||!I.roccia)return null;const t=new THREE.Texture(I.roccia);t.wrapS=t.wrapT=THREE.MirroredRepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.needsUpdate=true;return t;})();
-  const terrM=addRelief(new THREE.MeshStandardMaterial({map:grassTex,vertexColors:true,roughness:1,envMapIntensity:0.35}),3,0.6);
+  const terrM=addRelief(new THREE.MeshStandardMaterial({map:grassTex,vertexColors:true,roughness:1,envMapIntensity:0.35}),3,0.6);terrM.color.setRGB(1.1,0.95,0.84);
   const farM=terrM.clone();const nearBox={value:new THREE.Vector4(1,1,0,0)};
   farM.onBeforeCompile=sh=>{sh.uniforms.nearBox=nearBox;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform vec4 nearBox;').replace('void main() {','void main() {\nif(vWP.x>nearBox.x&&vWP.x<nearBox.z&&vWP.z>nearBox.y&&vWP.z<nearBox.w)discard;');};
@@ -406,8 +408,12 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   let TCR=0;
   function tcol(x,z,h,sl){const n=0.86+0.14*fbm(x/80,z/80,2);let c;
     const fld=hsh(Math.floor(x/140+fbm(x/300,z/300,1)*2),Math.floor(z/110));
-    if(h<230&&sl<0.1&&fld>0.42)c=[[0.98,0.9,0.58],[0.68,0.84,0.46],[0.84,0.76,0.52],[0.62,0.78,0.4]][(fld*40|0)%4];else c=[0.74,0.84,0.6];
-    const ff=forestF(x,z,h,sl);c=c.map((v,q)=>v*(1-ff)+[0.38,0.52,0.3][q]*ff);
+    // tavolozza per zona: costa calda e asciutta, colline verdi morbide, montagna più fredda; macchie grandi di prato più giallo o più verde
+    const mz=fbm(x/1100+3,z/1100-7,2)/0.75,coast=1-sstep(25,140,h),mont=sstep(380,800,h);
+    let base=[0.96+0.14*mz,0.85-0.03*mz,0.64-0.04*mz];base=base.map((v,q)=>v*(1-coast)+[1.05,0.9,0.66][q]*coast);base=base.map((v,q)=>v*(1-mont)+[0.8,0.82,0.7][q]*mont);
+    if(h<230&&sl<0.1&&fld>0.42)c=[[1.08,0.9,0.58],[0.86,0.86,0.58],[1.0,0.82,0.6],[0.82,0.82,0.54]][(fld*40|0)%4].map((v,q)=>v*0.75+base[q]*0.25);else c=base;
+    const gk=CLUMP(x,z,h);c=c.map(v=>v*(1-0.22*gk));
+    const ff=forestF(x,z,h,sl);c=c.map((v,q)=>v*(1-ff)+[0.42,0.48,0.38][q]*ff);
     const rock=sstep(0.55,0.95,sl)+sstep(900,1100,h)*0.6;c=c.map((v,q)=>v*(1-Math.min(1,rock))+[0.62,0.6,0.57][q]*Math.min(1,rock));
     const snow=sstep(1250,1400,h+60*n);TCR=Math.min(1,rock)*(1-snow);c=c.map((v,q)=>v*(1-snow)+2.3*snow);
     const ci=NW.cityAt(x,z),pa=ci?null:NW.placeAt(x,z);const urb=ci?1:pa?(1-sstep(0.55,1,pa.f))*(pa.p.t===2?0.4:0.75):0;
@@ -858,7 +864,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const c=Math.cos(rot),s=Math.sin(rot),cx=[[w/2,d/2],[-w/2,d/2],[-w/2,-d/2],[w/2,-d/2]].map(([a,b])=>[x+a*c+b*s,z-a*s+b*c]);for(let q=0;q<4;q++)addSeg(T,cx[q][0],cx[q][1],cx[(q+1)%4][0],cx[(q+1)%4][1]);}
     for(let k=0;k<700;k++){const x=x0+rnd(k*7+100)*TS,z=z0+rnd(k*7+101)*TS,h=NW.Hg(x,z);const sl=Math.abs(NW.Hg(x+6,z)-NW.Hg(x-6,z))/12+Math.abs(NW.Hg(x,z+6)-NW.Hg(x,z-6))/12;
       if(h>1080||sl>1.1)continue;if(window.HOMEZ2&&HOMEZ2(x,z))continue;const ff=forestF(x,z,h,sl);const pa=NW.placeAt(x,z);if(pa&&pa.f<0.9)continue;
-      if(ff<0.3&&rnd(k+500)>0.035){if(!herd&&ff<0.1&&h>90&&h<600&&sl<0.12&&rnd(k+77)>0.995&&COWX&&free(x,z,25))herd={x,z};continue;}
+      if(ff<0.3&&rnd(k+500)>0.006+0.3*CLUMP(x,z,h)){if(!herd&&ff<0.1&&h>90&&h<600&&sl<0.12&&rnd(k+77)>0.995&&COWX&&free(x,z,25))herd={x,z};continue;}
       if(!free(x,z,5))continue;const g=NW.Hground(x,z);
       if(h>420||(h>200&&rnd(k+3)>0.55)){if(fr.length<260)fr.push([x,g,z,6+rnd(k)*8]);}else if(tr.length<230)tr.push([x,g,z,3.5+rnd(k+5)*4.5]);}
     // fast food lungo le provinciali vicino alle città (pacchetto HD)

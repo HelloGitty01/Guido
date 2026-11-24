@@ -219,7 +219,7 @@ HOME.camera=function(dt){const g=HOME.gd,ret=HOME.mode==='return',back=ret?5.2:3
   tmpV.set(bx,gy+up,bz);if(HOME.camInit){camera.position.copy(tmpV);HOME.camInit=false;}else camera.position.lerp(tmpV,1-Math.exp(-dt*(ret?2.5:5)));
   if(camera.fov!==60){camera.fov=60;camera.updateProjectionMatrix();}camLook.set(g.x+Math.sin(g.h)*1.5,gy+1.2,g.z+Math.cos(g.h)*1.5);camera.lookAt(camLook);
   sun.position.set(g.x+SUNOFF.x,gy+SUNOFF.y,g.z+SUNOFF.z);sun.target.position.set(g.x,gy,g.z);}
-window.__x={pedHit,penalty,HOME,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
+window.__x={pedHit,penalty,HOME,PCARD,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
 const hud=document.getElementById('hud'),navBox=document.getElementById('navBox'),endBtn=document.getElementById('endBtn');endBtn.onclick=()=>endRun('fine');
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;
@@ -244,7 +244,7 @@ function loop(now){
     const st={dmg:dmgTot,rpm:pl.rpm,kmh,limit,over,gearTxt,km:pl.km,load:pl.load,slip:pl.slip};
     clusterT-=dt;if(clusterT<=0&&view==='cockpit'){drawCluster(pl.ck,pl.P,st);clusterT=MOBILE?1/12:1/30;}
     screenT-=dt;if(screenT<=0&&view==='cockpit'){screenT=route?0.15:0.5;if(route)drawNavScreen(pl.ck);else drawScreen(pl.ck,st);}
-    RESUME.tick(dt);AUTOQ.tick(dt);AMB.tick(dt);RAINW.tick(dt);PCARD.tick(dt);fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);if(DRV)DRV.tick(dt);drawMini(dt);
+    RESUME.tick(dt);HZN.tick();AUTOQ.tick(dt);AMB.tick(dt);RAINW.tick(dt);PCARD.tick(dt);fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);if(DRV)DRV.tick(dt);drawMini(dt);
     lodT-=dt;if(lodT<=0){lodT=0.5;parked.forEach(c=>c.visible=Math.abs(c.position.x-camera.position.x)+Math.abs(c.position.z-camera.position.z)<420);}
     dashW(limit);document.getElementById('tGear').textContent=pl.sel==='R'?'D':'R';document.getElementById('extSpd').textContent=Math.round(kmh);document.getElementById('extGear').textContent=gearTxt+(over?' · ⚠ limite '+limit:'')+fuelTxt();
     {pl.flipT=pl.flip?(pl.flipT||0)+dt:0;const fx=document.getElementById('tFix'),need=!!((pl.flip&&((pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5)||pl.flipT>3))||(pl.wat&&pl.wat.sunk));fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
