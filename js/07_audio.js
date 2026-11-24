@@ -15,7 +15,7 @@ function engineParams(k,P){const base={cylinders:P.cyl||4,intakeWaveguideLength:
 // livello di ogni motore a guide d'onda, misurato perché al massimo dei giri il picco resti sotto 0,7 (prima i V8 e la Volvo saturavano e gracchiavano)
 const WKN={utilitaria:1.1,volvo:0.38,wagoneer:0.5,hellcat:0.42,zil:0.37,daily:1.05,taxi:0.85};
 function initAudio(){
-  if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();}
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)({latencyHint:0.06});}catch(e){AC=new (window.AudioContext||window.webkitAudioContext)();}}
   if(eng){eng.stopAll();}
   // bus del motore: tutto il motore passa da qui, così se un filtro impazzisce si stacca solo questo e si ricostruisce
   const EB=AC.createGain();EB.connect(ACOUT());const EAN=AC.createAnalyser();EAN.fftSize=512;EB.connect(EAN);
@@ -68,7 +68,7 @@ function initAudio(){
   const cv=AC.createConvolver();{const n=AC.sampleRate*2,b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.2)*(i<200?i/200:1);}cv.buffer=b;}
   const rvg=AC.createGain();rvg.gain.value=0;master.connect(cv).connect(rvg).connect(EB);
   // motore a guide d'onda (AudioWorklet): il suono nasce da cilindri, collettori e marmitta; gli oscillatori restano sotto come corpo
-  if(AC.audioWorklet&&CFG.wg!==false){const KP=P,mk=()=>{if(!eng||eng.P!==KP)return;try{const n=new AudioWorkletNode(AC,'engine-sound-processor',{numberOfInputs:0,numberOfOutputs:3,processorOptions:engineParams(selKey,P)});
+  if(AC.audioWorklet&&CFG.wg!==false&&!window.__wgOff){const KP=P,mk=()=>{if(!eng||eng.P!==KP)return;try{const n=new AudioWorkletNode(AC,'engine-sound-processor',{numberOfInputs:0,numberOfOutputs:3,processorOptions:engineParams(selKey,P)});
       const gI=AC.createGain(),gB=AC.createGain(),gO=AC.createGain();gI.gain.value=0.3;gB.gain.value=0.55;gO.gain.value=1;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=30;
       const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;lp.Q.value=0.4;const g=AC.createGain();g.gain.value=0;n.connect(gI,0);n.connect(gB,1);n.connect(gO,2);[gI,gB,gO].forEach(x=>x.connect(hp));hp.connect(lp).connect(g).connect(master);
       eng.wk={n,g,lp,rpm:n.parameters.get('rpm'),thr:n.parameters.get('throttle')};n.port.onmessage=()=>{console.warn('motore a guide d\'onda instabile: si riavvia');setTimeout(()=>{if(eng&&eng.wk&&eng.wk.n===n)initAudio();},250);};nodes.push({stop(){try{n.disconnect();g.disconnect();}catch(e){}}});}catch(e){console.warn('motore a guide d\'onda',e);}};

@@ -419,6 +419,15 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   // ---------- griglia di terreno ----------
   function terrain(x0,z0,size,n,hf,material,skipNear,paved){const N=n+1,rkA=ROCK?new Float32Array(N*N):null,pos=new Float32Array(N*N*3),col=new Float32Array(N*N*3),uv=new Float32Array(N*N*2),Hs=new Float32Array(N*N),st=size/n;
     for(let b=0;b<N;b++)for(let a=0;a<N;a++){const x=x0+a*st,z=z0+b*st,k=b*N+a,h=hf(x,z);Hs[k]=h;pos[k*3]=a*st;pos[k*3+1]=h-(paved?0.3:0.04);pos[k*3+2]=b*st;uv[k*2]=x/9;uv[k*2+1]=z/9;}
+    // la griglia del terreno è larga (10-20 m): fra un vertice sul ciglio della strada e uno a monte il prato può salire sopra l'asfalto.
+    // Si abbassano i vertici delle celle attraversate dalla strada sotto la quota della carreggiata (mai alzati: i rilevati restano)
+    if(skipNear==='carve'){const ti=Math.round(x0/TS),tj=Math.round(z0/TS),low=(a,b,h)=>{if(a<0||b<0||a>n||b>n)return;const k=b*N+a;if(Hs[k]>h){Hs[k]=h;pos[k*3+1]=h-0.04;}};
+      for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++){const l=segT.get(tk(ti+di,tj+dj));if(!l)continue;
+        for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.t||R.b||R.c>=9)continue;const ax=R.X[i],az=R.Z[i],bx=R.X[i+1],bz=R.Z[i+1],L=Math.hypot(bx-ax,bz-az);if(L<0.01)continue;
+          const hw=R.w/2+0.8;if(Math.max(ax,bx)<x0-hw-st||Math.min(ax,bx)>x0+size+hw+st||Math.max(az,bz)<z0-hw-st||Math.min(az,bz)>z0+size+hw+st)continue;
+          const nx=-(bz-az)/L,nz=(bx-ax)/L,M=Math.ceil(L/(st*0.35));
+          for(let u=0;u<=M;u++){const f=u/M,x=ax+(bx-ax)*f,z=az+(bz-az)*f,h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*f-0.14;
+            for(const o of [-hw,-hw/2,0,hw/2,hw]){const a=Math.floor((x+nx*o-x0)/st),b=Math.floor((z+nz*o-z0)/st);low(a,b,h);low(a+1,b,h);low(a,b+1,h);low(a+1,b+1,h);}}}}}
     for(let b=0;b<N;b++)for(let a=0;a<N;a++){const k=b*N+a,hx=(Hs[b*N+Math.min(n,a+1)]-Hs[b*N+Math.max(0,a-1)])/(st*((a>0&&a<n)?2:1)),hz=(Hs[Math.min(n,b+1)*N+a]-Hs[Math.max(0,b-1)*N+a])/(st*((b>0&&b<n)?2:1));
       {const xx=x0+a*st,zz=z0+b*st;if(paved){const sk=smogK(xx,zz);col.set(Hs[k]<3.2?[1.15,1.02,0.78]:[1.05*sk,1.03*sk*0.97,1*sk*0.92],k*3);}else{col.set(tcol(xx,zz,Hs[k],Math.hypot(hx,hz)),k*3);if(rkA)rkA[k]=TCR;}}}
     const idx=[];for(let b=0;b<n;b++)for(let a=0;a<n;a++){const p=b*N+a,q=p+1,r=p+N,s=r+1;idx.push(p,r,q,q,r,s);}
@@ -877,7 +886,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     T.segs.forEach(s=>{for(let a=Math.floor(Math.min(s[0],s[2])/BC);a<=Math.floor(Math.max(s[0],s[2])/BC);a++)for(let b=Math.floor(Math.min(s[1],s[3])/BC);b<=Math.floor(Math.max(s[1],s[3])/BC);b++){const l=bseg.get(tk(a,b));if(l){const p=l.indexOf(s);if(p>=0)l.splice(p,1);}}});T.segs=[];}
   const cityM=new THREE.MeshStandardMaterial({map:paverTex,vertexColors:true,roughness:0.9,envMapIntensity:0.35});
   function build(i,j){const T={i,j,key:tk(i,j),objs:[],det:false};const x0=i*TS,z0=j*TS,ct=NW.cityAt(x0+TS/2,z0+TS/2)&&(bldT.get(tk(i,j))||[]).length>12;
-    if(!HIDE){T.objs.push(terrain(x0,z0,TS,ct?40:20,NW.Hground,ct?cityM:terrM,false,!!ct));buildRoads(T);}tiles.set(T.key,T);return T;}
+    if(!HIDE){T.objs.push(terrain(x0,z0,TS,ct?40:(MOBILE||QG.lo)?20:32,NW.Hground,ct?cityM:terrM,ct?false:'carve',!!ct));buildRoads(T);}tiles.set(T.key,T);return T;}
   function drop(T){undetail(T);T.objs.forEach(o=>{scene.remove(o);if(o.isInstancedMesh)o.dispose();else if(o.geometry)o.geometry.dispose();});tiles.delete(T.key);}
   function buildFar(i,j){const x0=i*FS,z0=j*FS,m=terrain(x0,z0,FS,25,(x,z)=>NW.Hg(x,z)-1.5,farM);m.receiveShadow=false;const F={i,j,m};far.set(tk(i,j),F);return F;}
   const okTile=(x,z,s)=>x+s>NW.GX0&&z+s>NW.GZ0&&x<NW.GX1&&z<NW.GZ1;

@@ -7,7 +7,13 @@ function ACOUT(){if(!AC.__m){AC.__m=AC.createGain();AC.__an=AC.createAnalyser();
 function busTail(){if(AC.__lim){try{AC.__m.disconnect(AC.__lim);}catch(e){}try{AC.__lim.disconnect();}catch(e){}}
   const L=AC.createDynamicsCompressor();L.threshold.value=-3;L.knee.value=3;L.ratio.value=20;L.attack.value=0.002;L.release.value=0.15;AC.__m.connect(L);L.connect(AC.destination);AC.__lim=L;}
 const BUSW={b:new Float32Array(1024),e:new Float32Array(512),bad:0,n:0};
-function busWatch(){if(!AC)return;if(AC.state==='suspended'&&started&&!paused){AC.resume().catch(()=>{});return;}if(AC.state!=='running')return;const bad=(an,buf)=>{if(!an)return false;an.getFloatTimeDomainData(buf);for(let i=0;i<buf.length;i++){const v=buf[i];if(!(v>-30&&v<30))return true;}return false;};
+// se il dispositivo non riesce a calcolare l'audio in tempo (l'orologio audio resta indietro rispetto a quello reale) il suono si interrompe:
+// dopo alcuni episodi il motore passa alla versione leggera (senza guide d'onda) per il resto della sessione
+const AUW={w:0,a:0,g:[]};
+function audioLag(){const w=performance.now()/1000,a=AC.currentTime;if(AUW.w&&w-AUW.w>0.2&&w-AUW.w<2){const r=(a-AUW.a)/(w-AUW.w);if(r<0.75&&!document.hidden){AUW.g.push(w);AUW.g=AUW.g.filter(t=>w-t<20);
+    if(AUW.g.length>=4&&eng&&eng.wk&&CFG.wg==null&&!window.__wgOff){window.__wgOff=true;console.warn('audio in ritardo: motore audio alleggerito');try{initAudio();}catch(e){}pl.navMsg='🔈 Audio del motore alleggerito (il dispositivo era in affanno)';pl.navMsgT=4;}}}
+  AUW.w=w;AUW.a=a;}
+function busWatch(){if(!AC)return;if(AC.state==='running')audioLag();if(AC.state==='suspended'&&started&&!paused){AC.resume().catch(()=>{});return;}if(AC.state!=='running')return;const bad=(an,buf)=>{if(!an)return false;an.getFloatTimeDomainData(buf);for(let i=0;i<buf.length;i++){const v=buf[i];if(!(v>-30&&v<30))return true;}return false;};
   const eb=eng&&bad(eng.an,BUSW.e),mb=bad(AC.__an,BUSW.b);if(!eb&&!mb){BUSW.bad=0;return;}
   BUSW.n++;console.warn('audio: valori non validi',eb?'nel motore':'nel mix');
   if(eb||BUSW.bad>=1){try{initAudio();}catch(e){}}busTail();BUSW.bad++;
