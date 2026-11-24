@@ -262,7 +262,7 @@ function loop(now){
   if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir===1?2:QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
     scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
   frameN++;updateMaples();updateCarLOD();if(NWT)NWT.update(dt);
-  renderer.render(scene,camera);if(PCARD.want)PCARD.snap();
+  renderer.render(scene,camera);if(PCARD.want)PCARD.snap();if(SHOT.want)SHOT.snap();
   if(CKO.on){renderer.autoClear=false;renderer.clearDepth();renderer.render(CKO.hud,CKO.cam);renderer.autoClear=true;}
   requestAnimationFrame(loop);
 }
@@ -273,5 +273,12 @@ function loop(now){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);if(ios&&!standalone)ib.style.display='';
   ib.onclick=async()=>{if(dp){dp.prompt();try{await dp.userChoice;}catch(e){}dp=null;ib.style.display='none';}else if(ios)alert('Per installare Guido: tocca il pulsante Condividi di Safari (il quadrato con la freccia) e scegli «Aggiungi alla schermata Home».');};
   addEventListener('appinstalled',()=>{ib.style.display='none';});}
-document.getElementById('credBtn').onclick=()=>{document.getElementById('credOv').style.display='flex';};document.getElementById('credClose').onclick=()=>{document.getElementById('credOv').style.display='none';};
+document.getElementById('credBtn').onclick=()=>{const o=document.getElementById('credOv'),r=o.firstElementChild;o.style.display='flex';r.classList.remove('roll');void r.offsetWidth;r.classList.add('roll');};document.getElementById('credOv').addEventListener('click',e=>{if(e.target.id==='credOv')e.currentTarget.style.display='none';});document.getElementById('credClose').onclick=()=>{document.getElementById('credOv').style.display='none';};
 buildMaples();
+/* ESCI: salva, ferma audio e prova a chiudere l'app (PWA/finestra) */
+(function(){const b=document.getElementById('exitBtn'),ov=document.getElementById('byeOv');if(!b)return;
+b.onclick=()=>{try{RESUME.t=0;RESUME.tick(0.001);}catch(e){}
+try{if(AC)AC.suspend();}catch(e){}document.querySelectorAll('audio,video').forEach(a=>{try{a.pause();}catch(e){}});
+try{speechSynthesis.cancel();}catch(e){}
+ov.style.display='flex';try{window.close();}catch(e){}};
+document.getElementById('byeBack').onclick=()=>{ov.style.display='none';try{if(AC)AC.resume();}catch(e){}};})();

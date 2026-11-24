@@ -155,6 +155,10 @@ document.getElementById('sumMenu').onclick=()=>{document.getElementById('sum').s
 // ================= MENU / CICLO =================
 let started=false,paused=true,simT=0;
 const menu=document.getElementById('menu');
+// ---- modalità di gioco a riquadri (il select nascosto resta la fonte del valore) ----
+function syncModes(){const v=document.getElementById('selMode').value;document.querySelectorAll('#modeGrid .mode').forEach(b=>b.classList.toggle('sel',b.dataset.m===v));}
+document.querySelectorAll('#modeGrid .mode').forEach(b=>b.onclick=()=>{const sm=document.getElementById('selMode');sm.value=b.dataset.m;if(sm.onchange)sm.onchange();savePrefs&&savePrefs();syncModes();});
+setTimeout(syncModes,0);
 // ---- menu a schede ----
 const MTAB={cur:'gioco'};
 function menuTab(t){MTAB.cur=t;document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);if(t==='cart')PCARD.album();try{localStorage.setItem('sim_tab',t);}catch(e){}}
@@ -179,7 +183,7 @@ const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null
     if(car){const L=C.userData.L||4.5,hf=Math.atan(Math.tan(15*Math.PI/180)*C.aspect),d=L*0.44/Math.tan(hf)+L*0.15;C.position.set(Math.cos(ang)*d,(C.userData.h||0.7)+d*0.22,Math.sin(ang)*d);C.lookAt(0,C.userData.h||0.7,0);}R.render(S,C);raf=requestAnimationFrame(loop);}
   return{show};})();
 document.getElementById('vehList').addEventListener('click',()=>setTimeout(()=>VP.show(selKey),0));
-function showMenu(){setTimeout(()=>{menuTab(MTAB.cur);RESUME.btn();},0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':"Let's go !";if(AC)AC.suspend();setHorn(false);}
+function showMenu(){setTimeout(()=>{menuTab(MTAB.cur);RESUME.btn();syncModes();},0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':"Let's go !";if(AC)AC.suspend();setHorn(false);}
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;RADIO.pause(paused);document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
 document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};
@@ -199,7 +203,7 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
 {const f=document.getElementById('selFuel');f.value=String(CFG.fuel??1);f.onchange=()=>{CFG.fuel=+f.value;savePrefs();};
  const c=document.getElementById('selCyc');c.value=String(CFG.cycSp??1);c.onchange=()=>{CFG.cycSp=+c.value;savePrefs();};
  const c2=document.getElementById('selCycS');c2.value=String(CFG.cycStart??5.5);if(!c2.value)c2.value='5.5';CFG.cycStart=+c2.value;c2.onchange=()=>{CFG.cycStart=+c2.value;savePrefs();};
- document.getElementById('mapBtn').onclick=e=>{e.currentTarget.blur();mapToggle();};document.getElementById('photoBtn').onclick=e=>{e.currentTarget.blur();photoToggle();};document.getElementById('recBtn').onclick=e=>{e.currentTarget.blur();recToggle();};
+ document.getElementById('mapBtn').onclick=e=>{e.currentTarget.blur();mapToggle();};document.getElementById('photoBtn').onclick=e=>{e.currentTarget.blur();SHOT.take();};document.getElementById('recBtn').onclick=e=>{e.currentTarget.blur();recToggle();};
  document.getElementById('photoShot').onclick=()=>photoShot();document.getElementById('photoExit').onclick=()=>photoToggle();}
 {const t=document.getElementById('selTraf');t.value=String(CFG.traf??1);if(!t.value)t.value='1';t.onchange=()=>{CFG.traf=+t.value;savePrefs();};}
 {const box=document.getElementById('radioList');const save=l=>{try{localStorage.setItem('sim_radio',JSON.stringify(l));}catch(e){}RADIO.reload();};
@@ -225,7 +229,7 @@ document.getElementById('ctrlReset').onclick=()=>{CTRL=JSON.parse(JSON.stringify
 if(PREF.mode)selMode.value=PREF.mode;if(PREF.dest&&[...selDest.options].some(o=>o.value===PREF.dest))selDest.value=PREF.dest;if(PREF.time)selTime.value=PREF.time;if(PREF.wx)selWx.value=PREF.wx;selMode.onchange&&selMode.onchange();
 document.getElementById('seedLbl').textContent=SEED;{if(NW){const ss=document.getElementById('selStart');ss.innerHTML='';NW.cities.filter(c=>!c.v).forEach(c=>{const o=document.createElement('option');o.textContent=c.n;ss.appendChild(o);});}document.getElementById('seedRow').style.display=WORLD_NW?'none':'';
 if(WORLD_NW){document.getElementById('lblStart').style.display='';const ss=document.getElementById('selStart');try{const v=localStorage.getItem('sim_start');if(v)ss.value=v;}catch(e){}ss.onchange=()=>{try{localStorage.setItem('sim_start',ss.value);}catch(e){}fillVia();};
-    const sv=document.getElementById('selVia'),vr=document.getElementById('viaRes');document.getElementById('lblVia').style.display='';try{sv.value=localStorage.getItem('sim_via')||'';}catch(e){}
+    const sv=document.getElementById('selVia'),vr=document.getElementById('viaRes');sv.value='';
     const norm=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/['’.]/g,' ').replace(/\s+/g,' ').trim();
     const setVia=v=>{sv.value=v;try{localStorage.setItem('sim_via',v);}catch(e){}};
     const showOk=()=>{vr.innerHTML=sv.value?'<span class="note">✓ Partenza da <b>'+sv.value.replace(/</g,'&lt;')+'</b>, '+ss.value+'</span>':'<span class="note">Partenza dal centro di '+ss.value+'</span>';};
@@ -237,7 +241,7 @@ if(WORLD_NW){document.getElementById('lblStart').style.display='';const ss=docum
       if(hits.length===1&&norm(hits[0])===q){setVia(hits[0]);showOk();return;}
       vr.innerHTML='';const lab=document.createElement('span');lab.className='note';lab.textContent='Scegli: ';vr.appendChild(lab);
       hits.forEach(n=>{const b=document.createElement('button');b.className='sm';b.textContent=n;b.onclick=()=>{setVia(n);showOk();};vr.appendChild(b);});};
-    document.getElementById('viaBtn').onclick=search;sv.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search();}});
+    sv.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search();}});
     window.fillVia=()=>{if(sv.value&&NWT&&!NWT.streets(ss.value).includes(sv.value))setVia('');showOk();};}}
 function goWorld(n){try{localStorage.setItem('sim_seed',n);}catch(e){}location.hash='#w'+n;location.reload();}
 document.getElementById('newWorld').onclick=()=>goWorld(1+Math.floor(_rnd()*99999));

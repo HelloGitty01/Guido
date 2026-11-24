@@ -72,10 +72,10 @@ function recToggle(){const ind=document.getElementById('recInd');
   REC.chunks=[];REC.mr=mr;REC.ext=(mr.mimeType||mm[0]).includes('mp4')?'mp4':'webm';
   mr.ondataavailable=e=>{if(e.data&&e.data.size)REC.chunks.push(e.data);};
   mr.onstop=()=>{const b=new Blob(REC.chunks,{type:mr.mimeType||('video/'+REC.ext)});if(REC.dst){try{ACOUT().disconnect(REC.dst);}catch(e){}REC.dst=null;}if(REC.rs){try{REC.rs.disconnect();}catch(e){}REC.rs=null;}vs.getTracks().forEach(t=>t.stop());
-    if(b.size>1000){download(b,'guido_clip_'+stamp()+'.'+REC.ext);pl.navMsg='Clip salvata ('+REC.ext.toUpperCase()+', '+(b.size/1048576).toFixed(1)+' MB)';pl.navMsgT=3;}};
+    if(b.size>1000){ALBUM.add({type:'clip',blob:b,ext:REC.ext,name:ALBUM.here()}).then(()=>{pl.navMsg='🎬 Clip salvata nell\'Album ('+(b.size/1048576).toFixed(1)+' MB)';pl.navMsgT=3;}).catch(()=>download(b,'guido_clip_'+stamp()+'.'+REC.ext));}};
   mr.start(1000);REC.on=true;REC.t0=performance.now();ind.style.display='block';}
 function recTick(){if(!REC.on)return;const s=(performance.now()-REC.t0)/1000;document.getElementById('recInd').textContent='● REC '+Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+' · '+REC.ext.toUpperCase();if(s>=REC.MAX)recToggle();}
-// ---- mappa grande di Ornavia ----
+// ---- mappa grande di Valdonia ----
 const MAP={on:false,base:null,S:2048,cx:0,cz:0,sc:1,drag:null,pinch:null};
 function mapBase(){if(MAP.base||!NW)return MAP.base;const S=MAP.S,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d');
   const W0=NW.J.meta.OX||8000,SZ=22000;MAP.x0=W0;MAP.z0=W0;MAP.sz=SZ;const k=S/SZ,N=256,cell=S/N,img=g.createImageData(N,N);
@@ -159,11 +159,11 @@ function chTick(dt){const box=document.getElementById('chBox');if(!started||pl.e
     const t=CH.t0==null?0:simT-CH.t0;box.innerHTML=`🏁 <b>Giro dell'anello</b> · intermedio ${Math.min(CH.next,r.length)}/${r.length}<br>⏱ <b>${fm(t)}.${Math.floor(t*10%10)}</b> · km ${(Math.hypot(pl.x-p[0],pl.z-p[1])/1000).toFixed(1)} al prossimo`;}}
 // ================= RADIO GUIDO: lo speaker commenta le imprese di Guido =================
 const DJ={t:-99,q:null,lines:{
-  velocita:['Qualcuno ha fretta oggi! Occhio all\'autovelox, Guido.','Piede pesante, eh? La multa arriva a casa.','Più piano, che le strade di Ornavia non scappano!'],
+  velocita:['Qualcuno ha fretta oggi! Occhio all\'autovelox, Guido.','Piede pesante, eh? La multa arriva a casa.','Più piano, che le strade di Valdonia non scappano!'],
   rosso:['Rosso è rosso, Guido. Anche per te.','Semaforo rosso bruciato: i vigili prendono nota.'],
   contromano:['Contromano! Ma da dove vengono quelle macchine?','Guido, la corsia giusta è l\'altra!'],
   pedone:['Attenzione ai pedoni! Ci sentiamo dopo la pubblicità.','Ahi! Quel signore non l\'ha presa bene.'],
-  salto:['Che salto! Le sospensioni ringraziano.','In volo sopra le colline di Ornavia!','Guido decolla! Ricordiamo che non è un aereo.'],
+  salto:['Che salto! Le sospensioni ringraziano.','In volo sopra le colline di Valdonia!','Guido decolla! Ricordiamo che non è un aereo.'],
   lavoro:['Lavoro fatto, soldi in tasca!','Un altro cliente soddisfatto. Bravo Guido!','Ecco come si porta avanti la ditta!'],
   presa:['La polizia ha fermato Guido. Sorridi, sei su Radio Guido.','Patente e libretto, prego.'],
   seminata:['Guido ha seminato la pattuglia! Noi non abbiamo visto niente.'],
@@ -369,11 +369,11 @@ let hissArm=false;
 function airHiss(){if(!AC)return;const t=AC.currentTime,n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*0.8,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5);n.buffer=b;
   const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=2500;const g=AC.createGain();g.gain.value=0.22;n.connect(f).connect(g).connect(ACOUT());n.start(t);}
 
-// ================= CARTOLINE DI ORNAVIA: 20 punti panoramici da scoprire guidando =================
+// ================= CARTOLINE DI VALDONIA: 20 punti panoramici da scoprire guidando =================
 // valichi e belvedere più alti, lungolaghi e coste, le piazze delle città più grandi. Passandoci accanto si scatta la cartolina
 const PCARD={list:null,got:{},want:null,t:0,
   load(){try{this.got=JSON.parse(localStorage.getItem('sim_pc')||'{}')||{};}catch(e){this.got={};}},
-  build(){if(this.list||!NW)return this.list;const P=NW.places||[],near=(x,z)=>{let b=null,bd=1e18;for(const p of P){const d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;b=p;}}return b?b.n:'Ornavia';};
+  build(){if(this.list||!NW)return this.list;const P=NW.places||[],near=(x,z)=>{let b=null,bd=1e18;for(const p of P){const d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;b=p;}}return b?b.n:'Valdonia';};
     const pts=[];for(const R of NW.roads){if(R.t||R.b||R.priv||R.c>8)continue;for(let i=0;i<R.N;i+=4)pts.push([R.X[i],R.Z[i],R.Hh[i],R]);}
     const far=(L,x,z,d)=>L.every(q=>Math.hypot(q.x-x,q.z-z)>d),out=[];
     // i più alti, distanti fra loro
@@ -388,9 +388,36 @@ const PCARD={list:null,got:{},want:null,t:0,
     for(const o of L){if(this.got[o.id])continue;if(Math.abs(o.x-pl.x)<45&&Math.abs(o.z-pl.z)<45&&Math.hypot(o.x-pl.x,o.z-pl.z)<38){this.want=o;break;}}},
   snap(){const o=this.want;this.want=null;if(!o)return;try{const src=renderer.domElement,c=document.createElement('canvas');c.width=360;c.height=240;const g=c.getContext('2d');
       g.fillStyle='#f3efe6';g.fillRect(0,0,360,240);const sw=src.width,sh=src.height,ar=344/196;let w=sw,h=sw/ar;if(h>sh){h=sh;w=sh*ar;}g.drawImage(src,(sw-w)/2,(sh-h)/2,w,h,8,8,344,196);
-      g.fillStyle='#2b2422';g.font='italic 600 15px Georgia,serif';g.fillText('Saluti da '+o.n.replace(/^(Belvedere|Costa|Lungolago|Piazza) di /,''),12,226);g.font='11px system-ui';g.fillStyle='#8a1f22';g.textAlign='right';g.fillText('ORNAVIA',348,226);
+      g.fillStyle='#2b2422';g.font='italic 600 15px Georgia,serif';g.fillText(o.n.replace(/^(Belvedere|Costa|Lungolago|Piazza|Panorama su|Vista su|Balcone) (di )?/,''),12,226);g.font='11px system-ui';g.fillStyle='#8a1f22';g.textAlign='right';g.fillText('VALDONIA',348,226);
       this.got[o.id]={t:Date.now(),img:c.toDataURL('image/jpeg',0.72)};localStorage.setItem('sim_pc',JSON.stringify(this.got));}catch(e){this.got[o.id]={t:Date.now()};}
     const n=Object.keys(this.got).length;pl.navMsg='📮 Cartolina: '+o.n+' ('+n+'/'+this.list.length+')';pl.navMsgT=4;if(typeof ding==='function')ding(2);this.album();},
+  media(){const box=document.getElementById('mediaAlbum');if(!box)return;ALBUM.list().then(L=>{this.urls&&this.urls.forEach(u=>URL.revokeObjectURL(u));this.urls=[];
+      if(!L.length){box.innerHTML='<p class="note">Ancora nessuna foto o clip.</p>';return;}box.innerHTML='';
+      L.forEach(it=>{const u=URL.createObjectURL(it.blob);this.urls.push(u);const f=document.createElement('figure');f.className='pc got';
+        f.innerHTML=(it.type==='clip'?`<span class="clipTag">▶ clip</span><video src="${u}" muted preload="metadata"></video>`:`<img src="${u}" alt="">`)+`<figcaption>${it.name||'Valdonia'} · ${new Date(it.t).toLocaleDateString('it-IT')}</figcaption>`;
+        f.onclick=()=>LBX.show({src:u,clip:it.type==='clip',cap:(it.name||'Valdonia'),file:'guido_'+(it.type==='clip'?'clip':'foto')+'_'+it.id+'.'+(it.type==='clip'?(it.ext||'webm'):'jpg'),blob:it.blob,del:()=>ALBUM.del(it.id).then(()=>this.media())});box.appendChild(f);});});},
   album(){const box=document.getElementById('pcAlbum');if(!box)return;const L=this.build();if(!L){box.innerHTML='<p class="note">Le cartoline compaiono quando il mondo è caricato.</p>';return;}this.load();
     const n=L.filter(o=>this.got[o.id]).length;document.getElementById('pcCount').textContent=n+' / '+L.length;
-    box.innerHTML=L.map(o=>{const g=this.got[o.id];return g&&g.img?`<figure class="pc got"><img src="${g.img}" alt=""><figcaption>${o.n}</figcaption></figure>`:`<figure class="pc"><div class="q">${o.k==='alto'?'⛰':o.k==='acqua'?'🌊':'🏛'}</div><figcaption>${g?o.n:'??? · '+o.hint}</figcaption></figure>`;}).join('');}};
+    this.media();box.innerHTML=L.map(o=>{const g=this.got[o.id];return g&&g.img?`<figure class="pc got" data-id="${o.id}"><img src="${g.img}" alt=""><figcaption>${o.n}</figcaption></figure>`:`<figure class="pc"><div class="q">${o.k==='alto'?'⛰':o.k==='acqua'?'🌊':'🏛'}</div><figcaption>${g?o.n:'??? · '+o.hint}</figcaption></figure>`;}).join('');
+    box.querySelectorAll('figure.got').forEach(f=>{const o=L.find(q=>q.id===f.dataset.id),g=this.got[o.id];f.onclick=()=>LBX.show({src:g.img,cap:o.n,file:'cartolina_'+o.n.replace(/\W+/g,'_')+'.jpg'});});}};
+
+// ================= ALBUM: foto scattate al volo, clip e cartoline, salvate nel browser (IndexedDB) =================
+const ALBUM={db:null,
+  open(){return this.db||(this.db=new Promise((res,rej)=>{const r=indexedDB.open('guido_album',1);r.onupgradeneeded=()=>r.result.createObjectStore('items',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));},
+  async add(it){const db=await this.open();it.t=Date.now();return new Promise((res,rej)=>{const tx=db.transaction('items','readwrite');tx.objectStore('items').add(it);tx.oncomplete=()=>{res();if(MTAB&&MTAB.cur==='cart')PCARD.album();};tx.onerror=()=>rej(tx.error);});},
+  async list(){const db=await this.open();return new Promise(res=>{const r=db.transaction('items').objectStore('items').getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.t-a.t));r.onerror=()=>res([]);});},
+  async del(id){const db=await this.open();return new Promise(res=>{const tx=db.transaction('items','readwrite');tx.objectStore('items').delete(id);tx.oncomplete=res;});},
+  here(){if(!NW)return'Valdonia';const c=NW.cityAt&&NW.cityAt(pl.x,pl.z);if(c)return c.n;let b=null,bd=1e18;for(const p of NW.places||[]){const d=(p.x-pl.x)**2+(p.z-pl.z)**2;if(d<bd){bd=d;b=p;}}return b&&bd<4e6?'vicino a '+b.n:'Valdonia';}};
+// foto al volo: alla pressione del tasto si scatta subito (dopo il prossimo fotogramma), flash e via nell'album
+const SHOT={want:false,
+  take(){if(!started||pl.ended)return;this.want=true;},
+  snap(){this.want=false;const fl=document.getElementById('photoFlash');if(fl){fl.style.transition='none';fl.style.opacity=0.9;requestAnimationFrame(()=>{fl.style.transition='opacity .45s';fl.style.opacity=0;});}
+    try{if(AC){const t=AC.currentTime,n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*0.08,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);n.buffer=b;const g=AC.createGain();g.gain.value=0.25;n.connect(g).connect(ACOUT());n.start(t);}}catch(e){}
+    const name=ALBUM.here();renderer.domElement.toBlob(b=>{if(!b)return;ALBUM.add({type:'photo',blob:b,name}).then(()=>{pl.navMsg='📷 Foto salvata nell\'Album';pl.navMsgT=2;}).catch(()=>download(b,'guido_foto_'+stamp()+'.jpg'));},'image/jpeg',0.92);}};
+
+// ingrandimento di foto, clip e cartoline con salvataggio sul dispositivo
+const LBX={cur:null,show(o){this.cur=o;const b=document.getElementById('lbx'),m=b.querySelector('.media');m.innerHTML=o.clip?`<video src="${o.src}" controls autoplay playsinline></video>`:`<img src="${o.src}" alt="">`;b.querySelector('.cap').textContent=o.cap||'';document.getElementById('lbxDel').style.display=o.del?'':'none';b.classList.add('on');},
+  hide(){const b=document.getElementById('lbx');b.classList.remove('on');b.querySelector('.media').innerHTML='';this.cur=null;}};
+document.getElementById('lbxClose').onclick=()=>LBX.hide();document.getElementById('lbx').addEventListener('click',e=>{if(e.target.id==='lbx')LBX.hide();});
+document.getElementById('lbxSave').onclick=async()=>{const o=LBX.cur;if(!o)return;let b=o.blob;if(!b){b=await (await fetch(o.src)).blob();}download(b,o.file||('guido_'+stamp()+'.jpg'));};
+document.getElementById('lbxDel').onclick=()=>{const o=LBX.cur;if(o&&o.del&&confirm('Eliminare dall\'album?')){o.del();LBX.hide();}};

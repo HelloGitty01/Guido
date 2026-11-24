@@ -7,7 +7,7 @@ const CTRL_DEF={keys:{thr:['KeyA','ArrowUp'],brk:['KeyZ','ArrowDown'],hold:['Key
   pad:{steer:{a:0,s:1},pedal:{mode:'one',a:'auto',s:-1},thrA:{a:-1,rest:0,full:1},brkA:{a:-1,rest:0,full:1},
     btn:{radioP:-1,navMute:-1,gear:7,horn:6,view:0,lights:3,haz:2,blL:14,blR:15,hb:1,unflip:1,car:-1,radio:-1,flash:-1,volUp:-1,volDn:-1,map:-1,photo:-1,rec:-1}}};
 const CTRL_LBL={thr:'Acceleratore',brk:'Freno',hold:'Mantieni velocità (tenere premuto)',left:'Sterzo a sinistra',right:'Sterzo a destra',hb:'Freno a mano',horn:'Clacson',gD:'Marcia D',gR:'Retromarcia R',
-  lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D↔R',car:'Cambia auto',radio:'Autoradio (stazione successiva)',radioP:'Autoradio (stazione precedente)',navMute:'Voce del navigatore sì/no',flash:'Lampeggio abbaglianti',volUp:'Volume radio +',volDn:'Volume radio −',map:'Mappa grande',photo:'Modalità foto',rec:'Registra clip (avvia/ferma)'};
+  lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D↔R',car:'Cambia auto',radio:'Autoradio (stazione successiva)',radioP:'Autoradio (stazione precedente)',navMute:'Voce del navigatore sì/no',flash:'Lampeggio abbaglianti',volUp:'Volume radio +',volDn:'Volume radio −',map:'Mappa grande',photo:'Scatta una foto (va nell\'Album)',rec:'Registra clip, avvia/ferma (va nell\'Album)'};
 let CTRL=JSON.parse(JSON.stringify(CTRL_DEF));
 try{const sv=JSON.parse(localStorage.getItem('sim_ctrl')||'null');if(sv){Object.assign(CTRL.keys,sv.keys||{});if(sv.pad){Object.assign(CTRL.pad,sv.pad);CTRL.pad.btn=Object.assign({},CTRL_DEF.pad.btn,sv.pad.btn||{});}}}catch(e){}
 function saveCtrl(){try{localStorage.setItem('sim_ctrl',JSON.stringify(CTRL));}catch(e){}}
@@ -55,11 +55,11 @@ addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPU
   const A=actOf(e.code);
   if(PHOTO.on){if(e.code==='Escape'||A==='photo')photoToggle();else if(e.code==='Space'||e.code==='Enter')photoShot();e.preventDefault();return;}
   if(MAP.on){if(e.code==='Escape'||A==='map')mapToggle();e.preventDefault();return;}
-  if(started&&HOME.mode&&menu.style.display!=='flex'){if(e.code==='Escape'){showMenu();return;}if(A==='map'){mapToggle();e.preventDefault();return;}if(A==='photo'){photoToggle();e.preventDefault();return;}if(A==='rec'){recToggle();return;}
+  if(started&&HOME.mode&&menu.style.display!=='flex'){if(e.code==='Escape'){showMenu();return;}if(A==='map'){mapToggle();e.preventDefault();return;}if(A==='photo'){SHOT.take();e.preventDefault();return;}if(A==='rec'){recToggle();return;}
     if(HOME.mode==='walk'&&(e.code==='Enter'||e.code==='NumpadEnter'||e.code==='KeyE')&&HOME.near)HOME.enter(HOME.near);if(HOME.mode==='return'&&(e.code==='Enter'||e.code==='NumpadEnter'))HOME.finish();if(e.code.startsWith('Arrow')||e.code==='Space'||e.code==='Tab')e.preventDefault();return;}
   if(e.code==='Escape')showMenu();
   if(A==='map'&&started&&!pl.ended&&menu.style.display!=='flex'){mapToggle();e.preventDefault();return;}
-  if(A==='photo'&&started&&!pl.ended&&menu.style.display!=='flex'){photoToggle();e.preventDefault();return;}
+  if(A==='photo'&&started&&!pl.ended&&menu.style.display!=='flex'){SHOT.take();e.preventDefault();return;}
   if(A==='rec'&&started)recToggle();
   if(e.code==='KeyK'&&started&&!pl.ended&&menu.style.display!=='flex'){const ov=document.getElementById('jobOv');if(ov.style.display==='flex')JOB.close();else JOB.open();e.preventDefault();return;}
   if(A==='pause'&&started)togglePause();

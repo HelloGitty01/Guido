@@ -249,7 +249,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     {const [x,z]=W(a0+0.6,bm),g=new THREE.BufferGeometry(),hw=(b1-b0)*0.42;g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,-hw,0,0,hw,0,16,0],3));g.setIndex([0,1,2]);g.computeVertexNormals();
      const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:stoneTex,color:0xf3e9dd,roughness:0.7,side:THREE.DoubleSide}));m.position.set(x,g0+Hw,z);m.rotation.y=-Math.atan2(az,ax);grp.add(m);}
   }catch(e){console.warn('Duomo',e);}});
-  // ---------- Ornavia: chiese, torri, monumenti, ciminiere, porto, spiaggia, barche, mucche ----------
+  // ---------- Valdonia: chiese, torri, monumenti, ciminiere, porto, spiaggia, barche, mucche ----------
   const nightMats=[],lampPoleMX=new THREE.MeshStandardMaterial({color:0x6a6f75,metalness:0.6,roughness:0.45});
   function signTex(kind,lines){return canvasTex(512,(g,n)=>{const hw=kind!=='st',bg=hw?'#1f6e3d':'#1d4f9c';const H2=kind==='hwd'?272:kind.startsWith('hw')?240:280;g.canvas.height=H2;
     g.fillStyle=bg;g.fillRect(0,0,512,H2);g.strokeStyle='#fff';g.lineWidth=8;g.strokeRect(10,10,492,H2-20);g.fillStyle='#fff';g.textAlign='left';
@@ -258,11 +258,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     else if(kind==='hwd'){g.font='bold 50px Arial';lines.forEach((l,i)=>g.fillText(l,40,80+i*74));}
     else if(kind==='a1'){g.fillStyle='#fff';g.beginPath();g.ellipse(120,140,80,62,0,0,7);g.fill();g.fillStyle=bg;g.font='bold 70px Arial';g.textAlign='center';g.fillText('A1',120,165);g.fillStyle='#fff';g.textAlign='left';g.font='bold 52px Arial';g.fillText('Autostrada',220,160);}
     else{g.font='bold 62px Arial';g.fillText(lines[0],40,120);g.font='bold 48px Arial';g.fillText(lines[1],40,210);g.save();g.translate(450,140);g.beginPath();g.moveTo(0,-70);g.lineTo(36,-20);g.lineTo(13,-20);g.lineTo(13,70);g.lineTo(-13,70);g.lineTo(-13,-20);g.lineTo(-36,-20);g.closePath();g.fill();g.restore();}});}
-  const ADS=[['Caffè Ornello','Il risveglio di Ornavia','#5a3420','#f3e2c4','#c98a3c'],['Gelati Polare','Freschi di montagna','#bfe6f5','#0f4c75','#ffffff'],['Birra Valdorna','Bionda dal 1921','#14432b','#f2c84b','#f2c84b'],['Pasta Calvina','Al dente, sempre','#1d4fa0','#ffd23f','#ffffff'],
+  const ADS=[['Caffè Ornello','Il risveglio di Valdonia','#5a3420','#f3e2c4','#c98a3c'],['Gelati Polare','Freschi di montagna','#bfe6f5','#0f4c75','#ffffff'],['Birra Valdorna','Bionda dal 1921','#14432b','#f2c84b','#f2c84b'],['Pasta Calvina','Al dente, sempre','#1d4fa0','#ffd23f','#ffffff'],
     ['Assicurazioni Fenice','Viaggia sereno','#8c1c1c','#ffffff','#f5a623'],['Moto Rondine','Libertà su due ruote','#111111','#ff7a1a','#ffffff'],['Acqua Pievalta','Sorgente alpina','#ffffff','#1565c0','#7fb8e6'],['Banca Serena','Il tuo futuro, in buone mani','#13284f','#ffffff','#5ec4b6'],
     ['Pneumatici Grippa','Tenuta su ogni strada','#ffd400','#111111','#111111'],['Supermercati Sole','Aperti 7 giorni su 7','#ff8a00','#ffffff','#ffe066'],['Radio Guido','Musica che fa strada','#d7261e','#ffffff','#5e1511'],['Terme di San Rocco','Relax a un passo','#0f6e6e','#ffffff','#9fe0d8'],
     ['Mobilificio Ferrandina','Arreda la tua vita','#5b3a1e','#ffe9c7','#d9a066'],['Formaggi Pievalta','Stagionati in alta quota','#f6e27a','#5a3a10','#c0392b'],['Pizzeria Da Gino','Forno a legna dal 1968','#1e7a3a','#ffffff','#e53935'],['Concessionaria Vroom','Usato garantito','#0d47a1','#ffeb3b','#ffffff'],
-    ['Ornapetrol','Il pieno di Ornavia','#c8202a','#ffffff','#ffd23f'],['Cantine Collebruna','Rosso di collina','#5a0f1e','#f4d9a8','#d9a066'],['Lido Serena','Il mare più bello','#4fc3f7','#ffffff','#ffeb3b'],['Gatto Crocchette','Il gatto ringrazia','#ff7f2a','#ffffff','#4a2600'],['Autoscuola Guido','Patente in 30 giorni','#ffffff','#c8202a','#1d4fa0'],['Salumificio Montecastro','Tradizione di borgo','#7a1f1a','#ffe0b2','#ffb74d']];
+    ['Ornapetrol','Il pieno di Valdonia','#c8202a','#ffffff','#ffd23f'],['Cantine Collebruna','Rosso di collina','#5a0f1e','#f4d9a8','#d9a066'],['Lido Serena','Il mare più bello','#4fc3f7','#ffffff','#ffeb3b'],['Gatto Crocchette','Il gatto ringrazia','#ff7f2a','#ffffff','#4a2600'],['Autoscuola Guido','Patente in 30 giorni','#ffffff','#c8202a','#1d4fa0'],['Salumificio Montecastro','Tradizione di borgo','#7a1f1a','#ffe0b2','#ffb74d']];
   function adTex(i){const [b,sl,bg,fg,ac]=ADS[i%ADS.length];return canvasTex(512,(g,n)=>{g.canvas.height=256;g.fillStyle=bg;g.fillRect(0,0,512,256);g.fillStyle=ac;g.globalAlpha=0.35;
       for(let k=0;k<5;k++){g.beginPath();g.arc(420+k*8,40+k*30,60-k*8,0,7);g.fill();}g.globalAlpha=1;g.fillRect(0,214,512,10);g.fillStyle=fg;g.textAlign='left';
       g.font='bold '+(b.length>16?52:64)+'px Arial';g.fillText(b,32,110);g.font='italic 34px Arial';g.fillText(sl,34,170);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(8,8,496,240);});}
@@ -613,7 +613,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const town=(n,exit)=>(g,w,h)=>{g.fillStyle='#fff';g.fillRect(0,0,w,h);g.strokeStyle='#111';g.lineWidth=10;g.strokeRect(10,10,w-20,h-20);g.fillStyle='#111';g.textAlign='center';g.textBaseline='middle';
       let fs=70;g.font='bold '+fs+'px Arial';while(g.measureText(n.toUpperCase()).width>w-60&&fs>30){fs-=4;g.font='bold '+fs+'px Arial';}g.fillText(n.toUpperCase(),w/2,h/2);
       if(exit){g.strokeStyle='#c81818';g.lineWidth=18;g.beginPath();g.moveTo(30,h-24);g.lineTo(w-30,24);g.stroke();}};
-    const GRAF=['ORNAVIA LIBERA','ZONA 47','GATTO','NO FUTURE','SKRT','VALDORNA CREW','BRUNO + ALE','RESPECT','WOW','KAOS','2026','FERRO'];
+    const GRAF=['VALDONIA LIBERA','ZONA 47','GATTO','NO FUTURE','SKRT','VALDORNA CREW','BRUNO + ALE','RESPECT','WOW','KAOS','2026','FERRO'];
     const grafTex=i=>tex('graf'+i,(g,w,h)=>{g.clearRect(0,0,w,h);const word=GRAF[i%GRAF.length],cols=[['#ff3b8d','#2b1055'],['#35e0a1','#103a2b'],['#ffd23f','#7a2e00'],['#4dc3ff','#0c2b52'],['#ff6b35','#2a0f00'],['#c77dff','#22004a']][i%6];
       g.save();g.translate(w/2,h/2);g.rotate((i%3-1)*0.08);let fs=150;g.font='900 '+fs+'px Impact, Arial Black, sans-serif';while(g.measureText(word).width>w*0.9&&fs>40){fs-=6;g.font='900 '+fs+'px Impact, Arial Black, sans-serif';}
       g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=fs*0.22;g.strokeStyle='#111';g.strokeText(word,0,0);g.lineWidth=fs*0.1;g.strokeStyle='#fff';g.strokeText(word,0,0);g.fillStyle=cols[0];g.fillText(word,0,0);
@@ -978,7 +978,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       if(flatAt(x,z,h)){pl.x=x;pl.z=z;pl.h=h;return;}}}
   function spawn(name,via){const s=NW.J.starts.find(t=>t[0]===name)||NW.J.starts[0];pl.x=s[1];pl.z=s[2];pl.h=s[3];if(via&&!spawnVia(name,via)){pl.navMsg='Via non trovata: parto dal centro';pl.navMsgT=4;}if(!via)fixStart();NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;update(0,true);}
   function dests(){const L=[];const d=NW.places.map((p,i)=>[p,i]).filter(([p])=>p.t<=1).sort((a,b)=>a[0].n.localeCompare(b[0].n));d.forEach(([p,i])=>L.push(['nwp_'+i,p.n+(p.t===0?'':'')]));return L;}
-  // ---------- traffico e pedoni di Ornavia: fitti in città, medi fuori, radi in montagna ----------
+  // ---------- traffico e pedoni di Valdonia: fitti in città, medi fuori, radi in montagna ----------
   const TRF=(()=>{const NE=E.length,ECELL=200,eh=new Map();
     E.forEach((e,k)=>{const R=NW.roads[e.ri];if(R.c>7&&R.c!==8)return;const im=(e.i0+e.i1)>>1,key=tk(Math.floor(R.X[im]/ECELL),Math.floor(R.Z[im]/ECELL));let l=eh.get(key);if(!l)eh.set(key,l=[]);l.push(k);});
     const onE=new Map(),list=[],pool=[],pedPool=[],pedPools={},peds2=[];let spT=0,pT=0,made=0;
