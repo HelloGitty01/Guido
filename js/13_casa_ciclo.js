@@ -1,6 +1,6 @@
 // Guido · 13 casa ciclo — parte del codice del gioco (i file in js/ condividono lo stesso spazio globale e vengono eseguiti in ordine)
 // ================= CASA DI GUIDO: villetta in collina sul lago, grande garage, Guido a piedi e Gatto =================
-function makeGuido(){
+function makeGuido(){try{if(HDX&&HDX.guido)return HDX.guido();}catch(e){}
   const M=(c,r=0.75)=>new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(),roughness:r,flatShading:true});
   const skin=M(0xe8b48c,0.7),hair=M(0x3a2618,0.85),jacket=M(0x24365a,0.7),tee=M(0xf6f4ef,0.8),jeans=M(0x3f5f8f,0.85),shoe=M(0x4a3020,0.6),eye=M(0x1a1410,0.3),white=M(0xffffff,0.4),lip=M(0xb5705a,0.7),belt=M(0x2a1c12,0.6);
   const G=new THREE.Group(),add=(geo,mat,x,y,z,p)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(p||G).add(m);return m;};
@@ -31,7 +31,7 @@ function makeGuido(){
   add(new THREE.SphereGeometry(0.124,12,8,Math.PI,Math.PI,0.2,Math.PI*0.62),hair,0,0,-0.004,H).scale.set(0.96,1.12,1.04);
   G.userData={legs,arms,T,H,ph:0};return G;}
 // passo: ph avanza con la velocità, braccia opposte alle gambe, leggero dondolio; wave = saluto con la destra
-function poseGuido(g,dt,sp,wave,t){const u=g.userData,k=Math.min(1,sp/1.4),run=sp>2.2;u.ph+=dt*(run?9:6.3)*Math.min(1.6,0.3+sp/1.4);const s=Math.sin(u.ph),c=Math.cos(u.ph);
+function poseGuido(g,dt,sp,wave,t){if(g.userData.hd){HDX.poseGuido(g,dt,sp,wave?'wave':'walk',t);return;}const u=g.userData,k=Math.min(1,sp/1.4),run=sp>2.2;u.ph+=dt*(run?9:6.3)*Math.min(1.6,0.3+sp/1.4);const s=Math.sin(u.ph),c=Math.cos(u.ph);
   u.legs.forEach((L,i)=>{const q=i?-s:s;L.L.rotation.x=-q*0.55*k*(run?1.25:1);L.K.rotation.x=Math.max(0,(i?c:-c))*0.9*k*(run?1.3:1);});
   u.arms.forEach((A,i)=>{const q=i?s:-s;if(i===1&&wave){A.A.rotation.set(0,0,2.5);A.E.rotation.set(0,0,0.35+Math.sin(t*7)*0.35);return;}A.A.rotation.set(-q*0.45*k*(run?1.4:1),0,(i?1:-1)*0.07);A.E.rotation.set(-0.25*k-(run?0.7:0),0,0);});
   u.T.position.y=1.0+Math.abs(c)*0.025*k;u.T.rotation.x=run?0.12:0.02*k;u.H.rotation.set(-0.04,0,wave?0.08:0);}
@@ -163,7 +163,7 @@ HOME.reset=function(){if(!HOME.ok)return;HOME.mode=null;HOME.wasOut=true;HOME.pa
   Object.values(HOME.cars).forEach(c=>{c.m.userData._v=true;c.m.visible=HOME.vis!==false;if(c.tr){c.tr.userData._v=true;c.tr.visible=HOME.vis!==false;}if(!c.dyn)c.dyn=NWT.addDyn(c.segs);});HOME.c.st='porch';HOME.catTo(4.6,1.6,true);HOME.c.sit=1;};
 function muteCar(on){if(eng&&AC){const t=AC.currentTime;eng.master.gain.setTargetAtTime(0,t,0.05);['tg','sqg','rg'].forEach(k=>eng[k]&&eng[k].gain.setTargetAtTime(0,t,0.05));}RADIO.pause(on);}
 HOME.begin=function(){HOME.mode='walk';HOME.stillT=0;HOME.t=0;document.getElementById('homeSkip').textContent='Salta: parti con l\'auto del menu';const g=HOME.gd,[x,z]=hW(5.0,-1);g.x=x;g.z=z;g.h=Math.atan2(-HOME.ca,-HOME.sa);g.sp=0;HOME.doorA=1.6;
-  HOME.guido.visible=true;pl.mesh.visible=false;pl.x=x;pl.z=z;pl.vx=pl.vy=0;muteCar(true);HOME.camInit=true;
+  HOME.guido.visible=true;pl.mesh.visible=false;pl.x=x;pl.z=z;pl.vx=pl.vy=0;muteCar(true);HOME.camInit=true;ckOverlay();
   const ui=document.getElementById('homeUI');ui.style.display='flex';document.getElementById('homeCard').style.display='none';
   pl.navMsg='Ciao Guido! Vai in garage e scegli il mezzo: avvicinati e premi Invio. Gatto ti segue.';pl.navMsgT=6;
   if(CFG.intro===false)HOME.enter(selKey,true);};
@@ -171,7 +171,7 @@ function fade(cb){const f=document.getElementById('fadeOv');f.style.opacity=1;se
 HOME.enter=function(k,instant){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on&&!CAR.s.own[k]){if(CAR.buy(k)){HOME.near=null;}return;}HOME.busy=true;const go=()=>{HOME.busy=false;const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
     resetPlayer();pl.x=C.x;pl.z=C.z;pl.h=C.pad?C.h:HOME.carH;pl.vx=pl.vy=pl.r=0;NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;C.m.visible=false;if(C.dyn){NWT.remDyn(C.dyn);C.dyn=null;}
     HOME.guido.visible=false;HOME.mode=null;HOME.doorA=0;document.getElementById('homeUI').style.display='none';applyView();pl.camInit=false;RADIO.pause(false);try{savePrefs();}catch(e){}
-    HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;startDrive();};
+    HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;if(DRV)DRV.skipBoard=true;startDrive();};
   if(instant)go();else fade(go);};
 HOME.finish=function(){if(HOME.done)return;HOME.done=true;document.getElementById('homeUI').style.display='none';fade(()=>{HOME.guido.visible=false;HOME.cat.visible=false;HOME.doorA=0;setTimeout(()=>{HOME.cat.visible=true;HOME.mode=null;endRun('casa');},700);});};
 HOME.arrive=function(){if(CAR.on){CAR.repair();CAR.save();}HOME.mode='return';HOME.t=0;muteCar(true);pl.vx=pl.vy=0;pl.hb=true;if(pl.lights)toggleLights();
@@ -258,10 +258,10 @@ function loop(now){
     const st={dmg:dmgTot,rpm:pl.rpm,kmh,limit,over,gearTxt,km:pl.km,load:pl.load,slip:pl.slip};
     clusterT-=dt;if(clusterT<=0&&view==='cockpit'){drawCluster(pl.ck,pl.P,st);clusterT=MOBILE?1/12:1/30;}
     screenT-=dt;if(screenT<=0&&view==='cockpit'){screenT=route?0.15:0.5;if(route)drawNavScreen(pl.ck);else drawScreen(pl.ck,st);}
-    fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);drawMini(dt);
+    fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);if(DRV)DRV.tick(dt);drawMini(dt);
     lodT-=dt;if(lodT<=0){lodT=0.5;parked.forEach(c=>c.visible=Math.abs(c.position.x-camera.position.x)+Math.abs(c.position.z-camera.position.z)<420);}
     document.getElementById('tGear').textContent=pl.sel==='R'?'D':'R';document.getElementById('extSpd').textContent=Math.round(kmh);document.getElementById('extGear').textContent=gearTxt+(over?' · ⚠ limite '+limit:'')+fuelTxt();
-    {const fx=document.getElementById('tFix'),need=!!(pl.flip&&pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5);fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
+    {const fx=document.getElementById('tFix'),need=!!((pl.flip&&pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5)||(pl.wat&&pl.wat.sunk));fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
     navBox.style.display=(pl.navMsgT>0)?'block':'none';if(pl.navMsgT>0)navBox.textContent=pl.navMsg+(route&&route.next&&view!=='cockpit'?'':'');
     if(route&&view!=='cockpit'&&route.next){navBox.style.display='block';navBox.textContent=Math.round(Math.max(0,route.next.s-route.ps))+' m · '+manText(route.next);}
     if(MOB)hud.textContent=pl.infrT>0?'⚠ '+pl.infrMsg:'';else hud.textContent=(pl.infrT>0?'⚠ '+pl.infrMsg+'  ':'')+`${pl.P.label} · ${pl.km.toFixed(2)} km · urti: ${pl.hits} · rossi: ${pl.infr.rosso} · contromano: ${pl.infr.contromano}`+licTxt()+fuelTxt()+(isTouch?'':' · C: vista · Tab: mappa · O: foto · J: clip · Esc: menu');

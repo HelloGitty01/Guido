@@ -9,7 +9,7 @@ const TYPES={
   // la flotta di Guido (modelli dettagliati con interni): misure riprese dai modelli al caricamento
   volvo:{L:4.79,W:1.71,hb:0.92,H:1.43,fleet:true,gh:[[-1.9,0.92],[-1.6,1.42],[0.5,1.42],[1.1,0.92]]},
   wagoneer:{L:4.76,W:1.9,hb:1.05,H:1.8,fleet:true,gh:[[-2.2,1.05],[-2.1,1.75],[0.55,1.75],[1.0,1.05]]},
-  hellcat:{L:5.03,W:2.0,hb:0.9,H:1.45,fleet:true,gh:[[-1.6,0.9],[-1.1,1.4],[0.4,1.4],[1.05,0.9]]},
+  hellcat:{L:4.9,W:2.03,hb:0.85,H:1.37,fleet:true,gh:[[-1.7,0.9],[-1.0,1.33],[0.3,1.33],[1.0,0.9]]},
   zil:{L:8.76,W:2.2,hb:1.3,H:3.09,fleet:true,big:true,camL:12,camH:5.6,gh:[[2.4,1.6],[2.4,2.6],[3.0,2.6],[3.3,1.6]]},
   daily:{L:5.6,W:2.0,hb:1.15,H:2.4,fleet:true,gh:[[-2.7,1.2],[-2.7,2.3],[1.5,2.3],[2.0,1.2]]},
   taxi:{L:5.35,W:2.0,hb:0.95,H:1.5,fleet:true,gh:[[-1.9,0.95],[-1.55,1.45],[0.55,1.45],[1.1,0.95]]},

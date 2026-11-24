@@ -102,6 +102,7 @@
   #sum td{border-color:var(--line)!important}#ctrlBody td{border-color:var(--line)!important}
   #sum button,#credClose,#ctrlClose{background:var(--red)!important;color:#fff!important;border:0!important;border-radius:22px!important;padding:9px 20px!important;font:800 15px Nunito,sans-serif;margin-right:8px;cursor:pointer}
   #ctrlOv .sm,#ctrlBody button{background:#fff;color:var(--wine);border:2px solid var(--line);border-radius:8px}
+  #holdInd{position:fixed;bottom:118px;left:50%;transform:translateX(-50%);z-index:3;display:none;pointer-events:none;padding:4px 12px;border-radius:12px;background:rgba(10,14,18,.6);color:#7dffa0;font:700 14px system-ui,sans-serif;letter-spacing:.04em;border:1px solid rgba(125,255,160,.45)}
   #gripInd{position:fixed;bottom:62px;left:50%;transform:translateX(-50%);z-index:3;display:none;pointer-events:none;filter:drop-shadow(0 0 4px rgba(0,0,0,.6))}#gripInd svg{display:block}#gripInd.ck{left:auto;right:18px;bottom:110px;transform:none}body.mob #gripInd{bottom:58px}body.mob #gripInd svg{width:34px;height:34px}
   #steerInd{position:fixed;bottom:48px;left:50%;transform:translateX(-50%);z-index:3;display:none;text-align:center;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}#steerInd svg{display:block;margin:0 auto;transition:none}#steerInd b{color:#fff;font:800 12px Nunito,sans-serif}
   /* smartphone: due zone per i pollici (gas/freno a sinistra, sterzo a destra), icone al posto delle scritte */
@@ -249,17 +250,18 @@
 <li>"Generic Building Models" – QuintusHortensiusHortalus, CC BY 4.0</li>
 <li>"Low-poly Brick House" – Vitalii.Sandula, CC BY 4.0</li>
 <li>"FIAT Panda 4x4" – Duhyeen, licenza Sketchfab Standard</li>
-<li>"Volvo 240" – wallon · "Jeep Grand Wagoneer (1991)" – geyges · "Dodge Challenger SRT Hellcat Widebody" – RPMRender · "ZIL 133540" e "Ford Crown Victoria Taxi" – Korolv; licenza Sketchfab Standard</li>
+<li>"Volvo 240" – wallon · "Jeep Grand Wagoneer (1991)" – geyges · "Dodge Challenger - Muscle Car - Low-Poly" – Allay Design · "ZIL 133540" e "Ford Crown Victoria Taxi" – Korolv; licenza Sketchfab Standard</li>
 <li>"Free Lowpoly City Props Pack" – MaHa / Low Poly Models, licenza Sketchfab Standard</li>
 <li>Pedoni: "Ultimate Modular Men" e "Ultimate Modular Women" – Quaternius (quaternius.com), licenza CC0</li>
 <li>"Iveco Daily 1982 - Lowpoly" – kekis69, CC BY 4.0</li></ul>
 <p><b>Modelli dettagliati</b> (Sketchfab, licenza Sketchfab Standard salvo dove indicato):</p><ul>
-<li>"Tree 3d model linden tree" – High Quality Work; "Tree 3d model Fir Spruce Pine" – Qruad; "Tropical Palm Tree" – assetfactory</li>
+<li>"Tree 3d model linden tree" – High Quality Work; "Tree 3d model Fir Spruce Pine" – Qruad; "Tropical Palm Tree" – assetfactory (non più usato)</li>
 <li>"Brisbane City Scania L94UB Bus (RHD)" e "Hungry Jack's Restaurant (low poly)" – Jotrain Models (insegne ridipinte come "Orna Burger")</li>
 <li>"Cow" – kenchoo; "Cow" – stylo0; "Trotting Cat" – miyapCG; "Low Poly People Free Sample Pack" – Denys Almaral</li>
 <li>"Road Pack" e "Neighbourhood City Modular lowpoly" – golukumar; "Building" e "Procedural City 3" – abhayexe; "street city buildings (8)" – dasy444; "Desert rocks" – WeSVa</li>
 <li>"Modern Night Building (Game-ready)" – Ishxxn, CC BY 4.0</li>
-<li>"Cypress tree" – ElectroNick, CC BY 4.0; "Poplar tree" – Georgeous, CC BY 4.0</li></ul>
+<li>"Cypress tree" – ElectroNick, CC BY 4.0; "Poplar tree" – Georgeous, CC BY 4.0; "Date Palm" – evolveduk, CC BY 4.0</li>
+<li>"Indian Man In Kurta" (Guido) – Pixel_Monster</li></ul>
 <h2 style="margin:14px 0 6px">Suono dei motori</h2><p style="opacity:.8;margin:0 0 6px">Modello a guide d'onda adattato da "engine-sound-generator" di Antonio-R1, licenza MIT.</p>
 <h2 style="margin:14px 0 6px">Musica</h2><p style="opacity:.8;margin:0 0 6px">Brani da Pixabay, licenza Pixabay Content License.</p>
 <ul style="padding-left:18px;margin:0"><li>Sigla: "Driving" – nastelbom</li><li>Radio Guido: "Broken Radio" – mangmaru · "Radio Active" – BearStockMusic · "Radio Jingle" – Alex Morgan · "Got a Space Shuttle Parked in My Yard" (cover) – Tim Kraaijvanger</li></ul>
@@ -311,7 +313,7 @@
 
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
 <button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
-<div id="vign"></div><div id="cineFade"></div><div id="lbT"></div><div id="lbB"></div><div id="cineTitle"></div><div id="gripInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="19" fill="none" stroke="#ffb020" stroke-width="2.2"/></svg></div><div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><b id="ckSpd">0</b><b id="ckGear">N</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i><img id="ckWheel" alt=""></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
+<div id="vign"></div><div id="cineFade"></div><div id="lbT"></div><div id="lbB"></div><div id="cineTitle"></div><div id="holdInd"></div><div id="gripInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="19" fill="none" stroke="#ffb020" stroke-width="2.2"/></svg></div><div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><b id="ckSpd">0</b><b id="ckGear">N</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i><img id="ckWheel" alt=""></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
 <div id="jobOv"><div></div></div>
 <button id="radioBtn" title="Autoradio (tasto M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">♪ Radio</button><div id="radioTag"></div>
 <div id="navBox" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(10,30,60,.82);color:#fff;padding:8px 16px;border-radius:12px;font-size:17px;display:none;pointer-events:none;z-index:3"></div>
@@ -342,7 +344,7 @@ const MODELS={};
 // pacchetto "modelli dettagliati": si può spegnere dalle impostazioni e si torna esattamente alla grafica di prima
 window.HDON=(()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');return c.hd!=null?!!c.hd:c.q!=='bassa';}catch(e){return true;}})();
 window.HDIMG={};
-(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
+(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','guido','hd_linden_far','hd_fir_far','hd_palm_far','hd_cypress_far','hd_poplar_far','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
   const upd=()=>{let a=0;files.forEach(f=>a+=prog[f]||0);const p=Math.round(a/files.length*100);const b=document.getElementById('ldBar'),t=document.getElementById('ldTxt');if(b)b.style.width=p+'%';if(t)t.innerHTML=(p<40?'Accendo il motore…':p<80?'Scaldo le gomme…':'Controllo gli specchietti…')+' <b>'+p+'%</b>';};
   const go=()=>{const t=document.getElementById('ldTxt');if(t)t.innerHTML='Preparo le strade…';setTimeout(()=>MAIN().then(()=>{if(box)box.remove();
       const sp=document.getElementById('splash'),bt=document.getElementById('splGo');if(t)t.textContent='Pronto!';bt.style.display='block';bt.focus();

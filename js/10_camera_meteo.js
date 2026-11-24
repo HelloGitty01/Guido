@@ -139,7 +139,7 @@ function updateBlinker(dt){const wa=pl.delta*pl.P.ratio*57.3,v=Math.abs(pl.vx);
   if(on!==pl.blinkOn){pl.blinkOn=on;if(any)tick(on);}
   if(!any)pl.blinkT=0;
   const ud=pl.mesh.userData;ud.indL.emissiveIntensity=(on&&(pl.blink<0||pl.hazard))?3:0;ud.indR.emissiveIntensity=(on&&(pl.blink>0||pl.hazard))?3:0;}
-function toggleView(){view=view==='cockpit'?'chase':'cockpit';applyView();}
+function toggleView(){pl.autoOut=false;view=view==='cockpit'?'chase':'cockpit';applyView();}
 function ckRestore(){if(pl.mesh)pl.mesh.children.forEach(c=>{if(c.userData._ckH){c.visible=true;delete c.userData._ckH;}});}
 function applyView(){if(!pl.ck)return;ckRestore();pl.camInit=false;pl.ck.g.visible=view==='cockpit';pl.mesh.userData.body.visible=view!=='cockpit';pl.bodyClip.visible=view==='cockpit';if(pl.mesh.userData.cabx){pl.mesh.userData.cabx.visible=view!=='cockpit';pl.mesh.userData.ckx.visible=view==='cockpit';pl.bodyClip.visible=false;}if(pl.mesh.userData.glb){const ck=view==='cockpit';(pl.mesh.userData.cage||[]).forEach(o=>o.visible=!ck);pl.mesh.userData.allMats.forEach(m=>{const G=m.userData.glass;if(G){m.transparent=true;m.opacity=ck?Math.min(G.op,0.14):G.op;}});pl.mesh.userData.body.visible=true;pl.mesh.userData.allMats.forEach(m=>{m.clippingPlanes=view==='cockpit'?pl.clipPlanes:null;m.clipIntersection=true;m.needsUpdate=true;});}(pl.mesh.userData.mir||[]).forEach(m=>m.visible=view!=='cockpit');document.getElementById('ext').style.display=view==='chase'?'block':'none';
   camera.fov=view==='cockpit'?72:58;camera.updateProjectionMatrix();ckOverlay();}
@@ -168,7 +168,7 @@ function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspec
   camera.aspect=w/h;camera.setViewOffset(w,h,-l,-t,W,H);camera.updateProjectionMatrix();
   CKO.cam.left=0;CKO.cam.right=W;CKO.cam.top=H;CKO.cam.bottom=0;CKO.cam.updateProjectionMatrix();
   ['C','L','R'].forEach(k=>{const q=CKO.q[k],g=C.glass[k];q.visible=!!g;if(!g)return;const x0=l+g[0]*s,x1=l+g[2]*s,y0=t+g[1]*s,y1=t+g[3]*s;q.position.set((x0+x1)/2,H-(y0+y1)/2,0);q.scale.set(x1-x0,y1-y0,1);});}
-function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on)?CKIMG[selKey]:null;CKO.on=!!C;CKO.cfg=C||null;const ov=document.getElementById('ckOv');ov.style.display=C?'block':'none';
+function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HOME.mode)?CKIMG[selKey]:null;CKO.on=!!C;CKO.cfg=C||null;const ov=document.getElementById('ckOv');ov.style.display=C?'block':'none';
   if(C){const img=document.getElementById('ckImg');if(img.dataset.src!==C.src){img.src=C.src;img.dataset.src=C.src;}
     ov.querySelectorAll('canvas.ckNav').forEach(c=>{if(!pl.ck||c!==pl.ck.scv)c.remove();});if(pl.ck&&CKNAV[selKey]&&pl.ck.scv.parentNode!==ov){pl.ck.scv.className='ckNav';ov.insertBefore(pl.ck.scv,document.getElementById('ckWheel'));}
     const wi=document.getElementById('ckWheel');wi.style.display=C.wheel?'block':'none';if(C.wheel&&wi.dataset.src!==C.wheel.src){wi.src=C.wheel.src;wi.dataset.src=C.wheel.src;}}
@@ -177,7 +177,7 @@ function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on)?CKI
 addEventListener('resize',()=>setTimeout(ckLayout,0));
 function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
-  const m=pl.mesh,S=pl.susp;if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
+  const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
   pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;
   if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,th=pl.delta*pl.P.ratio,c=Math.cos(th),sn=Math.sin(th),k=Wh.a/Wh.b;if(Math.abs(th-(CKO.th??99))>0.002){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
   if(pl.ck.wipers.length){const on=WX==='rain';pl.wipT=(pl.wipT||0)+(on?dt:0);const th=on?(1-Math.cos(pl.wipT*Math.PI*1.25))/2*1.35:0;
@@ -189,6 +189,9 @@ function updateCamera(dt){
   const w=m.userData.wheels;w[0].rotation.y=w[1].rotation.y=-pl.delta;
   if(m.userData.glb){const rel=Math.max(-0.06,Math.min(pl.P.truck?0.17:0.13,(pl.yb??pl.terrH)-pl.terrH));for(const q of w){if(q.userData.y0==null)q.userData.y0=q.position.y;q.position.y=q.userData.y0-rel;}}
   if(m.userData.glb){const a=(pl.lockF?0:pl.vx+(pl.spinW||0)*Math.sign(pl.vx||1)*3)*dt/(pl.T.wr||0.31);for(let i=0;i<w.length;i++){const sp=w[i].children[0];if(sp&&sp.name==='WSPIN')sp.rotation.z-=a;}}
+  // auto ribaltata: l'abitacolo-foto non può capovolgersi, quindi si passa alla vista esterna e si rientra quando l'auto è di nuovo sulle ruote
+  {const up=m.matrixWorld.elements[5]-(pl.wat&&pl.wat.y<pl.wat.lv-0.8?1:0);if(view==='cockpit'&&up<0.82&&!PHOTO.on){pl.autoOut=true;pl.autoOutT=0;view='chase';applyView();}
+   else if(pl.autoOut&&view==='chase'){if(up>0.96){pl.autoOutT=(pl.autoOutT||0)+dt;if(pl.autoOutT>1.2){pl.autoOut=false;view='cockpit';applyView();}}else pl.autoOutT=0;}}
   if(view==='cockpit'){
     tmpV.copy(pl.ck.eye);m.localToWorld(tmpV);camera.position.copy(tmpV);
     const look=new THREE.Vector3(pl.ck.eye.x+10,pl.ck.eye.y-1.5,pl.ck.eye.z);m.localToWorld(look);
@@ -206,7 +209,7 @@ function updateCamera(dt){
     // telecamera "con peso": arretra quando l'auto spinge, si avvicina in frenata, scivola verso l'esterno in curva e molleggia sui colpi
     {const C=CAMS,k=Math.min(1,dt*2.2);C.ax+=((pl.ax||0)-C.ax)*k;C.ay+=((pl.ay||0)-C.ay)*Math.min(1,dt*1.6);C.vy+=(-38*C.y-4.2*C.vy)*dt;C.y+=C.vy*dt;}
     const hz2=hz*(1+Math.max(-0.08,Math.min(0.1,CAMS.ax*0.011))),lat=-Math.max(-0.9,Math.min(0.9,CAMS.ay*0.07))*(1-ORB.w);
-    tmpV.set(pl.x-ch*hz2+sh*lat,Math.max(pl.terrH+0.6,(pl.yb??pl.terrH)+hy+CAMS.y),pl.z+sh*hz2+ch*lat);camera.position.lerp(tmpV,cd<cd0-0.1||ORB.w>0.05?1-Math.exp(-dt*14):1-Math.exp(-dt*6));
+    tmpV.set(pl.x-ch*hz2+sh*lat,Math.max(pl.terrH+0.6,(pl.yb??pl.terrH)+hy+CAMS.y,pl.wat?pl.wat.lv+1.6:-1e9),pl.z+sh*hz2+ch*lat);camera.position.lerp(tmpV,cd<cd0-0.1||ORB.w>0.05?1-Math.exp(-dt*14):1-Math.exp(-dt*6));
     {const lx=pl.x+ch*5,ly=(pl.yb??pl.terrH)+1.1+Math.sin(pl.slopeP)*5,lz=pl.z-sh*5,w=ORB.w;camLook.set(lx+(pl.x-lx)*w,ly+(pl.terrH+0.9-ly)*w,lz+(pl.z-lz)*w);}camera.lookAt(camLook);
   }
   const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?2.2:0;headSpot.distance=pl.flash?170:60;headSpot.angle=pl.flash?0.32:0.45;}
@@ -231,13 +234,15 @@ const CINE={shot:null,t:0,list:null,i:0,intro:null,used:false,env:false,
     const f=Math.max(0,Math.min(1,this.t/1.4,(S.dur-this.t)/1.4));const fe=document.getElementById('cineFade');if(fe)fe.style.opacity=(1-f).toFixed(3);},
   startIntro(){if(CFG.intro===false||!pl.mesh)return;const ck=view==='cockpit';if(ck){view='chase';applyView();}
     this.intro={t:0,dur:6.4,ck,side:Math.random()<0.5?1:-1};document.body.classList.add('cine');
+    // Guido e Gatto salgono in auto mentre la ripresa scende
+    if(DRV&&DRV.board())this.intro.dur=9.2;
     const tt=document.getElementById('cineTitle');if(tt){const st=document.getElementById('selStart'),wx=document.getElementById('selWx'),tm=document.getElementById('selTime');
       tt.innerHTML='<div class="c1">'+pl.P.label+'</div><div class="c2">'+((NWT&&st&&st.value)?st.value+' · ':'')+'Repubblica di Ornavia</div><div class="c3">'+(tm?tm.selectedOptions[0].textContent:'')+(wx?' · '+wx.selectedOptions[0].textContent:'')+'</div>';}},
   introCam(dt){const I=this.intro;I.t+=dt;const u=Math.min(1,I.t/I.dur),e=u<0.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,cx=pl.x,cz=pl.z,cy=(pl.yb??pl.terrH);
     const a1=Math.atan2(tmpV.z-cz,tmpV.x-cx),r1=Math.hypot(tmpV.x-cx,tmpV.z-cz),h1=tmpV.y-cy,a0=a1+I.side*2.5,r0=110,h0=88;
     const a=a0+(a1-a0)*e,r=r0+(r1-r0)*e,h=h0+(h1-h0)*Math.pow(e,0.85);camera.position.set(cx+Math.cos(a)*r,cy+h,cz+Math.sin(a)*r);
     _cl.set(cx,cy+1,cz).lerp(camLook,e);camera.lookAt(_cl);if(u>=1)this.endIntro();},
-  endIntro(){const I=this.intro;this.intro=null;document.body.classList.remove('cine');if(I&&I.ck){view='cockpit';applyView();}}};
+  endIntro(){const I=this.intro;this.intro=null;if(DRV)DRV.hideAll();document.body.classList.remove('cine');if(I&&I.ck){view='cockpit';applyView();}}};
 const _cl=new THREE.Vector3();
 ['keydown','pointerdown','touchstart'].forEach(ev=>addEventListener(ev,()=>{if(CINE.intro&&CINE.intro.t>0.5)CINE.endIntro();},{passive:true}));
 // ================= ORA DEL GIORNO E METEO =================

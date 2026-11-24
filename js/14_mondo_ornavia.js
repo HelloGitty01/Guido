@@ -52,6 +52,13 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function texKey(R){if(R.c>=9)return 'pv';if(R.c===8)return 'pl';if(R.c===7)return 'r2';
     if(R.o){const l=R.c===0?Math.max(2,Math.round((R.w-3)/3.6)):R.c===1||R.c===3?1:Math.max(1,Math.round((R.w-1.5)/3.5));return 'm'+Math.min(4,l);}return 'r2';}
   const waterM=new THREE.MeshStandardMaterial({color:0x2b5a73,roughness:0.08,metalness:0.15,envMapIntensity:1.2,transparent:true,opacity:0.9});
+  // onde: la superficie resta piatta, si muovono le normali (riflessi che corrono); ampiezza per specchio d'acqua: poche nei laghi, tante nel mare
+  const WAVT={value:0},waveMat=(amp)=>{const m=waterM.clone();m.onBeforeCompile=sh=>{sh.uniforms.uT=WAVT;sh.uniforms.uAmp={value:amp};
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWp;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWp=(modelMatrix*vec4(transformed,1.0)).xyz;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform float uT;uniform float uAmp;varying vec3 vWp;\nvec2 wv(vec2 p,vec2 d,float f,float sp){float ph=dot(p,d)*f+uT*sp;return d*cos(ph)*f;}').replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
+      {vec2 p=vWp.xz;vec2 g=wv(p,normalize(vec2(1.0,0.35)),0.21,1.7)*0.55+wv(p,normalize(vec2(-0.4,1.0)),0.37,2.3)*0.35+wv(p,normalize(vec2(0.8,-0.7)),0.83,3.1)*0.18+wv(p,normalize(vec2(-0.9,-0.2)),1.9,4.6)*0.07;
+       vec3 wn=normalize(vec3(-g.x*uAmp,1.0,-g.y*uAmp));normal=normalize((viewMatrix*vec4(wn,0.0)).xyz);}`);};m.customProgramCacheKey=()=>'wave';return m;};
+  NW.waveAmp=L=>/mare/i.test(L.n||'')||L.lv<=0.5?1.0:0.28;
   const riverM=new THREE.MeshStandardMaterial({color:0x3a6170,roughness:0.15,metalness:0.1,envMapIntensity:1,polygonOffset:true,polygonOffsetFactor:-0.5,polygonOffsetUnits:-1});
   const portM=mat(0xb5b0a4,{roughness:0.85}),concM=mat(0x9a968e,{roughness:0.9,side:THREE.DoubleSide}),deckM=mat(0x77756f,{roughness:0.92,side:THREE.DoubleSide}),tunM=new THREE.MeshStandardMaterial({color:0x4a4846,roughness:0.95,side:THREE.DoubleSide}),lampM=new THREE.MeshBasicMaterial({color:0xffe2a0});
   const railM=new THREE.MeshStandardMaterial({color:0xaeb3b8,metalness:0.6,roughness:0.4,side:THREE.DoubleSide});
@@ -161,14 +168,23 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       gShift(all,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));
       const parts=[...by.entries()].map(([m,l])=>{const mm=gFixMat(m.clone());const leaf=leafRe.test(m.name)||m.transparent||m.alphaTest>0;
         if(leaf){mm.transparent=false;mm.alphaTest=0.45;mm.side=THREE.DoubleSide;if(mm.map){mm.map=coverageMips(mm.map,0.45);}mm.roughness=0.9;mm.metalness=0;if(tint!==1)mm.color.multiplyScalar(tint);}else{mm.roughness=Math.max(0.8,mm.roughness);mm.metalness=0;}
-        return{geo:gMerge(l),mat:mm};});
-      V[key]={parts,items:new Set(),im:null};};
+        return{geo:gMerge(l),mat:mm,name:m.name};});
+      // versione leggera per la distanza (stesso modello, poche foglie e niente rami fini): stessi materiali
+      let far=null;const FG=MODELS['hd_'+key2file[key]+'_far'];if(FG){const fs=FG.scene;fs.updateMatrixWorld(true);const fb=new Map();fs.traverse(m=>{if(!m.isMesh)return;const nm=m.material.name;if(!fb.has(nm))fb.set(nm,[]);fb.get(nm).push(gBake(m,m.matrixWorld));});
+        const fa=[...fb.values()].flat();gShift(fa,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));far=[...fb.entries()].map(([nm,l])=>{const P=parts.find(p=>p.name===nm)||parts[0];return{geo:gMerge(l),mat:P.mat};});}
+      V[key]={parts,far,items:new Set(),im:null};};
+    const key2file={lin:'linden',fir:'fir',palm:'palm',cyp:'cypress',pop:'poplar'};
     prep('lin',MODELS.hd_linden,/001/);prep('fir',MODELS.hd_fir,/branch/i,0.28,1.45);prep('palm',MODELS.hd_palm,/leaves/i);prep('cyp',MODELS.hd_cypress,/2_sided/i,0,1.1);prep('pop',MODELS.hd_poplar,/branch/i,0,1.1);
     const CAP=MOBILE||QG.mid?50:110,TOT=MOBILE||QG.mid?60:130,RAD=MOBILE?140:210,Z=new THREE.Matrix4().makeScale(0,0,0),M4=new THREE.Matrix4(),shown=new Set();let tm=0;
     Object.values(V).forEach(v=>{v.im=v.parts.map(p=>{const im=new THREE.InstancedMesh(p.geo,p.mat,CAP);im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(CAP*3).fill(1),3);im.instanceColor.setUsage(THREE.DynamicDrawUsage);im.count=0;im.castShadow=true;im.receiveShadow=true;im.frustumCulled=false;im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);return im;});});
     // it: {v,x,z,m(Matrix4),c(Color),im,q,T}
     const add=(T,it)=>{if(!V[it.v])return false;(T.hdt||(T.hdt=[])).push(it);it.T=T;return true;};
     const drop=T=>{if(T.hdt)T.hdt.forEach(it=>shown.delete(it));T.hdt=null;};
+    // a fine costruzione della zona: gli alberi di quella zona diventano modelli 3D leggeri (e le sagome poligonali spariscono)
+    const buildFar=T=>{if(!T.hdt)return;const by={};T.hdt.forEach(it=>{if(!it.far&&V[it.v]&&V[it.v].far)(by[it.v]||(by[it.v]=[])).push(it);});
+      Object.entries(by).forEach(([k,L])=>{const ims=V[k].far.map(p=>{const im=new THREE.InstancedMesh(p.geo,p.mat,L.length);im.frustumCulled=false;im.receiveShadow=true;
+          L.forEach((it,q)=>{im.setMatrixAt(q,it.m);im.setColorAt(q,it.c);});scene.add(im);T.dobj.push(im);return im;});
+        L.forEach((it,q)=>{it.far=ims;it.fq=q;if(it.im){it.im.visible=false;}});});};
     const update=(dt,force)=>{tm-=dt;if(tm>0&&!force)return;tm=0.4;const cx=camera.position.x,cz=camera.position.z,R2=RAD*RAD,cand={};Object.keys(V).forEach(k=>cand[k]=[]);
       tiles.forEach(T=>{if(!T.det||!T.hdt)return;const x0=T.i*TS,z0=T.j*TS;if(cx<x0-RAD||cx>x0+TS+RAD||cz<z0-RAD||cz>z0+TS+RAD)return;
         for(const it of T.hdt){const d=(it.x-cx)**2+(it.z-cz)**2;if(d<R2)cand[it.v].push([d,it]);}});
@@ -178,15 +194,15 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       Object.keys(V).forEach(k=>{const L=cand[k];L.sort((a,b)=>a[0]-b[0]);const v=V[k],n=Math.min(CAP,L.length);
         for(let q=0;q<n;q++){const it=L[q][1];now.add(it);v.im.forEach(im=>{im.setMatrixAt(q,it.m);im.setColorAt(q,it.c);});}
         v.im.forEach(im=>{im.count=n;im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;});});
-      shown.forEach(it=>{if(!now.has(it)&&it.T.det&&it.im.parent){it.im.setMatrixAt(it.q,it.m0);dirty.add(it.im);}});
-      now.forEach(it=>{if(!shown.has(it)){if(!it.m0){it.m0=new THREE.Matrix4();it.im.getMatrixAt(it.q,it.m0);}it.im.setMatrixAt(it.q,Z);dirty.add(it.im);}});
+      shown.forEach(it=>{if(!now.has(it)&&it.T.det){if(it.far){it.far.forEach(im=>{im.setMatrixAt(it.fq,it.m);dirty.add(im);});}else if(it.im.parent){it.im.setMatrixAt(it.q,it.m0);dirty.add(it.im);}}});
+      now.forEach(it=>{if(!shown.has(it)){if(it.far){it.far.forEach(im=>{im.setMatrixAt(it.fq,Z);dirty.add(im);});}else{if(!it.m0){it.m0=new THREE.Matrix4();it.im.getMatrixAt(it.q,it.m0);}it.im.setMatrixAt(it.q,Z);dirty.add(it.im);}}});
       dirty.forEach(im=>im.instanceMatrix.needsUpdate=true);shown.clear();now.forEach(it=>shown.add(it));};
-    return Object.keys(V).length?{V,add,drop,update}:null;}catch(e){console.warn('alberi HD non preparati',e);return null;}})();
+    return Object.keys(V).length?{V,add,drop,update,buildFar}:null;}catch(e){console.warn('alberi HD non preparati',e);return null;}})();
   // ---------- laghi: costruiti una volta sola ----------
   if(!HIDE)NW.lakes.forEach(L=>{try{const ct=[];for(let i=0;i<L.p.length;i+=2)ct.push(new THREE.Vector2(L.p[i],L.p[i+1]));const hs=L.holes.map(h=>{const a=[];for(let i=0;i<h.length;i+=2)a.push(new THREE.Vector2(h[i],h[i+1]));return a;});
     const tri=THREE.ShapeUtils.triangulateShape(ct,hs),all=ct.concat(...hs),pos=new Float32Array(all.length*3);all.forEach((v,i)=>{pos[i*3]=v.x;pos[i*3+1]=L.lv;pos[i*3+2]=v.y;});
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setIndex(tri.flat());g.computeVertexNormals();if(g.attributes.normal.array[1]<0)g.index.array.reverse();g.computeVertexNormals();
-    const m=new THREE.Mesh(g,waterM);m.receiveShadow=true;scene.add(m);}catch(e){console.warn('lago',L.n,e);}});
+    const m=new THREE.Mesh(g,waveMat(NW.waveAmp(L)));m.receiveShadow=true;scene.add(m);}catch(e){console.warn('lago',L.n,e);}});
   // ---------- monumenti: il Duomo, costruito dalla sua pianta vera ----------
   const LMS={segs:[]};
   (NW.J.lms||[]).forEach(([kind,rg,g0])=>{if(kind!=='duomo'||HIDE)return;try{
@@ -783,7 +799,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         L.forEach((ti,q)=>{const x=TR[ti*2],z=TR[ti*2+1],g=NW.Hground(x,z),v=hsh(ti,7),s=(vi===4?10:vi===5?12:vi===2?10:vi?11:8)+v*5;Q.setFromAxisAngle(UPV,v*6.28);im.setMatrixAt(q,M4.compose(V.set(x,g-0.1,z),Q,S3.set(s*(0.9+0.2*hsh(ti,9)),s,s*(0.9+0.2*hsh(ti,5)))));
           co.setRGB(0.85+0.3*v,0.9+0.2*hsh(ti,4),0.85+0.2*v);im.setColorAt(q,co);addSeg(T,x-0.25,z,x+0.25,z);
           if(HDT){const hv=['lin','pop','fir','lin','palm','cyp'][vi];if(hv){const k=hv==='lin'?0.95:hv==='fir'?1.25:hv==='cyp'?0.95:1.05;HDT.add(T,{v:hv,x,z,m:new THREE.Matrix4().compose(V.set(x,g-0.15,z),Q,S3.set(s*k*(0.9+0.2*hsh(ti,9)),s*k,s*k*(0.9+0.2*hsh(ti,5)))),c:new THREE.Color(0.9+0.15*v,0.92+0.12*hsh(ti,4),0.88+0.12*v),im,q});}}});
-        im.castShadow=true;im.receiveShadow=true;scene.add(im);T.dobj.push(im);});}
+        im.castShadow=true;im.receiveShadow=true;scene.add(im);T.dobj.push(im);});if(HDT)HDT.buildFar(T);}
     // parchi e piazze
     const al=areaT.get(T.key);if(al){const P=[],I=[],PP=[],PI=[],WP=[],WI=[];al.forEach(ai=>{const [kind,ring]=NW.J.areas[ai];const ct=[];for(let q=0;q<ring.length;q+=2)ct.push(new THREE.Vector2(ring[q],ring[q+1]));let tri;try{tri=THREE.ShapeUtils.triangulateShape(ct,[]);}catch(e){return;}
         const A=kind===1?PP:kind===2?WP:P,B=kind===1?PI:kind===2?WI:I,s=A.length/3;ct.forEach(v=>A.push(v.x-x0,NW.Hground(v.x,v.y)+(kind===1?0.075:kind===2?0.06:0.03),v.y-z0));tri.forEach(t=>B.push(s+t[0],s+t[1],s+t[2]));});
@@ -797,6 +813,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       // vicino a una strada (le case stanno lungo le vie), tranne nelle città grandi
       let best=null;for(const q of NW.near(x,z,32))if(q.R.c<=8&&(!best||q.d<best.d))best=q;if(!best&&p.t!==0)continue;
       if(!free(x,z,3.5))continue;const g=NW.Hground(x,z),sl=Math.abs(NW.Hg(x+8,z)-NW.Hg(x-8,z))/16+Math.abs(NW.Hg(x,z+8)-NW.Hg(x,z-8))/16;if(sl>0.35)continue;
+      // niente case sotto il livello di una strada in rilevato
+      if(best&&best.d<24){const R2=best.R,i2=best.i,rh=Math.max(R2.Hh[i2],R2.Hh[i2+1]||R2.Hh[i2]);if(rh-g>1.2)continue;}
       let rot=rnd(k)*6.28;if(best){const R2=best.R;rot=Math.atan2(-(R2.Z[best.i+1]-R2.Z[best.i]),R2.X[best.i+1]-R2.X[best.i]);}
       const tall=p.t===0?(1-f)*(p.R>2000?0.9:0.6):p.t===1?(1-f)*0.35:0.04,big=rnd(k+31)<tall;
       const w=big?14+rnd(k+3)*12:8+rnd(k+3)*5,d=big?11+rnd(k+4)*6:7+rnd(k+4)*4,h=big?12+rnd(k+5)*(p.t===0?18:9):5.5+rnd(k+5)*3;
@@ -832,6 +850,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const nearWater=(x,z)=>{for(const[dx,dz]of[[0,0],[50,0],[-50,0],[0,50],[0,-50]]){const lk=NW.lakeAt(x+dx,z+dz);if(lk&&NW.Hg(x+dx,z+dz)<NW.lakes[lk-1].lv+0.3)return true;}return false;};
     inst(TREEV[3],treeVM,tr.map(([x,y,z,s])=>[x,y,z,s*1.3]),1.15,0,(c,v)=>c.setRGB(0.8+0.3*v,0.85+0.25*v,0.8),(x,z,r)=>nearWater(x,z)&&NW.Hg(x,z)<260?(r<0.5?'palm':'pop'):r<0.12?'pop':'lin');
     inst(TREEV[2],treeVM,fr.map(([x,y,z,s])=>[x,y,z,s*1.25]),0.85,0,(c,v)=>c.setRGB(0.85+0.25*v,0.9+0.2*v,0.85),()=>'fir');
+    if(HDT)HDT.buildFar(T);
     tr.concat(fr).forEach(([x,,z])=>addSeg(T,x-0.35,z,x+0.35,z));
     if(herd){const n=3+((rnd(5)*4)|0);for(let q=0;q<n;q++){const a=makeAnimal('cow'),x=herd.x+(rnd(q+30)-0.5)*24,z=herd.z+(rnd(q+40)-0.5)*24;a.position.set(x,NW.Hground(x,z),z);a.rotation.y=rnd(q)*6.28;scene.add(a);T.dobj.push(a);if(a.userData.mixer)anims.push({m:a,T});}}}
   function undetail(T){if(!T.det)return;T.det=false;if(HDT)HDT.drop(T);looseDrop(T);VX.drop(T);T.dobj.forEach(o=>{scene.remove(o);if(o.isInstancedMesh)o.dispose();else if(o.isMesh&&!o.userData.shared)o.geometry.dispose();});
@@ -855,7 +874,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     // lontano: terreno semplificato fino a 7 km
     if(!HIDE&&(n>0||force)){const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);for(let a=-FR;a<=FR;a++)for(let b=-FR;b<=FR;b++){const i=fi+a,j=fj+b;if(!okTile(i*FS,j*FS,FS))continue;if(!far.has(tk(i,j))){buildFar(i,j);if(!force)break;}}}
     far.forEach((F,k)=>{const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);if(Math.abs(F.i-fi)>FR+1||Math.abs(F.j-fj)>FR+1){scene.remove(F.m);F.m.geometry.dispose();far.delete(k);}});
-    if(HDT)HDT.update(dt,force);
+    if(HDT)HDT.update(dt,force);WAVT.value+=dt;
     anims.forEach(a=>{const p=a.m.position;if(Math.abs(p.x-cx)+Math.abs(p.z-cz)<160)a.m.userData.mixer.update(dt);});LMX.update(dt);VX.update(dt);}
   function segQ(x,z){return bseg.get(tk(Math.floor(x/BC),Math.floor(z/BC)))||[];}
   function addDyn(list){const T={segs:[]};list.forEach(q=>addSeg(T,...q));return T;}
@@ -930,7 +949,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const lens=E.map(e=>e.len);
     function roadPos(e,dir,s,off){const R=NW.roads[e.ri],L=e.len,d=dir?L-s:s,cu=R.cum[e.i0]+Math.max(0,Math.min(L,d));let lo=e.i0,hi=e.i1;while(hi-lo>1){const m=(lo+hi)>>1;if(R.cum[m]<=cu)lo=m;else hi=m;}
       const sl=R.cum[lo+1]-R.cum[lo]||1,t=(cu-R.cum[lo])/sl;let dx=R.X[lo+1]-R.X[lo],dz=R.Z[lo+1]-R.Z[lo];const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;if(dir){dx=-dx;dz=-dz;}
-      const x=R.X[lo]+(R.X[lo+1]-R.X[lo])*t,z=R.Z[lo]+(R.Z[lo+1]-R.Z[lo])*t,h=R.Hh[lo]+(R.Hh[lo+1]-R.Hh[lo])*t;return{x:x-dz*off,z:z+dx*off,h,dx,dz};}
+      const x=R.X[lo]+(R.X[lo+1]-R.X[lo])*t,z=R.Z[lo]+(R.Z[lo+1]-R.Z[lo])*t,h=R.Hh[lo]+(R.Hh[lo+1]-R.Hh[lo])*t;return{x:x-dz*off,z:z+dx*off,h,dx,dz,g:(R.Hh[lo+1]-R.Hh[lo])/sl*(dir?-1:1)};}
     const zone=(x,z)=>{if(NW.cityAt(x,z))return 0;return NW.Hg(x,z)>600?2:1;};
     function v0of(R,x,z,urb){if(R.c===0)return 31;if(R.c===1)return 15;if(urb)return R.c<=5?13.5:11.5;if(R.c===8)return 8;return R.c<=5?23:NW.Hg(x,z)>600?14:18;}
     function key(k){return k;}
@@ -1130,7 +1149,9 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         // curve raccordate: negli ultimi/primi metri di ogni tratto l'auto segue un arco (curva di Hermite) invece di girare a 90°
         if(c.pk!=null&&c.s<c.pr){const ep=E[c.pk>>1],A=roadPos(ep,c.pk&1,ep.len-c.pr,c.plofs),B=roadPos(e2,c.k&1,c.pr,c.lofs);q=arcPos(A,B,(c.pr+c.s)/(2*c.pr));}
         else{c.pk=null;if(c.nk!=null){const en=E[c.nk>>1],r=turnR(e2,c.k&1,en,c.nk&1),rm=e2.len-c.s;if(r>0&&rm<r){const A=roadPos(e2,c.k&1,e2.len-r,c.lofs),B=roadPos(en,c.nk&1,r,laneOff(NW.roads[en.ri],c));q=arcPos(A,B,(r-rm)/(2*r));}}}
-        if(!q)q=roadPos(e2,c.k&1,c.s,(c.bo||0)+c.lofs+(c.dbl?Math.min(0.8,(c.dblO=(c.dblO||0)+dt*0.5)):(c.dblO=Math.max(0,(c.dblO||0)-dt*0.5))));c.dx=q.dx;c.dz=q.dz;c.mesh.position.set(q.x,q.h+0.02,q.z);c.mesh.rotation.y=Math.atan2(-q.dz,q.dx);knock(c,dt);}
+        if(!q)q=roadPos(e2,c.k&1,c.s,(c.bo||0)+c.lofs+(c.dbl?Math.min(0.8,(c.dblO=(c.dblO||0)+dt*0.5)):(c.dblO=Math.max(0,(c.dblO||0)-dt*0.5))));c.dx=q.dx;c.dz=q.dz;c.mesh.position.set(q.x,q.h+0.02,q.z);c.mesh.rotation.y=Math.atan2(-q.dz,q.dx);
+        // in salita e in discesa l'auto segue la pendenza (con un po' di inerzia)
+        c.pit=(c.pit||0)+(Math.atan(Math.max(-0.3,Math.min(0.3,q.g||0)))-(c.pit||0))*Math.min(1,dt*4);c.mesh.rotation.z=c.pit;knock(c,dt);}
       despQ.forEach(c=>{if(list.includes(c))despawn(c);});while(crashQ.length){const[a,b]=crashQ.pop();crash(a,b);}
       tlUpdate();
       // pedoni sui marciapiedi delle città e dei paesi: uomini, donne, anziani, bambini per mano, cani al guinzaglio
@@ -1201,5 +1222,5 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
 if(NWT&&window.fillVia)window.fillVia();
 if(NWT){{const keep=new Set([sky,sun,sun.target,rain,destMark,skMesh,...dust,...clouds]);BASE0.forEach(o=>{if(!keep.has(o)&&!o.isLight)o.visible=false;});clouds.forEach(c=>{c.position.x+=8000;c.position.z+=8000;c.position.y+=950;});}camera.far=12000;camera.updateProjectionMatrix();const sd=document.getElementById('selDest');sd.innerHTML='';NWT.dests().forEach(([id,n])=>{const o=document.createElement('option');o.value=id;o.textContent=n;sd.appendChild(o);});
   if(PREF.dest&&[...sd.options].some(o=>o.value===PREF.dest))sd.value=PREF.dest;else{const c=[...sd.options].find(o=>o.textContent==='Como');if(c)sd.value=c.value;}}
-if(NWT)HOME.init();window.__setCar=k=>switchCar(k);window.__hdx=HDX;window.__home=HOME;window.__loose=LOOSE;window.__cine=CINE;window.__mk={makeHuman,makeDog,makePed};window.__sim={cfg:CFG,PHYS,env:(t)=>{TIME=t;applyEnv();},NW,NWT,CARX,MAPLE,MONU,PROPS,HOUSE,PEDX,COWX,TYPES,peds:()=>peds,camera,animals:()=>animals,herds:()=>herds,buildRoute:(d)=>buildRoute(d),manText:(m)=>manText(m),mPath,TH,THREE,scene,pl,keys,cars,renderer,lanes,surfaceAt,step:(dt)=>{simT+=dt;updateLights(simT);for(let i=0;i<4;i++){readInput(dt/4);stepPhysics(dt/4);}if(!NWT)updateTraffic(dt);}};
+if(NWT)HOME.init();window.__setCar=k=>switchCar(k);window.__hdx=HDX;window.__drv=DRV;window.__home=HOME;window.__loose=LOOSE;window.__cine=CINE;window.__mk={makeHuman,makeDog,makePed};window.__sim={cfg:CFG,PHYS,env:(t)=>{TIME=t;applyEnv();},NW,NWT,CARX,MAPLE,MONU,PROPS,HOUSE,PEDX,COWX,TYPES,peds:()=>peds,camera,animals:()=>animals,herds:()=>herds,buildRoute:(d)=>buildRoute(d),manText:(m)=>manText(m),mPath,TH,THREE,scene,pl,keys,cars,renderer,lanes,surfaceAt,step:(dt)=>{simT+=dt;updateLights(simT);for(let i=0;i<4;i++){readInput(dt/4);stepPhysics(dt/4);}if(!NWT)updateTraffic(dt);}};
 requestAnimationFrame(loop);

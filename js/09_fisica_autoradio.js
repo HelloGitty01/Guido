@@ -11,7 +11,7 @@ function resetPlayer(){
   else{pl.bodyClip=new THREE.Mesh(pl.mesh.userData.body.geometry,clipM);pl.bodyClip.visible=false;pl.mesh.add(pl.bodyClip);
   pl.clipXf=pl.ck.wsx-0.03;pl.clipXr=T.van?-T.L/2+0.6:T.gh[0][0]+0.04;}
   const ln=lanes.find(l=>l.axis==='X'&&l.road===0&&l.d.x===1),p=ln.pos(-70,LANE_OFF);
-  Object.assign(pl,{wh:null,fy:[0,0,0,0],lx:0,lxv:0,ly:0,lyv:0,axR:0,ayR:0,espCut:0,alignK:1,hazard:false,blinkMan:false,blinkArmed:false,flip:null,flips:0,tipT:0,skid:false,spinW:0,blink:0,blinkOn:false,blinkT:0,slopeP:0,slopeR:0,terrH:0,camInit:false,lastLimit:0,surfR:'asphalt',x:p.x,z:p.z,h:0,vx:0,vy:0,r:0,delta:0,steerIn:0,thrIn:0,brkIn:0,gear:1,sel:'D',lights:false,steerTgt:0,steerAnalog:false,infr:{rosso:0,contromano:0},inBox:null,infrT:0,infrMsg:'',shiftT:0,rpm:P.idle,revHold:0,ax:0,km:0,hits:0,hitCd:0,overArmed:true,fyF:0,fyR:0,susp:{h:0,hv:0,p:0,pv:0,r:0,rv:0,hF:0},ay:0,dmg:{front:0,rear:0,left:0,right:0},pull:0,pullSign:0,dmgFlash:0,load:0,slip:0,wheelSpin:0});
+  Object.assign(pl,{wh:null,fy:[0,0,0,0],lx:0,lxv:0,ly:0,lyv:0,axR:0,ayR:0,espCut:0,alignK:1,hazard:false,blinkMan:false,blinkArmed:false,flip:null,wat:null,flips:0,tipT:0,skid:false,spinW:0,blink:0,blinkOn:false,blinkT:0,slopeP:0,slopeR:0,terrH:0,camInit:false,lastLimit:0,surfR:'asphalt',x:p.x,z:p.z,h:0,vx:0,vy:0,r:0,delta:0,steerIn:0,thrIn:0,brkIn:0,gear:1,sel:'D',lights:false,steerTgt:0,steerAnalog:false,infr:{rosso:0,contromano:0},inBox:null,infrT:0,infrMsg:'',shiftT:0,rpm:P.idle,revHold:0,ax:0,km:0,hits:0,hitCd:0,overArmed:true,fyF:0,fyR:0,susp:{h:0,hv:0,p:0,pv:0,r:0,rv:0,hF:0},ay:0,dmg:{front:0,rear:0,left:0,right:0},pull:0,pullSign:0,dmgFlash:0,load:0,slip:0,wheelSpin:0});
   // libera la corsia davanti all'auto
   ln.cars.forEach(c=>{if(c.s>-80&&c.s<-55)c.s=-110;});
   cars.forEach(c=>{if(!c.ln)return;const q=lanePos(c.ln,c.s,c.ln.off);if(Math.hypot(q.x-p.x,q.z-p.z)<9)c.s-=20;});
@@ -75,10 +75,32 @@ function stepFlip(dt){const F=pl.flip;F.t+=dt;
   const[wx,wz]=getWorldVel(),v=Math.hypot(wx,wz);if(v>0.01){const k=Math.max(0,v-5.5*dt)/v;setWorldVel(wx*k,wz*k);}
   const[ux,uz]=getWorldVel();pl.x+=ux*dt;pl.z+=uz*dt;pl.r*=Math.max(0,1-dt*2);pl.h-=pl.r*dt;pl.km+=Math.hypot(ux,uz)*dt/1000;
   const c0=Math.cos(pl.h),s0=Math.sin(pl.h);pl.terrH=TH(pl.x,pl.z);pl.rpm+=(pl.P.idle-pl.rpm)*dt*2;collide(dt);}
-function unflip(){if(!pl.flip)return;pl.flip=null;pl.vx=pl.vy=pl.r=0;Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.sel='D';pl.gear=1;}
+// ---- in acqua: l'auto galleggia un po' (cofano giù, sale l'acqua), poi affonda; si torna in strada col tasto "Raddrizza" ----
+function waterLv(x,z){if(!NW||!NW.lakeAt||!NW.lakes)return null;const lk=NW.lakeAt(x,z);if(!lk)return null;const L=NW.lakes[lk-1];return NW.Hg(x,z)<L.lv-0.6?L:null;}
+function waterStep(dt){let W=pl.wat;
+  if(!W){const L=waterLv(pl.x,pl.z);if(!L)return false;const yb=pl.yb??pl.terrH;if(yb>L.lv+0.5)return false;
+    const heavy=pl.P.truck||pl.P.m>2600;W=pl.wat={lv:L.lv,amp:NW.waveAmp?NW.waveAmp(L):0.3,t:0,y:Math.max(NW.Hg(pl.x,pl.z),Math.min(yb,L.lv+1)),vy:Math.min(-1,(pl.vb||0)),pitch:pl.slopeP||0,roll:0,float:heavy?3+Math.random()*2:7+Math.random()*5,sunk:false,ex:pl.x,ez:pl.z,eh:pl.h};
+    crashSound(Math.min(10,4+Math.abs(pl.vx)*0.4),'front');pl.infrMsg='In acqua!';pl.infrT=3;if(window.SPLASH)SPLASH(pl.x,L.lv,pl.z,Math.min(1,0.3+Math.abs(pl.vx)/20));}
+  W.t+=dt;pl.thrIn=0;pl.brkIn=0;pl.rpm+=((W.t<1.5?pl.P.idle:0)-pl.rpm)*Math.min(1,dt*1.5);
+  // avanti per inerzia, frenata dall'acqua; un po' di deriva
+  const[wx,wz]=getWorldVel(),k=Math.exp(-dt*(W.t<1?1.1:2.2));setWorldVel(wx*k,wz*k);const[ux,uz]=getWorldVel();pl.x+=ux*dt;pl.z+=uz*dt;pl.r*=Math.exp(-dt*1.5);pl.h-=pl.r*dt;
+  // galleggiamento, poi l'acqua entra e l'auto scende verso il fondo (col muso avanti)
+  const bottom=NW.Hg(pl.x,pl.z),sk=Math.max(0,W.t-W.float),bob=W.amp*(0.10*Math.sin(W.t*1.7)+0.05*Math.sin(W.t*2.9+1.3))*Math.max(0,1-sk/4);
+  const tgt=Math.max(bottom,W.lv-0.62*pl.T.H-0.06*Math.min(W.t,W.float)-0.05*sk*sk)+bob;
+  if(W.y>tgt+0.25)W.vy-=9.8*dt;else W.vy+=((tgt-W.y)*5-W.vy*2.4)*dt;W.vy=Math.max(-8,Math.min(3,W.vy));W.y+=W.vy*dt;if(W.y<bottom){W.y=bottom;W.vy=0;}
+  W.pitch+=((-0.06-Math.min(0.45,sk*0.09))*(W.y>bottom+0.05?1:0.3)-W.pitch)*Math.min(1,dt*0.8);W.roll+=(W.amp*0.07*Math.sin(W.t*1.25)-W.roll)*Math.min(1,dt*2);
+  if(!W.sunk&&(W.y<W.lv-pl.T.H-0.25||(W.y<=bottom+0.01&&sk>2))){W.sunk=true;pl.infrMsg=(isTouch?'Auto affondata: tocca Raddrizza per tornare in strada':'Auto affondata: premi '+keyName((KEYMAP.unflip||[])[0])+' per tornare in strada');pl.infrT=30;}
+  pl.terrH=W.y;pl.yb=W.y;pl.vb=0;pl.air=false;pl.slopeP=0;pl.slopeR=0;return true;}
+function waterRescue(){const W=pl.wat;if(!W)return false;let best=null;for(const r of [40,90,180,360])if(!best)for(const q of NW.near(pl.x,pl.z,r)){const h=q.R.Hh[q.i];if(q.R.b||q.R.t||h<W.lv+0.6||waterLv(q.R.X[q.i],q.R.Z[q.i]))continue;if(!best||q.d<best.d)best=q;}
+  if(best){const R=best.R,i=Math.min(best.i,R.N-2);pl.x=R.X[i];pl.z=R.Z[i];pl.h=Math.atan2(-(R.Z[i+1]-R.Z[i]),R.X[i+1]-R.X[i]);}
+  else{// nessuna strada vicina: si torna a riva, dove l'auto è entrata in acqua, voltati verso terra
+    let x=W.ex,z=W.ez;for(let k=0;k<60&&waterLv(x,z);k++){x-=Math.cos(W.eh)*3;z+=Math.sin(W.eh)*3;}x-=Math.cos(W.eh)*6;z+=Math.sin(W.eh)*6;pl.x=x;pl.z=z;pl.h=W.eh+Math.PI;}pl.wat=null;pl.vx=pl.vy=pl.r=0;pl.yb=null;pl.terrH=TH(pl.x,pl.z);
+  Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.sel='D';pl.gear=1;pl.infrT=0;pl.navMsg='Recuperata e riportata in strada';pl.navMsgT=3;return true;}
+function unflip(){if(pl.wat){waterRescue();return;}if(!pl.flip)return;pl.flip=null;pl.vx=pl.vy=pl.r=0;Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.sel='D';pl.gear=1;}
 // ---- fisica a quattro ruote: carichi dinamici con molle e ammortizzatori, gomme con curva di aderenza, differenziale, aiuti alla guida ----
 function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   if(pl.flip){stepFlip(dt);return;}
+  if(!pl.flip&&waterStep(dt))return;
   const P=pl.P,m=P.m,wb=pl.T.L*0.6,a=wb*(1-P.wf),b=wb*P.wf,Iz=m*a*b*1.05,tw=pl.T.W/2-0.15,AID=CFG.aids??1;
   const c0=Math.cos(pl.h),s0=Math.sin(pl.h);
   // le quattro ruote: 0 ant. sx, 1 ant. dx, 2 post. sx, 3 post. dx (x avanti, y a destra)
@@ -129,7 +151,7 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   if(rev&&Math.abs(pl.vx)>4.5)Te*=0.15;
   if(pl.shiftT>0)Te*=0.62;
   let Fdrive=neu?0:Te*ratio*0.92/P.rw*(rev?-1:1);
-  if(fwd&&pl.vx>1)Fdrive-=(1-drive)*0.12*P.Tmax*ratio/P.rw*(pl.rpm/P.red);
+  if(fwd&&pl.vx>1)Fdrive-=(1-drive)*[0.12,0.09,0.045][CFG.aids??1]*P.Tmax*ratio/P.rw*(pl.rpm/P.red);
   if(pl.espCut)Fdrive*=pl.espCut;
   // trasferimenti di carico con la dinamica di molle e ammortizzatori (oscillano, non sono istantanei)
   const om=2*Math.PI*(P.fq||1.45)*0.95,ze=Math.min(1.2,P.zeta||0.32)*1.15;

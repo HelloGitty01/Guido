@@ -42,6 +42,24 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
     X.cat=()=>{const{g,inner}=place(G.scene,M,true);const w=new THREE.Group();g.rotation.y=-Math.PI/2;w.add(g);// il gatto di casa guarda verso +z
       const mx=new THREE.AnimationMixer(inner),a=c0?mx.clipAction(c0):null;if(a)a.play();w.userData={hd:true,mx,a,ph:0};return w;};}catch(e){console.warn('gatto HD',e);}
 
+  // ---------- Guido (modello con scheletro): cammina, saluta, si siede al volante ----------
+  if(MODELS.guido)try{const G=MODELS.guido,M=measure(G.scene,{fix:0.54}),c0=G.animations[0],Q=new THREE.Quaternion(),Qa=new THREE.Quaternion(),Qp=new THREE.Quaternion(),Qr=new THREE.Quaternion(),AX=new THREE.Vector3(1,0,0),AZ=new THREE.Vector3(0,0,1),AY=new THREE.Vector3(0,1,0);
+    X.guido=()=>{const{g,inner}=place(G.scene,M,true),B={};inner.traverse(o=>{if(o.isBone)B[o.name.replace(/_\d+$/,'')]=o;});const mx=new THREE.AnimationMixer(inner);if(c0){const a=mx.clipAction(c0);a.play();}
+      g.userData={hd:true,mx,B,ph:0,root:inner};return g;};
+    // rotazione "nel riferimento del personaggio" applicata a un osso: q_locale = P^-1 · D · P · q_locale
+    const rotC=(u,b,D)=>{if(!b)return;b.parent.getWorldQuaternion(Qp);Qp.premultiply(Qr);Qa.copy(Qp).invert().multiply(D).multiply(Qp);b.quaternion.premultiply(Qa);b.updateMatrixWorld(true);};
+    const R=(ax,an)=>new THREE.Quaternion().setFromAxisAngle(ax,an);
+    X.poseGuido=(g,dt,sp,mode,t)=>{const u=g.userData,B=u.B;if(!u.rest){u.rest=new Map();['LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftArm','RightArm','LeftForeArm','RightForeArm','Spine'].forEach(n=>B[n]&&u.rest.set(B[n],B[n].quaternion.clone()));}u.rest.forEach((q,b)=>b.quaternion.copy(q));u.mx.update(dt);u.root.updateMatrixWorld(true);u.root.getWorldQuaternion(Qr);Qr.invert();
+      if(mode==='sit'){rotC(u,B.LeftUpLeg,R(AX,-1.5));rotC(u,B.RightUpLeg,R(AX,-1.5));rotC(u,B.LeftLeg,R(AX,1.35));rotC(u,B.RightLeg,R(AX,1.35));
+        rotC(u,B.Spine,R(AX,-0.12));
+        rotC(u,B.LeftArm,R(AX,-0.5));rotC(u,B.RightArm,R(AX,-0.5));return;}
+      const k=Math.min(1,sp/1.4),run=sp>2.2;u.ph+=dt*(run?9:6.3)*Math.min(1.6,0.3+sp/1.4);const sn=Math.sin(u.ph),cs=Math.cos(u.ph);
+      [[B.LeftUpLeg,B.LeftLeg,sn],[B.RightUpLeg,B.RightLeg,-sn]].forEach(([U,L,q],i)=>{rotC(u,U,R(AX,-q*0.5*k*(run?1.25:1)));rotC(u,L,R(AX,Math.max(0,i?cs:-cs)*0.85*k*(run?1.3:1)));});
+      rotC(u,B.LeftArm,R(AX,sn*0.4*k));
+      if(mode==='wave'){rotC(u,B.RightArm,R(AZ,-2.3));rotC(u,B.RightForeArm,R(AZ,-0.3-0.35*Math.sin(t*7)));}
+      else rotC(u,B.RightArm,R(AX,-sn*0.4*k));
+      u.root.parent.position.y+=0;};}catch(e){console.warn('Guido HD',e);}
+
   // ---------- persone ferme (alla fermata, davanti ai negozi): otto personaggi diversi ----------
   if(MODELS.hd_people)try{const G=MODELS.hd_people,sc=G.scene,c0=G.animations[0],roots=[];sc.traverse(o=>{if(/^rig_CharRoot\d*$/.test(o.name))roots.push(o);});
     const under=(n,r)=>{for(let p=n;p;p=p.parent)if(p===r)return true;return false;};
@@ -71,3 +89,42 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
     const bb=gBox(parts.map(p=>p.b)),c=bb.getCenter(new THREE.Vector3()),s=0.62;gShift(parts.map(p=>p.b),-c.x,-bb.min.y,-c.z,s);const t=gTemplate(parts);
     X.foodSize=[(bb.max.x-bb.min.x)*s,(bb.max.z-bb.min.z)*s];X.food=()=>gInstance(t);}catch(e){console.warn('fast food HD',e);}
   return Object.keys(X).length?X:null;})();
+
+// ================= Guido e Gatto a bordo: salgono in auto all'inizio della corsa e si vedono dentro dalla vista esterna =================
+const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk:null,wcat:null,inCar:true,catIn:true,skipBoard:false,par:null};
+  const V=new THREE.Vector3();
+  const mkSeat=()=>{D.seat=HDX.guido();D.seat.userData.seated=true;if(HDX.cat){D.cat=HDX.cat();const u=D.cat.userData;if(u.a){u.a.timeScale=0;u.mx.update(0.3);}}};
+  const attach=()=>{if(!pl.mesh||!pl.ck)return false;if(!D.seat)mkSeat();if(D.par!==pl.mesh){D.par=pl.mesh;pl.mesh.add(D.seat);if(D.cat)pl.mesh.add(D.cat);
+      const e=pl.ck.eye;D.seat.position.set(e.x+0.14,e.y-1.73,e.z);D.seat.rotation.y=Math.PI/2;
+      if(D.cat){D.cat.position.set(e.x+0.05,e.y-0.62,-e.z*0.95);D.cat.rotation.y=-Math.PI/2;}
+      HDX.poseGuido(D.seat,0.016,0,'sit',0);}return true;};
+  // salita a bordo durante la ripresa iniziale
+  D.board=()=>{if(D.skipBoard){D.skipBoard=false;D.inCar=D.catIn=true;return false;}if(!attach())return false;D.inCar=D.catIn=false;
+    if(!D.walk){D.walk=HDX.guido();scene.add(D.walk);if(HDX.cat){D.wcat=HDX.cat();scene.add(D.wcat);}}
+    const e=pl.ck.eye,sd=Math.sign(e.z)||-1,W=pl.T.W/2;D.sd=sd;D.door=[e.x-0.15,sd*(W+0.45)];D.g={u:e.x-3.8,v:sd*(W+3.2),h:0,sp:0};D.c={u:e.x-4.8,v:sd*(W+2.2),h:0,sp:0};D.t=0;
+    D.walk.visible=true;if(D.wcat)D.wcat.visible=true;return true;};
+  const toW=(u,v)=>{V.set(u,0,v);pl.mesh.localToWorld(V);return V;};
+  const step=(o,tu,tv,sp,dt)=>{const du=tu-o.u,dv=tv-o.v,d=Math.hypot(du,dv);if(d<0.06){o.sp=0;return d;}const w=Math.min(sp,d*2);o.sp+=(w-o.sp)*Math.min(1,dt*5);o.u+=du/d*o.sp*dt;o.v+=dv/d*o.sp*dt;o.h=Math.atan2(du,dv);return d;};
+  D.tick=(dt)=>{if(!pl.mesh||!started)return;attach();
+    if(D.walk&&(D.walk.visible||(D.wcat&&D.wcat.visible))){D.t+=dt;const o=D.g,c=D.c;
+      if(D.t>2.4){const d=step(o,D.door[0],D.door[1],1.45,dt);if(d<0.15&&!D.inCar){D.inCar=true;D.walk.visible=false;}}
+      if(D.t>2.7){const tu=D.inCar?D.door[0]:o.u-0.7,tv=D.inCar?D.door[1]:o.v+D.sd*0.4,d=step(c,tu,tv,D.inCar?2.2:1.6,dt);if(D.inCar&&d<0.2){D.catIn=true;if(D.wcat)D.wcat.visible=false;}}
+      if(!D.wcat&&D.inCar)D.catIn=true;
+      if(D.walk.visible){HDX.poseGuido(D.walk,dt,o.sp,'walk',simT);const p=toW(o.u,o.v);D.walk.position.set(p.x,NW.H(p.x,p.z),p.z);D.walk.rotation.y=dirW(o);}
+      if(D.wcat&&D.wcat.visible){const u=D.wcat.userData;if(u.a)u.a.timeScale=c.sp>0.05?Math.min(2,0.4+c.sp/0.9):0;u.mx.update(dt);const p=toW(c.u,c.v);D.wcat.position.set(p.x,NW.H(p.x,p.z),p.z);D.wcat.rotation.y=dirW(c);}
+      if(D.inCar&&D.catIn){D.walk.visible=false;if(D.wcat)D.wcat.visible=false;}}
+    if(HOME.cat&&HOME.ok){if(HOME.mode)HOME.cat.visible=HOME.vis!==false;else if(D.catIn&&D.cat)HOME.cat.visible=false;}
+    const out=view!=='cockpit'||PHOTO.on;D.seat.visible=D.inCar&&out&&!HOME.mode;if(D.cat)D.cat.visible=D.catIn&&!HOME.mode;
+    if(D.seat.visible)HDX.poseGuido(D.seat,dt,0,'sit',simT);};
+  // direzione di marcia (coordinate auto -> angolo nel mondo: il modello guarda verso +z)
+  const dirW=(o)=>{const a=toW(o.u,o.v).clone(),du=Math.sin(o.h),dv=Math.cos(o.h),b=toW(o.u+du,o.v+dv);return Math.atan2(b.x-a.x,b.z-a.z);};
+  D.hideAll=()=>{if(D.walk)D.walk.visible=false;if(D.wcat)D.wcat.visible=false;D.inCar=D.catIn=true;};
+  return D;})();
+
+// ---- spruzzi quando un'auto finisce in acqua (si animano da soli a ogni fotogramma) ----
+window.SPLASH=(x,y,z,k)=>{const n=90,P=new Float32Array(n*3),Vv=[];for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.random();P.set([x+Math.cos(a)*r*1.2,y+0.1,z+Math.sin(a)*r*1.2],i*3);Vv.push([Math.cos(a)*(1+Math.random()*3)*k,(3+Math.random()*6)*k,Math.sin(a)*(1+Math.random()*3)*k]);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));const m=new THREE.PointsMaterial({color:0xeef6fa,size:0.35,transparent:true,opacity:0.9,depthWrite:false});
+  const pts=new THREE.Points(g,m);pts.frustumCulled=false;scene.add(pts);let last=performance.now(),t=0;
+  pts.onBeforeRender=()=>{const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;t+=dt;const p=g.attributes.position.array;
+    for(let i=0;i<n;i++){const v=Vv[i];v[1]-=9.8*dt;p[i*3]+=v[0]*dt;p[i*3+1]=Math.max(y-0.2,p[i*3+1]+v[1]*dt);p[i*3+2]+=v[2]*dt;}g.attributes.position.needsUpdate=true;m.opacity=Math.max(0,0.9-t*0.45);
+    if(t>2.2){scene.remove(pts);g.dispose();m.dispose();}};};

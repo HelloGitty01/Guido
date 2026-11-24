@@ -2,11 +2,11 @@
 // ================= INPUT =================
 const keys={};
 // ================= COMANDI RIMAPPABILI (tastiera e gamepad) =================
-const CTRL_DEF={keys:{thr:['KeyA','ArrowUp'],brk:['KeyZ','ArrowDown'],left:['Comma','ArrowLeft'],right:['Period','ArrowRight'],hb:['Space',''],horn:['KeyH',''],
+const CTRL_DEF={keys:{thr:['KeyA','ArrowUp'],brk:['KeyZ','ArrowDown'],hold:['KeyS',''],left:['Comma','ArrowLeft'],right:['Period','ArrowRight'],hb:['Space',''],horn:['KeyH',''],
     gD:['KeyD',''],gR:['KeyR',''],gN:['KeyN',''],lights:['KeyL',''],view:['KeyC',''],blL:['KeyQ',''],blR:['KeyE',''],haz:['KeyX',''],pause:['KeyP',''],end:['KeyF',''],unflip:['Enter',''],car:['KeyV',''],radio:['KeyM',''],flash:['KeyG',''],volUp:['Equal','NumpadAdd'],volDn:['Minus','NumpadSubtract'],map:['Tab','KeyT'],photo:['KeyO',''],rec:['KeyJ','']},
   pad:{steer:{a:0,s:1},pedal:{mode:'one',a:'auto',s:-1},thrA:{a:-1,rest:0,full:1},brkA:{a:-1,rest:0,full:1},
     btn:{gear:7,horn:6,view:0,lights:3,haz:2,blL:14,blR:15,hb:1,unflip:1,car:-1,radio:-1,flash:-1,volUp:-1,volDn:-1,map:-1,photo:-1,rec:-1}}};
-const CTRL_LBL={thr:'Acceleratore',brk:'Freno',left:'Sterzo a sinistra',right:'Sterzo a destra',hb:'Freno a mano',horn:'Clacson',gD:'Marcia D',gR:'Retromarcia R',gN:'Folle N',
+const CTRL_LBL={thr:'Acceleratore',brk:'Freno',hold:'Mantieni velocità (tenere premuto)',left:'Sterzo a sinistra',right:'Sterzo a destra',hb:'Freno a mano',horn:'Clacson',gD:'Marcia D',gR:'Retromarcia R',gN:'Folle N',
   lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D→N→R',car:'Cambia auto',radio:'Autoradio (stazione successiva)',flash:'Lampeggio abbaglianti',volUp:'Volume radio +',volDn:'Volume radio −',map:'Mappa grande',photo:'Modalità foto',rec:'Registra clip (avvia/ferma)'};
 let CTRL=JSON.parse(JSON.stringify(CTRL_DEF));
 try{const sv=JSON.parse(localStorage.getItem('sim_ctrl')||'null');if(sv){Object.assign(CTRL.keys,sv.keys||{});if(sv.pad){Object.assign(CTRL.pad,sv.pad);CTRL.pad.btn=Object.assign({},CTRL_DEF.pad.btn,sv.pad.btn||{});}}}catch(e){}
@@ -68,7 +68,7 @@ addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPU
     if(A==='horn')setHorn(true);
     if(A==='gR')selectGear('R');if(A==='gD')selectGear('D');if(A==='gN')selectGear('N');
     if(A==='lights')toggleLights();
-    if(A==='unflip'){if(pl.flip&&pl.flip.done)unflip();else fuelRescue();}
+    if(A==='unflip'){if(pl.wat)unflip();else if(pl.flip&&pl.flip.done)unflip();else fuelRescue();}
     if(A==='car')cycleCar(1);
     if(A==='radio')RADIO.next();
     if(A==='volDn')radioVol((CFG.vol??0.6)-0.1);if(A==='volUp')radioVol((CFG.vol??0.6)+0.1);
@@ -157,6 +157,11 @@ function readInput(dt){
   pl.hb=kd(KEYMAP.hb);pl.flash=kd(KEYMAP.flash||[]);let thr=kd(KEYMAP.thr)?1:0,brk=kd(KEYMAP.brk)?1:0,steerT=(kd(KEYMAP.right)?1:0)-(kd(KEYMAP.left)?1:0),analog=false;
   // tastiera progressiva: un tocco dà poco gas o poco freno, tenendo premuto si arriva al massimo (più in fretta nel profilo Facile)
   {const ramp=[0.8,0.6,0.45][CFG.aids??1]||0.6;pl.kbT=thr?Math.min(1,(pl.kbT||0)+dt/ramp):0;pl.kbB=brk?Math.min(1,(pl.kbB||0)+dt/(ramp*0.85)):0;if(thr)thr=0.3+0.7*pl.kbT;if(brk)brk=0.25+0.75*pl.kbB;}
+  // mantenimento della velocità: tenendo premuto il tasto l'auto tiene la velocità che aveva; con l'acceleratore la si alza, il freno lo annulla
+  {const hk=kd(KEYMAP.hold||[]);if(!hk||brk||pl.sel==='R'){pl.holdV=null;pl.holdI=0;if(brk)pl.holdBlk=hk;}if(!hk)pl.holdBlk=false;
+    if(hk&&!brk&&!pl.holdBlk&&pl.vx>1.5){if(pl.holdV==null){pl.holdV=pl.vx;pl.holdI=0;}if(thr){pl.holdV=Math.max(pl.holdV,pl.vx);}
+      else{const e=pl.holdV-pl.vx;pl.holdI=Math.max(-0.3,Math.min(0.6,(pl.holdI||0)+e*0.3*dt));thr=Math.max(0,Math.min(1,0.2+e*0.5+pl.holdI));if(e<-1.2)brk=Math.min(0.35,(-e-1.2)*0.12);}}
+    const hi=document.getElementById('holdInd');if(hi){const on=pl.holdV!=null;if(on!==hi._on){hi._on=on;hi.style.display=on?'block':'none';}if(on){const t='▶ '+Math.round(pl.holdV*3.6);if(hi.textContent!==t)hi.textContent=t;}}}
   const v=Math.abs(pl.vx||0);
   const gps=navigator.getGamepads?navigator.getGamepads():[];
   // gamepad: stick sinistro = sterzo, stick destro su/giù = gas/freno, grilletto destro = marcia (D→N→R→N→D), grilletto sinistro = clacson
@@ -166,7 +171,7 @@ function readInput(dt){
     if(ed('gear')){const seq=['D','N','R','N'];pl.gpGi=((pl.gpGi||0)+1)%4;selectGear(seq[pl.gpGi]);if(pl.sel!==seq[pl.gpGi])pl.gpGi=(pl.gpGi+3)%4;}
     if(now.horn!==!!prev.horn)setHorn(now.horn);
     if(ed('view'))toggleView();if(ed('lights'))toggleLights();if(ed('haz'))pl.hazard=!pl.hazard;
-    if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&pl.flip&&pl.flip.done)unflip();if(ed('car'))cycleCar(1);if(ed('radio'))RADIO.next();if(ed('volUp'))radioVol((CFG.vol??0.6)+0.1);if(ed('volDn'))radioVol((CFG.vol??0.6)-0.1);
+    if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&(pl.wat||(pl.flip&&pl.flip.done)))unflip();if(ed('car'))cycleCar(1);if(ed('radio'))RADIO.next();if(ed('volUp'))radioVol((CFG.vol??0.6)+0.1);if(ed('volDn'))radioVol((CFG.vol??0.6)-0.1);
     pl.gpPrev=now;
     let gT=0,gB=0;
     if(CP.pedal.mode==='two'){const nv=(A)=>{if(A.a<0)return 0;const r=gp.axes[A.a]||0,d=(A.full-A.rest)||1;return Math.max(0,Math.min(1,(r-A.rest)/d));};gT=nv(CP.thrA);gB=nv(CP.brkA);}
