@@ -155,7 +155,31 @@ document.getElementById('sumMenu').onclick=()=>{document.getElementById('sum').s
 // ================= MENU / CICLO =================
 let started=false,paused=true,simT=0;
 const menu=document.getElementById('menu');
-function showMenu(){paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
+// ---- menu a schede ----
+const MTAB={cur:'gioco'};
+function menuTab(t){MTAB.cur=t;document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);try{localStorage.setItem('sim_tab',t);}catch(e){}}
+document.querySelectorAll('#mTabs button').forEach(b=>b.onclick=()=>menuTab(b.dataset.t));
+// ---- anteprima 3D dell'auto scelta: un piccolo studio fotografico che gira lentamente ----
+const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null,key=null,raf=0,last=0,ang=0.6;
+  function init(){R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.0;R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+    S=new THREE.Scene();C=new THREE.PerspectiveCamera(30,1,0.1,200);
+    // ambiente per i riflessi: cupola sfumata e due pannelli luminosi
+    const es=new THREE.Scene(),sg=new THREE.SphereGeometry(20,32,16),col=[],P=sg.attributes.position;for(let i=0;i<P.count;i++){const y=P.getY(i)/20,c=new THREE.Color(0x15151a).lerp(new THREE.Color(0xb8bcc4),Math.max(0,y)*0.9);col.push(c.r,c.g,c.b);}sg.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+    es.add(new THREE.Mesh(sg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})));[[6,7,4],[-7,5,-3]].forEach(([x,y,z])=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(8,3),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}));m.position.set(x,y,z);m.lookAt(0,0,0);es.add(m);});
+    const pm=new THREE.PMREMGenerator(R);S.environment=pm.fromScene(es,0.03).texture;
+    S.add(new THREE.HemisphereLight(0xffffff,0x303036,0.5));const d=new THREE.DirectionalLight(0xffffff,1.6);d.position.set(5,9,6);S.add(d);const r=new THREE.DirectionalLight(0xffd0c0,0.7);r.position.set(-6,4,-6);S.add(r);
+    const fc=document.createElement('canvas');fc.width=fc.height=128;const g=fc.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(0,0,0,.75)');gr.addColorStop(0.55,'rgba(0,0,0,.35)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+    const fl=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(fc),transparent:true,depthWrite:false}));fl.rotation.x=-Math.PI/2;fl.name='floor';S.add(fl);}
+  function fit(){if(!car)return;const b=new THREE.Box3().setFromObject(car),sz=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());car.position.x-=c.x;car.position.z-=c.z;car.position.y-=b.min.y;
+    const L=Math.max(sz.x,sz.z),f=S.getObjectByName('floor');f.scale.set(L*1.5,L*1.5,1);C.userData.L=L;C.userData.h=sz.y*0.42;}
+  function show(k){if(!cv)return;try{if(!R)init();}catch(e){return;}if(k!==key){if(car){S.remove(car);}key=k;try{car=new THREE.Group();const m=makeCar(k,0x8a1f1f,false,true);car.add(m);S.add(car);fit();}catch(e){car=null;}
+      const n=document.getElementById('vehName');if(n)n.textContent=PHYS[k]?PHYS[k].label:'';}if(!raf){last=performance.now();raf=requestAnimationFrame(loop);}}
+  function loop(now){raf=0;const vis=menu.style.display!=='none'&&MTAB.cur==='auto'&&cv.offsetParent;if(!vis)return;const dt=Math.min(0.05,(now-last)/1000);last=now;ang+=dt*0.4;
+    const w=cv.clientWidth,h=cv.clientHeight;if(w&&h&&(cv.width!==Math.round(w*R.getPixelRatio())||cv.height!==Math.round(h*R.getPixelRatio()))){R.setSize(w,h,false);C.aspect=w/h;C.updateProjectionMatrix();}
+    if(car){const L=C.userData.L||4.5,hf=Math.atan(Math.tan(15*Math.PI/180)*C.aspect),d=L*0.44/Math.tan(hf)+L*0.15;C.position.set(Math.cos(ang)*d,(C.userData.h||0.7)+d*0.22,Math.sin(ang)*d);C.lookAt(0,C.userData.h||0.7,0);}R.render(S,C);raf=requestAnimationFrame(loop);}
+  return{show};})();
+document.getElementById('vehList').addEventListener('click',()=>setTimeout(()=>VP.show(selKey),0));
+function showMenu(){setTimeout(()=>menuTab(MTAB.cur),0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;RADIO.pause(paused);document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
 document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};
