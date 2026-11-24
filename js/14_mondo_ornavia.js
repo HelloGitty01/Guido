@@ -62,6 +62,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const riverM=new THREE.MeshStandardMaterial({color:0x3a6170,roughness:0.15,metalness:0.1,envMapIntensity:1,polygonOffset:true,polygonOffsetFactor:-0.5,polygonOffsetUnits:-1});
   const portM=mat(0xb5b0a4,{roughness:0.85}),concM=mat(0x9a968e,{roughness:0.9,side:THREE.DoubleSide}),deckM=mat(0x77756f,{roughness:0.92,side:THREE.DoubleSide}),tunM=new THREE.MeshStandardMaterial({color:0x4a4846,roughness:0.95,side:THREE.DoubleSide}),lampM=new THREE.MeshBasicMaterial({color:0xffe2a0});
   const railM=new THREE.MeshStandardMaterial({color:0xaeb3b8,metalness:0.6,roughness:0.4,side:THREE.DoubleSide});
+  // delineatore: paletto bianco con fascia nera e catadiottro (arancio a destra, bianco a sinistra); montante del guardrail
+  const DELG=(()=>{const box=(w,h,d,y,c,x=0)=>{const g=new THREE.BoxGeometry(w,h,d).toNonIndexed();g.translate(x,y,0);const n=g.attributes.position.count,C=new Float32Array(n*3),col=new THREE.Color(c);for(let i=0;i<n;i++){C[i*3]=col.r;C[i*3+1]=col.g;C[i*3+2]=col.b;}g.setAttribute('color',new THREE.BufferAttribute(C,3));return g;};
+    const merge=L=>{const P=[],N=[],C=[];L.forEach(g=>{P.push(...g.attributes.position.array);N.push(...g.attributes.normal.array);C.push(...g.attributes.color.array);});const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));return g;};
+    const O=0xff6a10,Wt=0xf4f4f4,mk=(a,b)=>merge([box(0.1,1.05,0.12,0.52,0xeeeeea),box(0.105,0.2,0.125,0.86,0x161616),box(0.012,0.1,0.08,0.86,a,-0.056),box(0.012,0.1,0.08,0.86,b,0.056)]);
+    return{r:mk(O,Wt),l:mk(Wt,O),p:(()=>{const g=new THREE.BoxGeometry(0.12,0.85,0.08);g.translate(0,0.42,0);return g;})(),m:new THREE.MeshLambertMaterial({vertexColors:true})};})();
   const facTex=canvasTex(128,(g,n)=>{g.fillStyle='#fff';g.fillRect(0,0,n,n);for(let y=0;y<2;y++)for(let x=0;x<2;x++){g.fillStyle='rgba(60,50,40,.18)';g.fillRect(x*64+14,y*64+12,36,44);g.fillStyle='#3d4650';g.fillRect(x*64+18,y*64+16,28,36);g.fillStyle='rgba(120,90,60,.55)';g.fillRect(x*64+12,y*64+14,5,40);g.fillRect(x*64+47,y*64+14,5,40);}
     g.fillStyle='rgba(0,0,0,.07)';g.fillRect(0,60,n,4);g.fillRect(0,124,n,4);});
   facTex.wrapS=facTex.wrapT=THREE.RepeatWrapping;facTex.anisotropy=4;
@@ -161,6 +166,10 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const treeVM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.95});
   // ---------- alberi dettagliati (pacchetto HD): vicino alla camera i modelli veri, lontano le sagome di sempre ----------
   const HDT=(()=>{if(!window.HDON)return null;try{const V={};
+    // la versione lontana non ha coordinate di texture: materiale pieno col colore medio della texture (altrimenti le foglie spariscono e restano i tronchi)
+    const avgC=new Map();const farMat=(mm,by,nm)=>{let src=null;for(const m of by.keys())if(m.name===nm){src=m;break;}const map=src&&src.map;let col=new THREE.Color(0.25,0.33,0.18);
+      if(map&&map.image){let a=avgC.get(map);if(!a){try{const cv=document.createElement('canvas');cv.width=cv.height=24;const g=cv.getContext('2d');g.drawImage(map.image,0,0,24,24);const d=g.getImageData(0,0,24,24).data;let r=0,gg=0,b=0,n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]>140){r+=d[i];gg+=d[i+1];b+=d[i+2];n++;}if(n)a=new THREE.Color(r/n/255,gg/n/255,b/n/255).convertSRGBToLinear();}catch(e){}avgC.set(map,a||null);}if(a)col=a.clone();}
+      const f=new THREE.MeshStandardMaterial({color:col.multiply(mm.color),roughness:0.95,metalness:0,side:mm.side});f.name=mm.name+'_far';return f;};
     const prep=(key,G,leafRe,sink=0,tint=1)=>{if(!G)return;const sc=G.scene;sc.updateMatrixWorld(true);const by=new Map();sc.traverse(m=>{if(!m.isMesh)return;if(!by.has(m.material))by.set(m.material,[]);by.get(m.material).push(gBake(m,m.matrixWorld));});
       const all=[...by.values()].flat(),bb=gBox(all),h=bb.max.y-bb.min.y;
       // il tronco: centro della base
@@ -171,7 +180,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         return{geo:gMerge(l),mat:mm,name:m.name};});
       // versione leggera per la distanza (stesso modello, poche foglie e niente rami fini): stessi materiali
       let far=null;const FG=MODELS['hd_'+key2file[key]+'_far'];if(FG){const fs=FG.scene;fs.updateMatrixWorld(true);const fb=new Map();fs.traverse(m=>{if(!m.isMesh)return;const nm=m.material.name;if(!fb.has(nm))fb.set(nm,[]);fb.get(nm).push(gBake(m,m.matrixWorld));});
-        const fa=[...fb.values()].flat();gShift(fa,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));far=[...fb.entries()].map(([nm,l])=>{const P=parts.find(p=>p.name===nm)||parts[0];return{geo:gMerge(l),mat:P.mat};});}
+        const fa=[...fb.values()].flat();gShift(fa,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));far=[...fb.entries()].map(([nm,l])=>{const P=parts.find(p=>p.name===nm)||parts[0];return{geo:gMerge(l),mat:farMat(P.mat,by,P.name)};});}
       V[key]={parts,far,items:new Set(),im:null};};
     const key2file={lin:'linden',fir:'fir',palm:'palm',cyp:'cypress',pop:'poplar'};
     prep('lin',MODELS.hd_linden,/001/);prep('fir',MODELS.hd_fir,/branch/i,0.28,1.45);prep('palm',MODELS.hd_palm,/leaves/i);prep('cyp',MODELS.hd_cypress,/2_sided/i,0,1.1);prep('pop',MODELS.hd_poplar,/branch/i,0,1.1);
@@ -467,6 +476,16 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     if(rails.length){const P=[],I=[];rails.forEach(([R,a,b])=>{[-1,1].forEach(sd=>{for(let i=a;i<b;i++){const n=nrm(R,i),o=sd*(R.w/2+0.4),h=R.Hh[i],base=P.length/3;
         P.push(R.X[i]+n[0]*o-x0,h+0.45,R.Z[i]+n[1]*o-z0,R.X[i]+n[0]*o-x0,h+0.8,R.Z[i]+n[1]*o-z0);if(i>a)I.push(base-2,base,base-1,base-1,base,base+1);}});});
       const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setIndex(I);g.computeVertexNormals();const m=new THREE.Mesh(g,railM);m.position.set(x0,0,z0);scene.add(m);T.objs.push(m);}
+    // paletti delineatori ogni 25 m sulle strade extraurbane e montanti del guardrail in autostrada: riferimenti che scorrono ai lati e danno la velocità
+    {const D=[],Dl=[],Pst=[],SP=25;
+      for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
+        const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx;
+        if(R.c===0){if(NW.cityAt(R.X[i],R.Z[i]))continue;for(let u=Math.ceil(a/4)*4;u<b;u+=4){const f=(u-a)/L,x=R.X[i]+(R.X[i+1]-R.X[i])*f,z=R.Z[i]+(R.Z[i+1]-R.Z[i])*f,h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*f;[-1,1].forEach(sd=>Pst.push(x+nx*sd*(R.w/2+0.48)-x0,h,z+nz*sd*(R.w/2+0.48)-z0,Math.atan2(-tz,tx)));}continue;}
+        for(let u=Math.ceil(a/SP)*SP;u<b;u+=SP){const f=(u-a)/L,x=R.X[i]+(R.X[i+1]-R.X[i])*f,z=R.Z[i]+(R.Z[i+1]-R.Z[i])*f;if(NW.cityAt(x,z)||NW.nearJ(x,z,16))continue;const h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*f,ry=Math.atan2(-tz,tx);
+          [1,-1].forEach(sd=>{const px=x+nx*sd*(R.w/2+0.75),pz=z+nz*sd*(R.w/2+0.75);if(NW.Hg(px,pz)<h-2.5)return;(sd>0?D:Dl).push(px-x0,h,pz-z0,ry);});}}
+      const put=(arr,geo,mat)=>{const n=arr.length/4;if(!n)return;const im=new THREE.InstancedMesh(geo,mat,n),M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),V=new THREE.Vector3(),S1=new THREE.Vector3(1,1,1);
+        for(let k=0;k<n;k++){Q.setFromAxisAngle(Y,arr[k*4+3]);V.set(arr[k*4],arr[k*4+1],arr[k*4+2]);M.compose(V,Q,S1);im.setMatrixAt(k,M);}im.position.set(x0,0,z0);im.frustumCulled=false;im.matrixAutoUpdate=false;im.updateMatrix();scene.add(im);T.objs.push(im);};
+      put(D,DELG.r,DELG.m);put(Dl,DELG.l,DELG.m);put(Pst,DELG.p,railM);}
     // marciapiedi rialzati con cordolo (interrotti agli incroci)
     {const A=[],Uv=[],I=[];const q4=(p,uv)=>{const s0=A.length/3;p.forEach(v=>A.push(v[0]-x0,v[1],v[2]-z0));uv.forEach(u=>Uv.push(u[0],u[1]));I.push(s0,s0+1,s0+2,s0+1,s0+3,s0+2);};
       runs.forEach((list,ri)=>{const R=NW.roads[ri];if(!NW.swRoad(R)||!NW.cityAt(R.X[list[0]],R.Z[list[0]]))return;const hw=R.w/2,W=NW.SWW,Hs=NW.SWH;

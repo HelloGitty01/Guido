@@ -158,7 +158,7 @@ const DJ={t:-99,q:null,lines:{
   // parla solo se è accesa Radio Guido; i fatti importanti (eventi) anche col testo a schermo
   say(k,force,txt){const now=performance.now()/1000;if(!force&&now-this.t<18)return;if(!(window.RADIO_LBL||'').includes('Radio Guido'))return;this.t=now;const t=txt||this.pick(k);
     const e=document.getElementById('radioTag');if(e){e.textContent='🎙 Radio Guido: '+t;e.style.display='block';clearTimeout(this.q);this.q=setTimeout(()=>e.style.display='none',5000);}
-    try{const u=new SpeechSynthesisUtterance(t);u.lang='it-IT';u.pitch=1.18;u.rate=1.08;u.volume=0.9;RADIO.duck(true);u.onend=u.onerror=()=>RADIO.duck(false);setTimeout(()=>RADIO.duck(false),9000);speechSynthesis.speak(u);}catch(x){}}};
+    VOCE.speak(t,{dj:true,duck:true,pitch:1.18,rate:1.08,vol:0.9});}};
 
 // ================= CARRIERA: soldi, lavori, spese, garage =================
 const CAR={on:false,s:null,saveT:0,toastT:0,

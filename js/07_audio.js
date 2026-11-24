@@ -51,6 +51,10 @@ function initAudio(){
   sq.start();sq2.start();v1.start();v2.start();nodes.push(sq,sq2,v1,v2);
   const wf=AC.createBiquadFilter();wf.type='bandpass';wf.frequency.value=700;wf.Q.value=0.4;const wg=AC.createGain();wg.gain.value=0;nz.connect(wf).connect(wg).connect(ACOUT());
   const rf=AC.createBiquadFilter();rf.type='lowpass';rf.frequency.value=380;const rg=AC.createGain();rg.gain.value=0;nz.connect(rf).connect(rg).connect(ACOUT());
+  // fruscio d'aria quando si incrocia o si sorpassa un'auto (o si sfiora un muro)
+  const pbf=AC.createBiquadFilter();pbf.type='bandpass';pbf.frequency.value=900;pbf.Q.value=0.8;const pbg=AC.createGain();pbg.gain.value=0;const pbp=AC.createStereoPanner?AC.createStereoPanner():null;nz.connect(pbf).connect(pbg);if(pbp)pbg.connect(pbp).connect(ACOUT());else pbg.connect(ACOUT());
+  // fischio dell'aria sui montanti ad alta velocità
+  const whf=AC.createBiquadFilter();whf.type='bandpass';whf.frequency.value=2200;whf.Q.value=3;const whg=AC.createGain();whg.gain.value=0;nz.connect(whf).connect(whg).connect(ACOUT());
   // gomme al limite: prima dello stridio si sente lo "strisciare" sordo del battistrada
   const scf=AC.createBiquadFilter();scf.type='bandpass';scf.frequency.value=320;scf.Q.value=0.8;const scg=AC.createGain();scg.gain.value=0;nz.connect(scf).connect(scg).connect(ACOUT());
   // compressore volumetrico (Hellcat): fischio acuto che sale coi giri e col carico
@@ -66,7 +70,7 @@ function initAudio(){
       eng.wk={n,g,lp,rpm:n.parameters.get('rpm'),thr:n.parameters.get('throttle')};nodes.push({stop(){try{n.disconnect();g.disconnect();}catch(e){}}});}catch(e){console.warn('motore a guide d\'onda',e);}};
     if(window.__wkReady)setTimeout(mk,0);else AC.audioWorklet.addModule('js/motore_worklet.js').then(()=>{window.__wkReady=1;mk();}).catch(e=>console.warn(e));}
   nz.start();
-  eng={P,SN,bl,rvg,scf,scg,osc,cab,master,cbp,mod,cg,dmod,tg,sqg,sq,sq2,sqf,sqb1,sqb2,wg,wf,rg,rf,stopAll:()=>nodes.forEach(n=>{try{n.stop();}catch(e){}})};
+  eng={P,SN,bl,rvg,scf,scg,osc,cab,master,cbp,mod,cg,dmod,tg,sqg,sq,sq2,sqf,sqb1,sqb2,wg,wf,rg,rf,pbf,pbg,pbp,whf,whg,stopAll:()=>nodes.forEach(n=>{try{n.stop();}catch(e){}})};
   initTrafficVoices();initSirens();
 }
 function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
@@ -87,7 +91,9 @@ function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
    else{eng.sqg.gain.setTargetAtTime(0,t,0.05);eng.tg.gain.setTargetAtTime(Math.min(0.25,(lat+spin+brake)*1.4)*(sf0==='asphalt'?0:1),t,0.05);}}
   const v=st.kmh/3.6,sf=pl.surfR||'asphalt';
   {const sc=(sf==='asphalt'&&!pl.air)?Math.max(0,Math.min(0.12,((pl.slip||0)/(pl.alPk||0.2)-0.65)*0.5))*Math.min(1,v/9):0;eng.scg.gain.setTargetAtTime(sc,t,0.06);eng.scf.frequency.setTargetAtTime(240+v*5,t,0.1);}
-  eng.wg.gain.setTargetAtTime(Math.min(0.17,(v/36)**2*0.17)*(view==='cockpit'?0.8:1),t,0.15);eng.wf.frequency.setTargetAtTime(380+v*16,t,0.15);
+  eng.wg.gain.setTargetAtTime(Math.min(0.26,(v/36)**2*0.19)*(view==='cockpit'?0.85:1),t,0.15);eng.wf.frequency.setTargetAtTime(380+v*18,t,0.15);
+  eng.whg.gain.setTargetAtTime(Math.max(0,Math.min(0.05,(v-22)*0.0025))*(view==='cockpit'?1:0.5),t,0.3);eng.whf.frequency.setTargetAtTime(1600+v*22,t,0.3);
+  passBy(t,v);
   eng.rg.gain.setTargetAtTime(sf==='asphalt'?Math.min(0.055,v*0.0017):Math.min(0.3,v*0.014),t,0.08);eng.rf.frequency.setTargetAtTime(sf==='asphalt'?170+v*4:900,t,0.1);
   updateTrafficVoices(t);}
 // ---- voci dei veicoli vicini: motore + rotolamento, con distanza ed effetto Doppler ----
@@ -105,6 +111,15 @@ function updateSirens(t){if(NWT){sirens.forEach(sv=>sv.g.gain.setTargetAtTime(0,
   const pat={police:[650,870,0.33],amb:[590,790,0.5],fire:[440,590,0.62]}[c.em.kind],hi=((simT/pat[2])|0)%2;
   sv.o.frequency.setTargetAtTime((hi?pat[1]:pat[0])*dop,t,0.01);sv.g.gain.setTargetAtTime(d>500?0:0.22/(1+(d/14)**2),t,0.08);
   if(sv.pn){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);sv.pn.pan.setTargetAtTime(Math.max(-1,Math.min(1,(dx*sh+dz*ch)/d)),t,0.1);}});}
+// fruscio al passaggio: cerca l'auto più vicina e ne pesa velocità relativa e distanza laterale
+let pbCar=null,pbT=0;function passBy(t,v){if(!eng.pbg)return;pbT-=1/60;
+  if(pbT<=0){pbT=0.12;let best=null,bd=40;for(const c of cars){if(!c.mesh.visible)continue;const d=Math.hypot(c.mesh.position.x-pl.x,c.mesh.position.z-pl.z);if(d<bd){bd=d;best=c;}}pbCar=best;}
+  let g=0,pan=0;if(pbCar){const c=pbCar,dx=c.mesh.position.x-pl.x,dz=c.mesh.position.z-pl.z,d=Math.hypot(dx,dz)||1,[pwx,pwz]=getWorldVel();
+    const rvx=(c.dx||0)*(c.v||0)-pwx,rvz=(c.dz||0)*(c.v||0)-pwz,rel=Math.hypot(rvx,rvz);
+    g=Math.min(0.32,Math.pow(Math.min(1,rel/35),2)*0.42/(1+d*d/10));
+    pan=Math.max(-0.9,Math.min(0.9,(dx*Math.sin(pl.h)+dz*Math.cos(pl.h))/d));
+    if(!isFinite(g))g=0;}
+  eng.pbg.gain.setTargetAtTime(g*(view==='cockpit'?0.8:1),t,0.05);eng.pbf.frequency.setTargetAtTime(700+Math.min(900,v*12),t,0.1);if(eng.pbp)eng.pbp.pan.setTargetAtTime(pan,t,0.05);}
 function updateTrafficVoices(t){updateSirens(t);if(!tVoices.length)return;tvT-=1/60;
   if(tvT<=0){tvT=0.3;const near=cars.filter(c=>c.mesh.visible).map(c=>[c,Math.hypot(c.mesh.position.x-pl.x,c.mesh.position.z-pl.z)]).filter(a=>a[1]<70).sort((a,b)=>a[1]-b[1]).slice(0,3);
     tVoices.forEach((v,i)=>v.car=near[i]?near[i][0]:null);}

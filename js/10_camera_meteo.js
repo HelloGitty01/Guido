@@ -146,12 +146,12 @@ function applyView(){if(!pl.ck)return;ckRestore();pl.camInit=false;pl.ck.g.visib
 const tmpV=new THREE.Vector3(),camLook=new THREE.Vector3(),CAMS={y:0,vy:0,ax:0,ay:0};
 // abitacoli disegnati (immagini scelte da Giorgio): i vetri sono trasparenti e mostrano il mondo vero, gli specchi mostrano la vista dietro
 // schermo del navigatore negli abitacoli disegnati: centro e larghezza nell'immagine (sulla Challenger è lo schermo di bordo)
-const CKNAV={volvo:[712,328,170],utilitaria:[660,292,150],wagoneer:[700,290,160],taxi:[835,318,150],hellcat:[695,371,80],zil:[735,312,150],daily:[735,318,150]};
+const CKNAV={volvo:[712,328,170],utilitaria:[660,292,150],wagoneer:[700,290,160],taxi:[835,318,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
 const CKIMG={volvo:{man:true,wheel:{src:'cockpit/volvo_w.webp',c:[475,436],a:123,b:136,box:[348,296,603,572]},src:'cockpit/volvo.webp',size:[1024,572],glass:{C:[647,73,815,121],L:[143,296,240,348]},spd:[481,366],fs:9,turnL:[447,342],turnR:[515,342],beam:[481,343]},
   utilitaria:{man:true,wheel:{src:'cockpit/panda_w.webp',c:[472,381],a:120,b:111,box:[348,266,597,497]},src:'cockpit/panda.webp',size:[1024,503],glass:{C:[592,64,743,115],L:[172,272,244,304]},spd:[519,322],fs:9,turnL:[405,305],turnR:[552,305],beam:[466,305]},
   wagoneer:{wheel:{src:'cockpit/jeep_w.webp',c:[462,420],a:135,b:135,box:[323,281,602,560]},src:'cockpit/jeep.webp',size:[1024,572],glass:{C:[626,83,796,118],L:[123,287,229,333]},spd:[490,361],fs:8,gear:[490,371],turnL:[466,331],turnR:[514,331],beam:[490,331]},
   taxi:{wheel:{src:'cockpit/taxi_w.webp',c:[462,421],a:136,b:136,box:[322,281,603,562]},src:'cockpit/taxi.webp',size:[1024,572],glass:{C:[627,84,796,119],L:[121,276,223,330]},spd:[473,346],fs:8,gear:[476,357],turnL:[430,324],turnR:[515,324],beam:[500,324]},
-  hellcat:{wheel:{src:'cockpit/hellcat_w.webp',c:[518,431],a:118,b:122,box:[396,305,641,503]},src:'cockpit/hellcat.webp',size:[1024,503],glass:{C:[617,196,741,227],L:[141,313,247,361]},spd:[517,346],fs:11,gear:[517,362],turnL:[505,332],turnR:[529,332],beam:[517,332]},
+  hellcat:{wheel:{src:'cockpit/hellcat_w.webp',c:[469,421],a:129,b:134,box:[336,283,603,560]},src:'cockpit/hellcat.webp',size:[1024,572],glass:{C:[612,142,773,177],L:[76,309,172,349]},spd:[473,357],fs:7,gear:[424,357],turnL:[447,323],turnR:[499,323],beam:[473,323]},
   zil:{wheel:{src:'cockpit/zil_w.webp',c:[524,384],a:112,b:103,box:[408,277,641,492]},man:true,src:'cockpit/zil.webp',size:[1024,503],glass:{C:[681,80,815,116],L:[30,112,190,298]},spd:[472,352],fs:7,gear:[472,361],turnL:[503,330],turnR:[538,330],beam:[520,330]},
   daily:{wheel:{src:'cockpit/daily_w.webp',c:[507,423],a:130,b:126,box:[373,293,642,554]},man:true,src:'cockpit/daily.webp',size:[1024,572],glass:{C:[668,76,806,112],L:[103,222,193,358]},spd:[463,378],fs:7,gear:[507,372],turnL:[482,345],turnR:[532,345],beam:[507,344]}};
 const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
@@ -175,6 +175,16 @@ function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HO
   if(pl.mesh&&C)pl.mesh.children.forEach(c=>{if(c===rearCam)return;if(c.visible){c.visible=false;c.userData._ckH=1;}});
   ckLayout();}
 addEventListener('resize',()=>setTimeout(ckLayout,0));
+// sensazione di velocità: tremolio della visuale e sfocatura ai bordi, entrambi crescono oltre i 90 km/h
+const SFX={b:-1,el:null,ox:0,oy:0};
+function speedFx(dt){const v=Math.abs(pl.vx),on=started&&!PHOTO.on&&!pl.ended&&!CINE.intro&&!document.body.classList.contains('cine')&&!HOME.mode;
+  const k=on?Math.max(0,Math.min(1,(v-25)/20)):0;
+  if(CFG.shake!==false&&k>0&&!pl.air){const t=simT,a=k*(view==='cockpit'?0.0026:0.0018)*(pl.surfR==='asphalt'||!pl.surfR?1:1.8);
+    const nx=Math.sin(t*9.3)*0.6+Math.sin(t*15.7+1.1)*0.4,ny=Math.sin(t*11.1+0.4)*0.6+Math.sin(t*19.3)*0.4;camera.rotateX(a*ny);camera.rotateY(a*nx*0.7);
+    const ov=document.getElementById('ckOv');if(ov&&CKO.on){const px=Math.round(nx*k*1.6*10)/10,py=Math.round(ny*k*1.6*10)/10;if(px!==SFX.ox||py!==SFX.oy){SFX.ox=px;SFX.oy=py;ov.style.transform='translate('+px+'px,'+py+'px)';}}}
+  else if(SFX.ox||SFX.oy){SFX.ox=SFX.oy=0;const ov=document.getElementById('ckOv');if(ov)ov.style.transform='';}
+  const bl=(CFG.blur??!document.body.classList.contains('mob'))?Math.round(k*k*4):0;
+  if(bl!==SFX.b){SFX.b=bl;const e=SFX.el||(SFX.el=document.getElementById('spdBlur'));if(e){e.style.display=bl?'block':'none';e.style.backdropFilter=e.style.webkitBackdropFilter=bl?'blur('+bl+'px)':'';}}}
 function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
   const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
@@ -184,7 +194,7 @@ function updateCamera(dt){
     pl.ck.wipers.forEach(w=>{const dir=new THREE.Vector3(0,0,1).multiplyScalar(Math.cos(th)).add(w.u.clone().multiplyScalar(Math.sin(th)));w.bl.position.copy(w.piv).addScaledVector(dir,0.29);w.bl.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir);w.bl.visible=on||true;});}
   {const f=new THREE.Vector3(Math.cos(pl.h),0,-Math.sin(pl.h)),pf=new THREE.Vector3(pl.clipXf,0,0),pr=new THREE.Vector3(pl.clipXr,0,0);m.localToWorld(pf);m.localToWorld(pr);
    pl.clipPlanes[0].setFromNormalAndCoplanarPoint(f,pf);pl.clipPlanes[1].setFromNormalAndCoplanarPoint(f.clone().negate(),pr);}
-  {const v=Math.abs(pl.vx),base=view==='cockpit'?72:58,tf=base+Math.min(view==='cockpit'?8:11,v*0.19);if(Math.abs(camera.fov-tf)>0.05){camera.fov+=(tf-camera.fov)*Math.min(1,dt*2);camera.updateProjectionMatrix();}}
+  {const v=Math.abs(pl.vx),base=view==='cockpit'?72:58,tf=base+Math.min(view==='cockpit'?12:15,v*0.12+Math.max(0,v-14)*0.26);if(Math.abs(camera.fov-tf)>0.05){camera.fov+=(tf-camera.fov)*Math.min(1,dt*2);camera.updateProjectionMatrix();}}
   // ruote anteriori sterzanti
   const w=m.userData.wheels;w[0].rotation.y=w[1].rotation.y=-pl.delta;
   if(m.userData.glb){const rel=Math.max(-0.06,Math.min(pl.P.truck?0.17:0.13,(pl.yb??pl.terrH)-pl.terrH));for(const q of w){if(q.userData.y0==null)q.userData.y0=q.position.y;q.position.y=q.userData.y0-rel;}}
@@ -212,6 +222,7 @@ function updateCamera(dt){
     tmpV.set(pl.x-ch*hz2+sh*lat,Math.max(pl.terrH+0.6,(pl.yb??pl.terrH)+hy+CAMS.y,pl.wat?pl.wat.lv+1.6:-1e9),pl.z+sh*hz2+ch*lat);camera.position.lerp(tmpV,cd<cd0-0.1||ORB.w>0.05?1-Math.exp(-dt*14):1-Math.exp(-dt*6));
     {const lx=pl.x+ch*5,ly=(pl.yb??pl.terrH)+1.1+Math.sin(pl.slopeP)*5,lz=pl.z-sh*5,w=ORB.w;camLook.set(lx+(pl.x-lx)*w,ly+(pl.terrH+0.9-ly)*w,lz+(pl.z-lz)*w);}camera.lookAt(camLook);
   }
+  speedFx(dt);
   const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?2.2:0;headSpot.distance=pl.flash?170:60;headSpot.angle=pl.flash?0.32:0.45;}
   if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);headSpot.position.set(pl.x+ch*pl.T.L/2,pl.terrH+0.8,pl.z-sh*pl.T.L/2);headSpot.target.position.set(pl.x+ch*25,TH(pl.x+ch*25,pl.z-sh*25),pl.z-sh*25);}
   if(CINE.intro)CINE.introCam(dt);else if(CINE.used){CINE.used=false;if(view!=='cockpit')camera.position.copy(tmpV);}

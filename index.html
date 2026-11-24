@@ -185,6 +185,7 @@
   #splash button:hover{background:rgba(255,255,255,.12)!important}
   /* menu sopra le riprese dal vivo */
   #menu{background:linear-gradient(90deg,rgba(6,8,11,.86) 0,rgba(6,8,11,.62) 52%,rgba(6,8,11,.28) 100%)!important;color:var(--txt)!important}
+  #spdBlur{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;-webkit-mask-image:radial-gradient(ellipse at 50% 48%,transparent 42%,#000 92%);mask-image:radial-gradient(ellipse at 50% 48%,transparent 42%,#000 92%)}
   #vign{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 55%,rgba(0,0,0,0) 58%,rgba(0,0,0,.28) 100%)}body.mob #vign{background:radial-gradient(ellipse at 50% 55%,rgba(0,0,0,0) 65%,rgba(0,0,0,.2) 100%)}
   #cineFade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:4;display:none}
   .brand img{mix-blend-mode:normal!important;width:64px!important;height:auto!important;border-radius:0!important;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
@@ -251,6 +252,7 @@
 <li>"Low-poly Brick House" – Vitalii.Sandula, CC BY 4.0</li>
 <li>"FIAT Panda 4x4" – Duhyeen, licenza Sketchfab Standard</li>
 <li>"Volvo 240" – wallon · "Jeep Grand Wagoneer (1991)" – geyges · "Dodge Challenger - Muscle Car - Low-Poly" – Allay Design · "ZIL 133540" e "Ford Crown Victoria Taxi" – Korolv; licenza Sketchfab Standard</li>
+<li>Voce del navigatore e di Radio Guido: modello di sintesi vocale Kokoro-82M (hexgrad, licenza Apache 2.0), voci italiane "Sara" e "Nicola"</li>
 <li>"Free Lowpoly City Props Pack" – MaHa / Low Poly Models, licenza Sketchfab Standard</li>
 <li>Pedoni: "Ultimate Modular Men" e "Ultimate Modular Women" – Quaternius (quaternius.com), licenza CC0</li>
 <li>"Iveco Daily 1982 - Lowpoly" – kekis69, CC BY 4.0</li></ul>
@@ -292,8 +294,9 @@
       <div class="row"><label>Zona morta joystick <input type="range" id="cfgJdz" min="0" max="0.3" step="0.01"></label><label>Sensibilità joystick <input type="range" id="cfgJgain" min="0.6" max="1.6" step="0.05"></label></div>
       <div class="row"><label>Ritorno al centro <input type="range" id="cfgRit" min="0.3" max="2" step="0.1"></label><label>Specchietti in cabina <input type="checkbox" id="cfgMir"></label></div>
       <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label><label>Comandi su smartphone <select id="cfgTouch"><option value="volante">Volante e pedali</option><option value="tilt">Inclina il telefono e pedali</option><option value="cursori">Due cursori</option></select></label><label>Qualità grafica <select id="cfgQ"><option value="bassa">Bassa (più fluida)</option><option value="media">Media</option><option value="alta">Alta</option></select></label></div>
+      <div class="row"><label>Sfocatura ai bordi in velocità <input type="checkbox" id="cfgBlur"></label><label>Tremolio ad alta velocità <input type="checkbox" id="cfgShake"></label><span class="note">aumentano la sensazione di velocità; la sfocatura pesa un po' sui dispositivi lenti</span></div>
       <div class="row"><label>Modelli dettagliati <input type="checkbox" id="cfgHd"></label><span class="note">alberi veri, autobus, mucche, facciate fotografiche, cantieri (togli la spunta se il gioco va a scatti)</span></div>
-      <div class="row"><label>Volume autoradio <input type="range" id="cfgVol" min="0" max="1" step="0.05"></label></div>
+      <div class="row"><label>Volume autoradio <input type="range" id="cfgVol" min="0" max="1" step="0.05"></label><label>Voce del navigatore <select id="cfgVoce"><option value="nat">Naturale (registrata)</option><option value="sys">Del sistema</option></select></label> <button id="voceTest" class="sm">Prova</button></div>
       <div class="row"><b>Stazioni radio</b><span class="note">(indirizzi di flussi audio MP3/AAC; funzionano nella versione su GitHub)</span></div><div id="radioList"></div><div class="row"><button id="radioAdd" class="sm">Aggiungi stazione</button><button id="radioDef" class="sm">Ripristina predefinite</button><span class="note" id="radioNote"></span></div>
     </section>
   </div>
@@ -313,7 +316,7 @@
 
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
 <button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
-<div id="vign"></div><div id="cineFade"></div><div id="lbT"></div><div id="lbB"></div><div id="cineTitle"></div><div id="holdInd"></div><div id="gripInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="19" fill="none" stroke="#ffb020" stroke-width="2.2"/></svg></div><div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><b id="ckSpd">0</b><b id="ckGear">N</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i><img id="ckWheel" alt=""></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
+<div id="spdBlur"></div><div id="vign"></div><div id="cineFade"></div><div id="lbT"></div><div id="lbB"></div><div id="cineTitle"></div><div id="holdInd"></div><div id="gripInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="19" fill="none" stroke="#ffb020" stroke-width="2.2"/></svg></div><div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><b id="ckSpd">0</b><b id="ckGear">N</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i><img id="ckWheel" alt=""></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
 <div id="jobOv"><div></div></div>
 <button id="radioBtn" title="Autoradio (tasto M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">♪ Radio</button><div id="radioTag"></div>
 <div id="navBox" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(10,30,60,.82);color:#fff;padding:8px 16px;border-radius:12px;font-size:17px;display:none;pointer-events:none;z-index:3"></div>

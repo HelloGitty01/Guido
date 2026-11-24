@@ -39,14 +39,32 @@ function buildRoute(dst,loose){if(NWT)return NWT.buildRoute(dst);const hx=Math.c
   return {P,man,dst,said:{},dest:G2.nodes[dst]};}
 function manText(m){if(m.nw)return NWT.manText(m);const a=m.ang*57.3;if(G2.nodes[m.node]&&G2.nodes[m.node].round){const k=Math.abs(a)>150?4:Math.abs(a)<25?2:a>0?1:3;return 'alla rotatoria prendi la '+['','prima','seconda','terza','quarta'][k]+' uscita';}if(m.exit)return a>0?"prendi l'uscita a destra":"prendi l'uscita a sinistra";if(m.ring)return a>0?'immettiti a destra sulla tangenziale':'immettiti a sinistra sulla tangenziale';
   if(Math.abs(a)<25)return 'prosegui dritto';if(Math.abs(a)>150)return 'fai inversione';return a>0?'svolta a destra':'svolta a sinistra';}
-let voice=null;try{const vs=speechSynthesis.getVoices();voice=vs.find(v=>/it/i.test(v.lang))||null;speechSynthesis.onvoiceschanged=()=>{voice=speechSynthesis.getVoices().find(v=>/it/i.test(v.lang))||voice;};}catch(e){}
-function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='it-IT';if(voice)u.voice=voice;u.rate=1.02;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}pl.navMsg=t;pl.navMsgT=4;}
+// voce del navigatore: frasi registrate con una voce neurale (cartella voce/), unite a pezzi; se manca un pezzo si usa la sintesi del sistema
+const VOCE=(()=>{let man=null,ld=null,cur=[],seq=0;const buf=new Map();
+  const norm=t=>t.toLowerCase().normalize('NFC').replace(/’/g,"'").replace(/[^a-z0-9àèéìòóù' ]+/g,' ').replace(/\s+/g,' ').trim();
+  const load=()=>ld||(ld=fetch('voce/voce.json').then(r=>r.json()).then(j=>{man=j;}).catch(()=>{man={};}));load();
+  const seg=(t,pre)=>{if(!man)return null;const w=norm(t).split(' ').filter(Boolean),out=[];let i=0;
+    while(i<w.length){let ok=0;for(let k=Math.min(14,w.length-i);k>0;k--){const f=man[pre+w.slice(i,i+k).join(' ')];if(f){out.push(f);i+=k;ok=1;break;}}if(!ok)return null;}return out.length?out:null;};
+  const get=f=>{let p=buf.get(f);if(!p){p=fetch('voce/'+f).then(r=>r.arrayBuffer()).then(a=>new Promise((res,rej)=>AC.decodeAudioData(a,res,rej)));p.catch(()=>buf.delete(f));buf.set(f,p);}return p;};
+  // voce del sistema: la migliore voce italiana disponibile (quelle "naturali" di Edge, Google su Chrome, le "Premium" di Apple)
+  let sv=null;const pick=()=>{try{const vs=speechSynthesis.getVoices().filter(v=>/^it/i.test(v.lang));const sc=v=>(/natural|neural/i.test(v.name)?50:0)+(/online/i.test(v.name)?20:0)+(/premium|enhanced|siri/i.test(v.name)?30:0)+(/google/i.test(v.name)?15:0)+(/elsa|isabella|diego|federica|alice/i.test(v.name)?5:0);vs.sort((a,b)=>sc(b)-sc(a));sv=vs[0]||null;}catch(e){}};
+  try{pick();speechSynthesis.onvoiceschanged=pick;}catch(e){}
+  const sys=(t,o)=>{try{const u=new SpeechSynthesisUtterance(t);u.lang='it-IT';if(sv)u.voice=sv;u.rate=o.rate||1.02;if(o.pitch)u.pitch=o.pitch;u.volume=o.vol||1;if(o.duck){RADIO.duck(true);u.onend=u.onerror=()=>RADIO.duck(false);setTimeout(()=>RADIO.duck(false),9000);}if(o.cancel)speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}};
+  const stop=()=>{seq++;cur.forEach(s=>{try{s.stop();}catch(e){}});cur=[];try{speechSynthesis.cancel();}catch(e){}};
+  function speak(t,o={}){const pre=o.dj?'dj:':'',fs=CFG.voce!=='sys'&&AC?seg(t,pre):null;if(o.cancel)stop();
+    if(!fs){sys(t,o);return;}const my=++seq;
+    Promise.all(fs.map(get)).then(B=>{if(my!==seq)return;if(AC.state==='suspended')AC.resume();let t0=AC.currentTime+0.03;const g=AC.createGain();g.gain.value=(o.vol||1)*1.15;g.connect(ACOUT());
+      if(o.duck)RADIO.duck(true);B.forEach((b,i)=>{const s=AC.createBufferSource();s.buffer=b;s.connect(g);s.start(t0);cur.push(s);t0+=b.duration+(i<B.length-1?0.06:0);});
+      const last=cur[cur.length-1];if(last)last.onended=()=>{if(my===seq){cur=[];if(o.duck)RADIO.duck(false);}};}).catch(()=>{if(my===seq)sys(t,o);});}
+  return{speak,stop,pre(t){const fs=seg(t,'');if(fs&&AC)fs.forEach(get);},has:t=>!!seg(t,'')};})();
+function say(t){VOCE.speak(t,{cancel:true,duck:true});pl.navMsg=t;pl.navMsgT=4;}
 let navT=0,offRouteT=0;
 function updateNav(dt){if(!route)return;navT-=dt;if(navT>0)return;navT=0.2;
   const q=route.P.proj(pl.x,pl.z);route.ps=q.s;route.left=route.P.len-q.s;
   if(q.dist>28){offRouteT+=0.2;if(offRouteT>2.5){offRouteT=0;const r=buildRoute(route.dst);if(r){r.started=true;route=r;say('Ricalcolo del percorso');}return;}}else offRouteT=0;
   const nm=route.man.find(m=>m.s>q.s+3);route.next=nm;
   if(nm){const d=nm.s-q.s,k=route.man.indexOf(nm);
+    if(d<700&&!route.said[k+'p']){route.said[k+'p']=1;VOCE.pre('Tra 300 metri, '+manText(nm));VOCE.pre('Tra 80 metri, '+manText(nm));}
     if(d<320&&d>230&&!route.said[k+'a']){route.said[k+'a']=1;say('Tra 300 metri, '+manText(nm));}
     if(d<90&&!route.said[k+'b']){route.said[k+'b']=1;say((d<40?'Ora ':'Tra '+Math.round(d/10)*10+' metri, ')+manText(nm));}}
   else if(route.left<300&&!route.said.fin){route.said.fin=1;say('La destinazione è tra '+Math.round(route.left/10)*10+' metri');}
@@ -162,6 +180,8 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
 {const e=document.getElementById('cfgEng');e.value=CFG.engVol??1;e.oninput=()=>{CFG.engVol=+e.value;};e.onchange=()=>savePrefs();}
 {const v=document.getElementById('cfgVol');v.value=CFG.vol??0.6;v.oninput=()=>{CFG.vol=+v.value;RADIO.setVol(CFG.vol);const h=document.getElementById('radioVolHud');if(h)h.value=CFG.vol;};v.onchange=()=>savePrefs();
   document.getElementById('radioNote').textContent=RADIO.web?'Tasto M: Radio Guido, Rai Radio 1-2-3, Radio 105, Virgin Radio, R101':'Tasto M: Radio Guido. Le radio vere funzionano nella versione su GitHub.';}
+{const a=document.getElementById('cfgBlur'),b=document.getElementById('cfgShake');if(a){a.checked=CFG.blur??!document.body.classList.contains('mob');a.onchange=()=>{CFG.blur=a.checked;savePrefs();};}if(b){b.checked=CFG.shake!==false;b.onchange=()=>{CFG.shake=b.checked;savePrefs();};}}
+{const e=document.getElementById('cfgVoce');if(e){e.value=CFG.voce||'nat';e.onchange=()=>{CFG.voce=e.value;savePrefs();};}const b=document.getElementById('voceTest');if(b)b.onclick=()=>{if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(x){}}VOCE.speak('Tra 300 metri, alla rotatoria prendi la seconda uscita',{cancel:true});};}
 {const el=document.getElementById('cfgMir');el.checked=CFG.mir!==false;el.onchange=()=>{CFG.mir=el.checked;savePrefs();};}
 document.getElementById('ctrlBtn').onclick=()=>{document.getElementById('ctrlOv').style.display='flex';ctrlUI();};
 document.getElementById('ctrlClose').onclick=()=>{ctrlWait=null;document.getElementById('ctrlOv').style.display='none';};
