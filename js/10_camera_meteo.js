@@ -246,13 +246,26 @@ const CINE={shot:null,t:0,list:null,i:0,intro:null,used:false,env:false,
   shots(){if(this.list)return this.list;const L=[];if(NW&&NW.cities)NW.cities.forEach(c=>{if(c.wx!=null)L.push({cx:c.wx,cz:c.wz,r:Math.max(220,Math.min(560,(c.r1||300)*0.28)),big:(c.r1||0)>1500,n:c.n});});
     L.sort((a,b)=>b.r-a.r);this.list=L.slice(0,8).sort(()=>Math.random()-0.5);return this.list;},
   next(){const L=this.shots();if(!L.length){this.shot=null;return;}const s=L[this.i++%L.length],types=s.big?['orbit','orbitLow']:['orbit','fly','orbitLow'];this.shot=Object.assign({},s,{type:types[(Math.random()*types.length)|0],a0:Math.random()*6.283,dir:Math.random()<0.5?1:-1,dur:14});this.t=0;},
-  menu(dt){if(!NW)return;if(!started&&!this.env){this.env=true;TIME='sunset';applyEnv();}
-    if(!this.shot||this.t>this.shot.dur)this.next();const S=this.shot;if(!S)return;this.t+=dt;this.used=true;const u=this.t/S.dur,H=(x,z)=>NW.H(x,z);let x,y,z,lx,ly,lz;const g0=H(S.cx,S.cz);
-    if(S.type==='orbit'||S.type==='orbitLow'){const a=S.a0+S.dir*u*0.85,r=S.type==='orbit'?S.r:S.r*0.7;x=S.cx+Math.cos(a)*r;z=S.cz+Math.sin(a)*r;y=Math.max(g0,H(x,z))+(S.type==='orbit'?34+r*0.05:24);lx=S.cx;lz=S.cz;ly=g0+(S.big?45:6);}
-    else{const dx=Math.cos(S.a0),dz=Math.sin(S.a0),d=-S.r*0.9+u*S.r*1.8;x=S.cx+dx*d-dz*S.r*0.3;z=S.cz+dz*d+dx*S.r*0.3;y=Math.max(g0,H(x,z))+46;lx=x+dx*160-dz*20;lz=z+dz*160+dx*20;ly=H(lx,lz)+5;}
-    y=Math.max(y,H(x,z)+20);camera.position.set(x,y,z);camera.lookAt(lx,ly,lz);if(camera.fov!==50){camera.fov=50;camera.updateProjectionMatrix();}
+  // filmato iniziale (e sfondo del menu): Valdorna, la città più grande, con il tempo che corre dal giorno alla notte e tagli rapidi
+  mkFilm(){if(!NW||!NW.cities||!NW.cities.length)return null;const C=NW.cities.find(c=>c.n==='Valdorna')||NW.cities.slice().sort((a,b)=>(b.r1||0)-(a.r1||0))[0];if(!C||C.wx==null)return null;
+    const R0=Math.min(900,(C.r1||800)*0.55),S=[];for(const R of NW.roads){if(R.t||R.b||R.priv||R.c<4||R.c>7)continue;for(let i=2;i<R.N-3;i+=9){const x=R.X[i],z=R.Z[i];if(Math.hypot(x-C.wx,z-C.wz)>R0)continue;const dx=R.X[i+2]-x,dz=R.Z[i+2]-z,l=Math.hypot(dx,dz)||1;if(NW.nearJ(x,z,25))continue;S.push({x,z,dx:dx/l,dz:dz/l,w:R.w});}}
+    for(let i=S.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[S[i],S[j]]=[S[j],S[i]];}
+    return{C,S,i:0,k:0,shot:null,t:0,clk:6.2,envT:0};},
+  menu(dt){if(!NW)return;const F=this.film||(this.film=this.mkFilm());if(!F)return;dt=Math.min(dt,0.05);
+    // tempo accelerato: un giorno intero in circa 20 secondi
+    if(!started){F.clk=(F.clk+dt*1.25)%24;if(TIME!=='cycle'||!this.env){this.env=true;TIME='cycle';CLOCK=F.clk;applyEnv();}F.envT-=dt;if(F.envT<=0){F.envT=0.08;CLOCK=F.clk;applyEnv(true);}}
+    if(!F.shot||F.t>F.shot.dur){const T=['track','crane','side','orbit','push','track','flyover','side','orbit'],ty=T[F.k++%T.length],road=F.S.length?F.S[F.i++%F.S.length]:null;
+      F.shot={ty:(ty==='track'||ty==='side')&&!road?'orbit':ty,r:road,a0:Math.random()*6.283,dir:Math.random()<0.5?1:-1,dur:ty==='flyover'?3.6:2.6+Math.random()*0.9};F.t=0;}
+    const S=F.shot,C=F.C;F.t+=dt;this.used=true;const u=Math.min(1,F.t/S.dur),e=u*u*(3-2*u),H=(x,z)=>NW.H(x,z),cx=C.wx,cz=C.wz,g0=H(cx,cz);let x,y,z,lx,ly,lz,fov=50;
+    if(S.ty==='track'){const r=S.r,d=-25+u*100;x=r.x+r.dx*d;z=r.z+r.dz*d;y=H(x,z)+2.6;lx=x+r.dx*40;lz=z+r.dz*40;ly=H(lx,lz)+2.2;fov=58;}
+    else if(S.ty==='side'){const r=S.r,nx=-r.dz,nz=r.dx,d=-35+u*70,o=r.w/2-0.8;x=r.x+r.dx*d+nx*o;z=r.z+r.dz*d+nz*o;y=H(x,z)+4;lx=x+r.dx*30+nx*13;lz=z+r.dz*30+nz*13;ly=y+3;fov=60;}
+    else if(S.ty==='crane'){const a=S.a0+S.dir*u*0.5,r=140-e*20;x=cx+Math.cos(a)*r;z=cz+Math.sin(a)*r;y=Math.max(H(x,z)+6,g0+6+e*150);lx=cx;lz=cz;ly=g0+20+e*10;}
+    else if(S.ty==='orbit'){const a=S.a0+S.dir*u*1.3,r=230;x=cx+Math.cos(a)*r;z=cz+Math.sin(a)*r;y=Math.max(H(x,z),g0)+75;lx=cx;lz=cz;ly=g0+30;}
+    else if(S.ty==='push'){const a=S.a0,r=560-e*400;x=cx+Math.cos(a)*r;z=cz+Math.sin(a)*r;y=Math.max(H(x,z)+30,g0+60-e*25);lx=cx;lz=cz;ly=g0+25;fov=46;}
+    else{const dx=Math.cos(S.a0),dz=Math.sin(S.a0),d=-380+u*760;x=cx+dx*d;z=cz+dz*d;y=g0+170;lx=x+dx*220;lz=z+dz*220;ly=g0+20;fov=55;}
+    y=Math.max(y,H(x,z)+2);camera.position.set(x,y,z);camera.lookAt(lx,ly,lz);if(Math.abs(camera.fov-fov)>0.1){camera.fov=fov;camera.updateProjectionMatrix();}
     sun.position.set(lx+SUNOFF.x,ly+SUNOFF.y,lz+SUNOFF.z);sun.target.position.set(lx,ly,lz);
-    const f=Math.max(0,Math.min(1,this.t/1.4,(S.dur-this.t)/1.4));const fe=document.getElementById('cineFade');if(fe)fe.style.opacity=(1-f).toFixed(3);},
+    const f=Math.max(0,Math.min(1,F.t/0.22,(S.dur-F.t)/0.18));const fe=document.getElementById('cineFade');if(fe)fe.style.opacity=(1-f).toFixed(3);},
   startIntro(){if(CFG.intro===false||!pl.mesh)return;const ck=view==='cockpit';if(ck){view='chase';applyView();}
     this.intro={t:0,dur:6.4,ck,side:Math.random()<0.5?1:-1};document.body.classList.add('cine');
     // Guido e Gatto salgono in auto mentre la ripresa scende

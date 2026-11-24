@@ -320,12 +320,42 @@ function crashSound(vn,zone,pan){if(!AC)return;zone=zone||'front';const t=AC.cur
   if(zone==='front'){thump(85,35,0.35,0.9);noise(0.35+Math.min(0.3,vn*0.02),'lowpass',1400+vn*60,0.7,0.8,2.5);if(vn>5){noise(0.25,'highpass',4500,1,0.35,1.5);noise(0.12,'bandpass',2600,3,0.4,4);}}
   else if(zone==='rear'){thump(110,55,0.25,0.7);noise(0.3,'bandpass',420,2.5,0.9,2);noise(0.12,'bandpass',1900,4,0.5,5);}
   else{thump(130,70,0.2,0.6);noise(0.55+Math.min(0.5,vn*0.04),'bandpass',950,1.8,0.9,1.2);noise(0.4,'bandpass',3200,6,0.25,1.5);}}
+// ---- graffi sulla carrozzeria: decalcomanie proiettate sul pezzo colpito, più grandi e fitte quanto più forte è l'urto;
+// di striscio (fianchi) righe lunghe orizzontali, di fronte o dietro scheggiature e righe in tutte le direzioni ----
+const SCR={tex:{},max:36};
+function scrTex(kind,lvl){const key=kind+lvl;let a=SCR.tex[key];if(!a)a=SCR.tex[key]=[];if(a.length<3){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d'),R=Math.random;
+    const n=kind==='side'?8+lvl*10:6+lvl*7;g.lineCap='round';
+    for(let i=0;i<n;i++){const ang=kind==='side'?(R()-0.5)*0.22:R()*Math.PI*2,len=kind==='side'?60+R()*170:20+R()*70+lvl*18,cx=40+R()*176,cy=50+R()*156,dx=Math.cos(ang)*len/2,dy=Math.sin(ang)*len/2;
+      const w=0.6+R()*(0.8+lvl*0.9),light=R()<0.75;g.strokeStyle=light?`rgba(${225+R()*30|0},${225+R()*30|0},${228+R()*27|0},${0.55+R()*0.4})`:`rgba(40,38,36,${0.4+R()*0.4})`;g.lineWidth=w;
+      g.beginPath();g.moveTo(cx-dx,cy-dy);const k=4;for(let s=1;s<=k;s++)g.lineTo(cx-dx+2*dx*s/k+(R()-0.5)*4,cy-dy+2*dy*s/k+(R()-0.5)*4);g.stroke();}
+    for(let i=0;i<(lvl*6+(kind==='side'?2:6));i++){const x=30+R()*196,y=40+R()*176,r=0.8+R()*(1.5+lvl*1.5);g.fillStyle=R()<0.6?'rgba(205,205,200,.85)':'rgba(70,64,58,.75)';g.beginPath();g.ellipse(x,y,r*(1+R()),r,R()*3,0,7);g.fill();}
+    // bordi sfumati: fuori dal riquadro la texture è trasparente
+    g.globalCompositeOperation='destination-in';const gr=g.createRadialGradient(128,128,40,128,128,128);gr.addColorStop(0,'#000');gr.addColorStop(0.85,'rgba(0,0,0,.9)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,256,256);
+    const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.anisotropy=4;a.push(new THREE.MeshStandardMaterial({map:t,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,roughness:0.45,metalness:0.35}));}
+  return a[(Math.random()*a.length)|0];}
+const _sr=new THREE.Raycaster(),_sv=new THREE.Vector3(),_sn=new THREE.Vector3(),_su=new THREE.Vector3(),_st=new THREE.Vector3(),_sm=new THREE.Matrix4(),_sq=new THREE.Vector3();
+function scratch(cx,cz,vn,zone){const car=pl.mesh,body=car&&car.userData.body;if(!body||vn<1.6)return;car.updateMatrixWorld(true);
+  const L=[];body.traverse(o=>{if(o.isMesh&&o.visible!==false&&o.userData.role!=='wheel'&&o.userData.role!=='glass'&&!o.userData.scr&&o.geometry&&o.geometry.attributes.position&&!Array.isArray(o.material))L.push(o);});if(!L.length)return;
+  const y=(pl.yb??pl.terrH)+Math.min(0.9,(pl.T.H||1.4)*0.42);let ox=cx-pl.x,oz=cz-pl.z;const ol=Math.hypot(ox,oz)||1;ox/=ol;oz/=ol;
+  _sr.set(new THREE.Vector3(cx+ox*1.5,y,cz+oz*1.5),new THREE.Vector3(-ox,0,-oz));_sr.far=4;const hit=_sr.intersectObjects(L,false)[0];if(!hit||!hit.face)return;
+  const m=hit.object,lvl=vn<5?0:vn<10?1:2,kind=zone==='side'?'side':'hit',ws=m.getWorldScale(_sq).x||1,S=(0.35+Math.min(1,vn/14)*0.95)/ws;
+  const inv=_sm.copy(m.matrixWorld).invert(),p=m.worldToLocal(hit.point.clone()),n=_sn.copy(hit.face.normal).normalize();
+  _su.set(0,1,0).transformDirection(inv);_su.addScaledVector(n,-_su.dot(n));if(_su.lengthSq()<1e-4)_su.set(1,0,0);_su.normalize();_st.crossVectors(_su,n).normalize();
+  if(kind!=='side'){const a=Math.random()*Math.PI*2,c=Math.cos(a),s=Math.sin(a),t2=_st.clone().multiplyScalar(c).addScaledVector(_su,s),u2=_su.clone().multiplyScalar(c).addScaledVector(_st,-s);_st.copy(t2);_su.copy(u2);}
+  const g=m.geometry,P=g.attributes.position,N=g.attributes.normal,idx=g.index?g.index.array:null,nT=(idx?idx.length:P.count)/3,pos=[],nor=[],uv=[],h=S/2;
+  for(let t=0;t<nT;t++){const I=[0,1,2].map(k=>idx?idx[t*3+k]:t*3+k),V=I.map(i=>new THREE.Vector3(gRd(P,i,0),gRd(P,i,1),gRd(P,i,2)));
+    const fn=new THREE.Vector3().subVectors(V[1],V[0]).cross(new THREE.Vector3().subVectors(V[2],V[0]));if(fn.lengthSq()<1e-12)continue;fn.normalize();if(fn.dot(n)<0.3)continue;
+    let inU=false,minu=9,maxu=-9,minv=9,maxv=-9,ok=true;const UV=V.map(v=>{_sv.subVectors(v,p);if(Math.abs(_sv.dot(n))>h*1.2)ok=false;const u=_sv.dot(_st)/S+0.5,w=_sv.dot(_su)/S+0.5;minu=Math.min(minu,u);maxu=Math.max(maxu,u);minv=Math.min(minv,w);maxv=Math.max(maxv,w);return[u,w];});
+    if(!ok||maxu<0||minu>1||maxv<0||minv>1)continue;
+    V.forEach((v,k)=>{pos.push(v.x+fn.x*0.002/ws,v.y+fn.y*0.002/ws,v.z+fn.z*0.002/ws);if(N)nor.push(gRd(N,I[k],0),gRd(N,I[k],1),gRd(N,I[k],2));else nor.push(fn.x,fn.y,fn.z);uv.push(UV[k][0],UV[k][1]);});}
+  if(!pos.length)return;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  const d=new THREE.Mesh(geo,scrTex(kind,lvl));d.userData.scr=true;d.renderOrder=2;m.add(d);const Ls=car.userData.scrs||(car.userData.scrs=[]);Ls.push(d);if(Ls.length>SCR.max){const o=Ls.shift();o.parent&&o.parent.remove(o);o.geometry.dispose();}}
 function impact(vn,cx,cz,nx,nz){
   if(vn<1.2||pl.hitCd>0)return;pl.hitCd=0.5;if(vn>2)pl.hits++;
   if(!DAMAGE){const ch=Math.cos(pl.h),sh=Math.sin(pl.h),dx=cx-pl.x,dz=cz-pl.z,lx=dx*ch-dz*sh,lz=dx*sh+dz*ch,T=pl.T;
     const zone=Math.abs(lx)/(T.L/2)>Math.abs(lz)/(T.W/2)?(lx>0?'front':'rear'):'side';
     pl.susp.pv+=(zone==='front'?-1:zone==='rear'?1:0)*Math.min(2,vn*0.1);pl.susp.rv+=(zone==='side'?Math.sign(lz):0)*Math.min(2,vn*0.1);pl.susp.hv+=Math.min(0.6,vn*0.03);
-    crashSound(vn,zone,Math.max(-1,Math.min(1,lz/(T.W/2))));return;}
+    crashSound(vn,zone,Math.max(-1,Math.min(1,lz/(T.W/2))));try{scratch(cx,cz,vn,zone);}catch(e){}return;}
   // punto d'urto e direzione in coordinate dell'auto
   const ch=Math.cos(pl.h),sh=Math.sin(pl.h),dx=cx-pl.x,dz=cz-pl.z;
   const lx=dx*ch-dz*sh,lz=dx*sh+dz*ch,nlx=nx*ch-nz*sh,nlz=nx*sh+nz*ch;

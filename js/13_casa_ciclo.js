@@ -272,8 +272,8 @@ function loop(now){
   } else if(!started){
     simT+=dt;updateLights(simT);if(!NWT){updateTraffic(dt);updatePeds(dt);updateAnimals(dt);}
     if(NW&&NWT)CINE.menu(dt);else{const a=simT*0.05;camera.position.set(Math.cos(a)*70,40,Math.sin(a)*70);camera.lookAt(0,0,0);sun.position.set(-60,90,40);sun.target.position.set(0,0,0);}
-  } else if(menu.style.display!=='none'&&NWT)CINE.menu(dt);
-  {const fe=document.getElementById('cineFade');if(fe){const on=menu.style.display!=='none';if(fe.style.display!==(on?'block':'none'))fe.style.display=on?'block':'none';}}
+  } else if((menu.style.display!=='none'||document.getElementById('splash'))&&NWT)CINE.menu(dt);
+  {const fe=document.getElementById('cineFade');if(fe){const on=menu.style.display!=='none'||!!document.getElementById('splash');if(fe.style.display!==(on?'block':'none'))fe.style.display=on?'block':'none';}}
   if(PHOTO.on)photoUpdate(dt);envTick(dt);chTick(dt);recTick();SMOKE.update(dt);CAR.tick(dt);JOB.tick(dt);POL.tick(dt);EVT.tick(dt);
   sky.position.copy(camera.position);skyMat.uniforms.uT.value=simT;clouds.forEach(c=>{c.position.x+=dt*3;if(NWT){const cx=camera.position.x,cz=camera.position.z;if(c.position.x-cx>2800)c.position.x-=5600;if(c.position.x-cx<-2800)c.position.x+=5600;if(c.position.z-cz>2800)c.position.z-=5600;if(c.position.z-cz<-2800)c.position.z+=5600;}else if(c.position.x>3400)c.position.x-=5600;});
   if(pl.ck&&pl.ck.mirrors)pl.ck.mirrors.forEach(m=>m.visible=CFG.mir!==false);

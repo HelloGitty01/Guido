@@ -53,11 +53,13 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
       if(mode==='sit'){rotC(u,B.LeftUpLeg,R(AX,-1.42));rotC(u,B.RightUpLeg,R(AX,-1.42));rotC(u,B.LeftLeg,R(AX,0.62));rotC(u,B.RightLeg,R(AX,0.62));rotC(u,B.LeftFoot,R(AX,-0.5));rotC(u,B.RightFoot,R(AX,-0.5));
         rotC(u,B.Spine,R(AX,-0.12));
         rotC(u,B.LeftArm,R(AX,-0.5));rotC(u,B.RightArm,R(AX,-0.5));return;}
-      const k=Math.min(1,sp/1.4),run=sp>2.2;u.ph+=dt*(run?9:6.3)*Math.min(1.6,0.3+sp/1.4);const sn=Math.sin(u.ph),cs=Math.cos(u.ph);
+      const k=Math.min(1,sp/1.2),run=sp>2.2;u.ph+=dt*(sp>0.05?Math.max(2.5,sp*4.9):0);/* passo legato alla distanza percorsa: i piedi non scivolano */const sn=Math.sin(u.ph),cs=Math.cos(u.ph);
       [[B.LeftUpLeg,B.LeftLeg,sn],[B.RightUpLeg,B.RightLeg,-sn]].forEach(([U,L,q],i)=>{rotC(u,U,R(AX,-q*0.5*k*(run?1.25:1)));rotC(u,L,R(AX,Math.max(0,i?cs:-cs)*0.85*k*(run?1.3:1)));});
       rotC(u,B.LeftArm,R(AX,sn*0.4*k));
       if(mode==='wave'){rotC(u,B.RightArm,R(AZ,-2.3));rotC(u,B.RightForeArm,R(AZ,-0.3-0.35*Math.sin(t*7)));}
-      else rotC(u,B.RightArm,R(AX,-sn*0.4*k));
+      else if(mode==='reach'){rotC(u,B.RightArm,R(AX,-1.15));rotC(u,B.RightForeArm,R(AX,-0.35));rotC(u,B.Spine,R(AX,-0.12));}
+      else{rotC(u,B.RightArm,R(AX,-sn*0.4*k));rotC(u,B.RightForeArm,R(AX,-0.18-Math.max(0,-sn)*0.3*k));}
+      rotC(u,B.LeftForeArm,R(AX,-0.18-Math.max(0,sn)*0.3*k));
       u.root.parent.position.y+=0;};}catch(e){console.warn('Guido HD',e);}
 
   // ---------- persone ferme (alla fermata, davanti ai negozi): otto personaggi diversi ----------
@@ -124,27 +126,36 @@ const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk
     const wait=d=>{let t=0;return dt=>(t+=dt)>=d;};
     const face=(o,h)=>dt=>{let dh=h-o.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));o.h+=dh*Math.min(1,dt*8);return Math.abs(dh)<0.05;};
     const both=(...f)=>{const dn=f.map(()=>false);return dt=>{f.forEach((g,i)=>{if(!dn[i])dn[i]=g(dt);});return dn.every(Boolean);};};
-    const catJump=()=>{let t=0;const p0={u:C.u,v:C.v},sp=D.cat?D.cat.position:null,p1=sp?{u:sp.x,v:sp.z,y:sp.y}:{u:e.x,v:ps*0.4,y:0.5};return dt=>{t+=dt;const k=Math.min(1,t/0.6);C.u=p0.u+(p1.u-p0.u)*k;C.v=p0.v+(p1.v-p0.v)*k;C.y=(p1.y*0.85)*k+Math.sin(k*Math.PI)*0.55;C.h=Math.atan2(p1.u-p0.u,p1.v-p0.v);C.sp=1.2;if(k>=1){C.y=0;D.catIn=true;if(D.wcat)D.wcat.visible=false;}return k>=1;};};
+    // salto del gatto: si ferma davanti alla portiera guardando dentro, si acquatta, poi salta ad arco fino al sedile
+    const catJump=()=>{let t=0,p0=null,p1=null;return dt=>{if(!p0){p0={u:C.u,v:C.v};const sp=D.cat?D.cat.position:null;p1=sp?{u:sp.x,v:sp.z,y:sp.y}:{u:e.x,v:ps*0.4,y:0.5};}
+        t+=dt;const h=Math.atan2(p1.u-p0.u,p1.v-p0.v);
+        if(t<0.35){let dh=h-C.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));C.h+=dh*Math.min(1,dt*10);C.sp=0;C.sq=1-0.12*Math.min(1,t/0.25);return false;}
+        const k=Math.min(1,(t-0.35)/0.5),e2=k<0.5?2*k*k:1-2*(1-k)*(1-k);C.sq=1;C.h=h;C.u=p0.u+(p1.u-p0.u)*e2;C.v=p0.v+(p1.v-p0.v)*e2;C.y=p1.y*e2+Math.sin(k*Math.PI)*0.45;C.pitch=-0.5*Math.cos(k*Math.PI);C.sp=1.6;
+        if(k>=1){C.y=0;C.pitch=0;D.catIn=true;if(D.wcat)D.wcat.visible=false;}return k>=1;};};
+    // Guido si siede: entra di fianco e si abbassa sul sedile, poi compare la versione seduta
+    const sitIn=()=>{let t=0,a=null,b=null;return dt=>{if(!a){a={u:G.u,v:G.v};b={u:e.x+0.05,v:sd*(W-0.25)};}t+=dt;const k=Math.min(1,t/0.8);G.u=a.u+(b.u-a.u)*k;G.v=a.v+(b.v-a.v)*k;G.sit=k;G.sp=0;
+        if(k>=1){D.inCar=true;D.walk.visible=false;G.sit=0;}return k>=1;};};
+    const reach=on=>dt=>{D.reach=on;return true;};
     D.seq=[
-      both(walk(G,[[back,ps*(W+0.75)]],1.4),walk(C,[[back-0.9,ps*(W+0.55)]],1.5)),
-      face(G,Math.PI/2*Math.sign(1)),
-      dt=>true,anim(dP,0,1,1.0),dt=>{D.wave=false;return true;},
-      walk(C,[[e.x-0.05,ps*(W+0.7)]],1.7),wait(0.15),catJump(),wait(0.35),
-      dt=>true,anim(dP,1,0,0.7),dt=>{D.wave=false;return true;},wait(0.2),
-      walk(G,[[-hl-0.9,ps*(W+0.5)],[-hl-0.9,sd*(W+0.5)],[back,sd*(W+0.75)]],1.45),
-      face(G,Math.PI/2),dt=>true,anim(dD,0,1,0.9),dt=>{D.wave=false;return true;},
-      walk(G,[[e.x-0.2,sd*(W+0.45)]],1.0),dt=>{D.inCar=true;D.walk.visible=false;return true;},wait(0.35),
+      both(walk(G,[[back,ps*(W+0.6)]],1.35),walk(C,[[back-0.8,ps*(W+0.5)]],1.4)),
+      both(face(G,Math.PI/2),face(C,Math.PI/2)),
+      reach(true),anim(dP,0,1,1.0),reach(false),
+      walk(C,[[e.x-0.1,ps*(W+0.75)]],1.5),catJump(),wait(0.35),
+      reach(true),anim(dP,1,0,0.7),reach(false),wait(0.15),
+      walk(G,[[-hl-0.8,ps*(W+0.55)],[-hl-0.8,sd*(W+0.55)],[back,sd*(W+0.6)]],1.35),
+      face(G,Math.PI/2),reach(true),anim(dD,0,1,0.9),reach(false),
+      walk(G,[[e.x-0.25,sd*(W+0.5)]],0.9),face(G,Math.atan2(0,sd)),sitIn(),wait(0.3),
       anim(dD,1,0,0.6),wait(0.6),dt=>{D.done=true;return true;}];
     D.ph='run';return true;};
   const toW=(u,v,y=0)=>{V.set(u,y,v);pl.mesh.localToWorld(V);return V;};
   const step=(o,tu,tv,sp,dt)=>{const du=tu-o.u,dv=tv-o.v,d=Math.hypot(du,dv);if(d<0.06){o.sp=0;return d;}const w=Math.min(sp,d*2.2+0.15);o.sp+=(w-o.sp)*Math.min(1,dt*5);const m=Math.min(d,o.sp*dt);o.u+=du/d*m;o.v+=dv/d*m;
     let dh=Math.atan2(du,dv)-o.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));o.h+=dh*Math.min(1,dt*9);return d;};
-  D.place=()=>{if(D.walk&&D.walk.visible){const p=toW(D.g.u,D.g.v);D.walk.position.set(p.x,NW.H(p.x,p.z),p.z);D.walk.rotation.y=dirW(D.g);}
-    if(D.wcat&&D.wcat.visible){const c=D.c,p=toW(c.u,c.v,c.y||0),gy=NW.H(p.x,p.z);D.wcat.position.set(p.x,c.y?p.y:gy,p.z);D.wcat.rotation.y=dirW(c);}};
+  D.place=()=>{if(D.walk&&D.walk.visible){const p=toW(D.g.u,D.g.v),gy=NW.H(p.x,p.z),st=D.g.sit||0;let y=gy;if(st>0){const sp=new THREE.Vector3();D.seat.getWorldPosition(sp);y=gy+(sp.y-gy)*Math.min(1,st*1.2);}D.walk.position.set(p.x,y,p.z);D.walk.rotation.y=dirW(D.g);}
+    if(D.wcat&&D.wcat.visible){const c=D.c,p=toW(c.u,c.v,c.y||0),gy=NW.H(p.x,p.z);D.wcat.position.set(p.x,c.y?Math.max(p.y,gy):gy,p.z);D.wcat.rotation.set(0,dirW(c),0);D.wcat.rotateX(c.pitch||0);D.wcat.scale.set(1,c.sq||1,1);}};
   D.tick=(dt)=>{if(!pl.mesh||!started)return;attach();
     if(D.walk&&(D.walk.visible||(D.wcat&&D.wcat.visible))){D.t+=dt;
       if(D.ph==='run'&&D.seq){while(D.seq.length&&D.seq[0](dt))D.seq.shift();}
-      if(D.walk.visible)HDX.poseGuido(D.walk,dt,D.g.sp,D.wave?'wave':'walk',simT);
+      if(D.walk.visible)HDX.poseGuido(D.walk,dt,D.g.sp,D.g.sit>0.15?'sit':D.reach?'reach':'walk',simT);
       if(D.wcat&&D.wcat.visible){const u=D.wcat.userData,c=D.c;if(u.a)u.a.timeScale=c.sp>0.05?Math.min(2,0.4+c.sp/0.9):0;u.mx.update(dt);}
       D.place();if(D.inCar&&D.catIn&&D.done){D.walk.visible=false;if(D.wcat)D.wcat.visible=false;}}
     else if(D.ph==='run'&&D.seq&&D.seq.length){while(D.seq.length&&D.seq[0](dt))D.seq.shift();}
@@ -153,7 +164,7 @@ const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk
     if(D.seat.visible)HDX.poseGuido(D.seat,dt,0,'sit',simT);};
   // direzione di marcia (coordinate auto -> angolo nel mondo: il modello guarda verso +z)
   const dirW=(o)=>{const a=toW(o.u,o.v).clone(),du=Math.sin(o.h),dv=Math.cos(o.h),b=toW(o.u+du,o.v+dv);return Math.atan2(b.x-a.x,b.z-a.z);};
-  D.hideAll=()=>{if(D.walk)D.walk.visible=false;if(D.wcat)D.wcat.visible=false;D.inCar=D.catIn=true;D.ph=null;D.seq=null;D.done=true;D.wave=false;doorsShut();};
+  D.hideAll=()=>{if(D.walk)D.walk.visible=false;if(D.wcat)D.wcat.visible=false;D.inCar=D.catIn=true;D.ph=null;D.seq=null;D.done=true;D.wave=false;D.reach=false;if(D.g)D.g.sit=0;if(D.wcat)D.wcat.scale.set(1,1,1);doorsShut();};
   return D;})();
 
 // ---- spruzzi quando un'auto finisce in acqua (si animano da soli a ogni fotogramma) ----

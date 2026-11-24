@@ -248,7 +248,7 @@
   #menu{background:radial-gradient(120% 90% at 30% 0%,rgba(40,40,46,.9),rgba(20,20,24,.94) 60%),linear-gradient(90deg,rgba(18,18,22,.9),rgba(18,18,22,.55))!important}
   #menu .mwrap{width:min(1100px,96vw)!important;margin:14px auto 30px!important}
   .brand{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px!important}
-  .brand img.logo{width:min(210px,40vw)!important;height:auto!important;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))!important;border-radius:10px!important;-webkit-mask-image:radial-gradient(ellipse 72% 70% at 50% 50%,#000 70%,transparent 100%);mask-image:radial-gradient(ellipse 72% 70% at 50% 50%,#000 70%,transparent 100%)}
+  .brand img.logo{width:min(150px,30vw)!important;height:auto!important;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))!important;border-radius:0!important}
   .cta.top{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin:0!important}
   #go{background:linear-gradient(180deg,#d23a40,#8f1a20)!important;border:1px solid rgba(255,255,255,.35)!important;box-shadow:0 4px 18px rgba(179,36,43,.45),inset 0 1px 0 rgba(255,255,255,.35)!important;border-radius:8px!important}
   #go:hover{background:linear-gradient(180deg,#e2464c,#a01f26)!important}
@@ -268,11 +268,16 @@
   #vehName{position:absolute;left:14px;bottom:12px;color:#fff;font:300 22px Inter,system-ui;letter-spacing:.06em;text-shadow:0 2px 10px rgba(0,0,0,.6)}
   @media (max-width:760px){.vehWrap{grid-template-columns:1fr}.vehPrev{min-height:220px;order:-1}.brand img.logo{width:44vw!important}}
   #splash{background:#141418!important}
+  #splash .sub{position:relative;z-index:1;margin-top:-14px;color:#fff;font:300 clamp(14px,2.2vw,22px) Inter,system-ui,sans-serif;letter-spacing:.42em;text-transform:uppercase;text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:.92}
+  #splash.live{background:transparent!important;justify-content:flex-end;padding-bottom:9vh}
+  #splash.live .shots{opacity:0;transition:opacity 1.8s}
+  #splash.live>img{width:min(300px,40vw)!important;animation:none}
+  #splash.live::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25),transparent 30%,transparent 55%,rgba(0,0,0,.65));pointer-events:none}
   #splash>img{width:min(520px,70vw)!important}
 </style>
 </head>
 <body>
-<div id="splash"><div class="shots"><img alt="" src="shots/s1.webp" class="on"><img alt="" src="shots/s3.webp"><img alt="" src="shots/s2.webp"><img alt="" src="shots/s5.webp"><img alt="" src="shots/s4.webp"></div><img alt="Guido" src="img/logo.webp"><div id="loadBox"><div class="bar"><i id="ldBar"></i></div></div><div class="st" id="ldTxt">Accendo il motore… <b>0%</b></div><button id="splGo">Si parte!</button><div style="position:absolute;bottom:14px;left:0;right:0;text-align:center;z-index:2;color:#fff;font:700 13px Nunito,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.35)">© 2026, Hopthop Studio</div></div>
+<div id="splash"><div class="shots"><img alt="" src="shots/s1.webp" class="on"><img alt="" src="shots/s3.webp"><img alt="" src="shots/s2.webp"><img alt="" src="shots/s5.webp"><img alt="" src="shots/s4.webp"></div><img alt="Guido" src="img/logo.webp"><div class="sub">Driving in Ornavia</div><div id="loadBox"><div class="bar"><i id="ldBar"></i></div></div><div class="st" id="ldTxt">Accendo il motore… <b>0%</b></div><button id="splGo">Si parte!</button><div style="position:absolute;bottom:14px;left:0;right:0;text-align:center;z-index:2;color:#fff;font:700 13px Nunito,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.35)">© 2026, Hopthop Studio</div></div>
 <script>(()=>{const L=document.querySelectorAll('#splash .shots img');let i=0;const t=setInterval(()=>{const sp=document.getElementById('splash');if(!sp||sp.style.display==='none'){clearInterval(t);return;}L[i].classList.remove('on');i=(i+1)%L.length;L[i].classList.add('on');},5200);})();</script>
 <div id="credOv" style="position:fixed;inset:0;background:rgba(8,10,14,.9);display:none;align-items:center;justify-content:center;z-index:9;overflow:auto"><div style="background:#141a22;border:1px solid #2f3a48;border-radius:14px;padding:20px 24px;max-width:640px;width:92%;font-size:14px;line-height:1.5">
 <h2 style="margin:0 0 8px">Crediti dei modelli 3D</h2><p style="opacity:.8;margin:0 0 10px">Modelli scaricati da Sketchfab, usati con licenza Creative Commons Attribution 4.0 (CC BY 4.0) salvo dove indicato. Sono stati ridotti e ottimizzati per il browser.</p>
@@ -402,8 +407,10 @@ window.HDIMG={};
 (function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','guido','hd_linden_far','hd_fir_far','hd_palm_far','hd_cypress_far','hd_poplar_far','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
   const upd=()=>{let a=0;files.forEach(f=>a+=prog[f]||0);const p=Math.round(a/files.length*100);const b=document.getElementById('ldBar'),t=document.getElementById('ldTxt');if(b)b.style.width=p+'%';if(t)t.innerHTML=(p<40?'Accendo il motore…':p<80?'Scaldo le gomme…':'Controllo gli specchietti…')+' <b>'+p+'%</b>';};
   const go=()=>{const t=document.getElementById('ldTxt');if(t)t.innerHTML='Preparo le strade…';setTimeout(()=>MAIN().then(()=>{if(box)box.remove();
-      const sp=document.getElementById('splash'),bt=document.getElementById('splGo');if(t)t.textContent='Pronto!';bt.style.display='block';bt.focus();
-      const close=()=>{sp.style.opacity=0;setTimeout(()=>sp.remove(),600);removeEventListener('keydown',kd);};const kd=e=>{if(e.code==='Enter'||e.code==='Space'){e.preventDefault();close();}};
+      const sp=document.getElementById('splash'),bt=document.getElementById('splGo'),mn=document.getElementById('menu');if(t)t.textContent='';bt.style.display='block';bt.focus();
+      // il filmato dal vivo prende il posto delle foto: il menu compare quando si entra
+      if(mn)mn.style.display='none';sp.classList.add('live');
+      const close=()=>{sp.style.opacity=0;if(mn)mn.style.display='flex';setTimeout(()=>sp.remove(),600);removeEventListener('keydown',kd);};const kd=e=>{if(e.code==='Enter'||e.code==='Space'){e.preventDefault();close();}};
       bt.onclick=close;addEventListener('keydown',kd);}),30);};
   if(!THREE.GLTFLoader){go();return;}
   const LD=new THREE.GLTFLoader();if(window.MeshoptDecoder)LD.setMeshoptDecoder(MeshoptDecoder);

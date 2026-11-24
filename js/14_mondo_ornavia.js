@@ -421,16 +421,24 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     for(let b=0;b<N;b++)for(let a=0;a<N;a++){const x=x0+a*st,z=z0+b*st,k=b*N+a,h=hf(x,z);Hs[k]=h;pos[k*3]=a*st;pos[k*3+1]=h-(paved?0.3:0.04);pos[k*3+2]=b*st;uv[k*2]=x/9;uv[k*2+1]=z/9;}
     // la griglia del terreno è larga (10-20 m): fra un vertice sul ciglio della strada e uno a monte il prato può salire sopra l'asfalto.
     // Si abbassano i vertici delle celle attraversate dalla strada sotto la quota della carreggiata (mai alzati: i rilevati restano)
-    if(skipNear==='carve'){const ti=Math.round(x0/TS),tj=Math.round(z0/TS),low=(a,b,h)=>{if(a<0||b<0||a>n||b>n)return;const k=b*N+a;if(Hs[k]>h){Hs[k]=h;pos[k*3+1]=h-0.04;}};
+    const HOLE=new Set();if(skipNear==='carve'){const ti=Math.round(x0/TS),tj=Math.round(z0/TS),LO=new Map(),CAND=[];
+      // in galleria il terreno deve restare sopra la volta; fuori (e davanti agli imbocchi) sotto la carreggiata
+      const portals=R=>{if(R._pt)return R._pt;let f=-1,l=-1;for(let i=0;i<R.N-1;i++){if(NW.Hg((R.X[i]+R.X[i+1])/2,(R.Z[i]+R.Z[i+1])/2)-(R.Hh[i]+R.Hh[i+1])/2>3){if(f<0)f=i;l=i+1;}}return R._pt=[f,l];};
+      const inTunP=(R,x,z)=>{const[f,l]=portals(R);if(f<0)return false;const dfx=R.X[f+1]-R.X[f],dfz=R.Z[f+1]-R.Z[f],dlx=R.X[l-1]-R.X[l],dlz=R.Z[l-1]-R.Z[l];
+        return (x-R.X[f])*dfx+(z-R.Z[f])*dfz>0&&(x-R.X[l])*dlx+(z-R.Z[l])*dlz>0;};
+      const mark=(R,a,b,h,tin)=>{if(a<0||b<0||a>n||b>n)return;const k=b*N+a;if(tin)return;if(!(LO.get(k)<=h))LO.set(k,h);};
       for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++){const l=segT.get(tk(ti+di,tj+dj));if(!l)continue;
-        for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.t||R.b||R.c>=9)continue;const ax=R.X[i],az=R.Z[i],bx=R.X[i+1],bz=R.Z[i+1],L=Math.hypot(bx-ax,bz-az);if(L<0.01)continue;
-          const hw=R.w/2+0.8;if(Math.max(ax,bx)<x0-hw-st||Math.min(ax,bx)>x0+size+hw+st||Math.max(az,bz)<z0-hw-st||Math.min(az,bz)>z0+size+hw+st)continue;
+        for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.b||R.c>=9)continue;const ax=R.X[i],az=R.Z[i],bx=R.X[i+1],bz=R.Z[i+1],L=Math.hypot(bx-ax,bz-az);if(L<0.01)continue;
+          const hw=R.w/2+(R.t?1.6:0.8);if(Math.max(ax,bx)<x0-hw-st||Math.min(ax,bx)>x0+size+hw+st||Math.max(az,bz)<z0-hw-st||Math.min(az,bz)>z0+size+hw+st)continue;
           const nx=-(bz-az)/L,nz=(bx-ax)/L,M=Math.ceil(L/(st*0.35));
           for(let u=0;u<=M;u++){const f=u/M,x=ax+(bx-ax)*f,z=az+(bz-az)*f,h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*f-0.14;
-            for(const o of [-hw,-hw/2,0,hw/2,hw]){const a=Math.floor((x+nx*o-x0)/st),b=Math.floor((z+nz*o-z0)/st);low(a,b,h);low(a+1,b,h);low(a,b+1,h);low(a+1,b+1,h);}}}}}
+            const tin=R.t&&inTunP(R,x,z);for(const o of [-hw,-hw/2,0,hw/2,hw]){const a=Math.floor((x+nx*o-x0)/st),b=Math.floor((z+nz*o-z0)/st);if(tin){if(a>=0&&b>=0&&a<n&&b<n)CAND.push(a,b,h);continue;}mark(R,a,b,h);mark(R,a+1,b,h);mark(R,a,b+1,h);mark(R,a+1,b+1,h);}}}}
+      LO.forEach((v,k)=>{if(Hs[k]>v){Hs[k]=v;pos[k*3+1]=v-0.04;}});
+      // sopra la galleria, dove il terreno passerebbe dentro la volta (vicino agli imbocchi), si apre un buco: si vede la galleria in trincea
+      for(let c=0;c<CAND.length;c+=3){const a=CAND[c],b=CAND[c+1],h=CAND[c+2],m=Math.min(Hs[b*N+a],Hs[b*N+a+1],Hs[(b+1)*N+a],Hs[(b+1)*N+a+1]);if(m<h+6.6)HOLE.add(b*n+a);}}
     for(let b=0;b<N;b++)for(let a=0;a<N;a++){const k=b*N+a,hx=(Hs[b*N+Math.min(n,a+1)]-Hs[b*N+Math.max(0,a-1)])/(st*((a>0&&a<n)?2:1)),hz=(Hs[Math.min(n,b+1)*N+a]-Hs[Math.max(0,b-1)*N+a])/(st*((b>0&&b<n)?2:1));
       {const xx=x0+a*st,zz=z0+b*st;if(paved){const sk=smogK(xx,zz);col.set(Hs[k]<3.2?[1.15,1.02,0.78]:[1.05*sk,1.03*sk*0.97,1*sk*0.92],k*3);}else{col.set(tcol(xx,zz,Hs[k],Math.hypot(hx,hz)),k*3);if(rkA)rkA[k]=TCR;}}}
-    const idx=[];for(let b=0;b<n;b++)for(let a=0;a<n;a++){const p=b*N+a,q=p+1,r=p+N,s=r+1;idx.push(p,r,q,q,r,s);}
+    const idx=[];for(let b=0;b<n;b++)for(let a=0;a<n;a++){if(HOLE.has(b*n+a))continue;const p=b*N+a,q=p+1,r=p+N,s=r+1;idx.push(p,r,q,q,r,s);}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));if(rkA)g.setAttribute('rk',new THREE.BufferAttribute(rkA,1));g.setIndex(idx);g.computeVertexNormals();
     const m=new THREE.Mesh(g,material);m.position.set(x0,0,z0);m.receiveShadow=true;scene.add(m);return m;}
   // ---------- nastri stradali ----------
