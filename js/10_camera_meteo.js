@@ -363,7 +363,7 @@ function applyEnv(tick){
   if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=NIGHT?4.4:3.9;}}
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
-   if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(0xa4abb3).multiplyScalar(0.25+0.75*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}
+   if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(K.bot).lerp(new THREE.Color(0xa4abb3),0.3).multiplyScalar(0.3+0.7*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}
   sun.intensity=sunI;sun.color.set(sunC);hemiL.intensity=hemiI;U.uSun.value.copy(SUNOFF).normalize();U.uSunC.value.set(sunC).multiplyScalar(WX==='clear'?1:0.35);if(!NIGHT&&ENVGEN&&(!tick||(frameN%600===0))){const t=ENVGEN.make(!tick);if(t&&scene.environment!==t)scene.environment=t;}ENVB.sun=sunI;ENVB.hemi=hemiI;ENVB.exp=exp;fog.color.set(fogC);fog.near=fogN*QG.fog;fog.far=fogF*QG.fog;scene.background.set(fogC);renderer.toneMappingExposure=exp;
   clouds.forEach(c=>{c.material.color.set(clouds_c);c.visible=WX!=='fog';});
   HZN.color(fog.color,K.day||0);
@@ -386,11 +386,11 @@ function applyEnv(tick){
    seguono il giocatore, si abbassano verso il mare e prendono il colore della foschia */
 const HZN={L:[],cx:null,cz:null,N:200,
   init(){if(this.L.length||!NW)return;const N=this.N;
-    [[5500,0.56,680,11],[4500,0.4,500,23],[3600,0.26,340,37]].forEach(([R,hz,amp,sd],i)=>{const g=new THREE.BufferGeometry(),pos=new Float32Array((N+1)*2*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    [[5500,0.46,760,11],[4500,0.3,560,23],[3600,0.17,380,37]].forEach(([R,hz,amp,sd],i)=>{const g=new THREE.BufferGeometry(),pos=new Float32Array((N+1)*2*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));
       const idx=[];for(let k=0;k<N;k++){const a=k*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}g.setIndex(idx);
       const me=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x8899aa,fog:false,side:THREE.DoubleSide,depthWrite:false}));me.frustumCulled=false;me.renderOrder=-0.9+i*0.1;me.visible=false;scene.add(me);
       this.L.push({me,R,hz,amp,sd});});},
-  ridge(a,sd){let r=0,am=1,f=3,t=0;for(let k=0;k<6;k++){r+=am*Math.sin(a*f+sd*(k+1)*2.3+Math.sin(a*f*0.5+sd)*1.3);t+=am;am*=0.55;f*=2.1;}r=0.5+0.5*r/t;return Math.max(0,Math.min(1,r))**1.6;},
+  ridge(a,sd){let r=0,am=1,f=3,t=0;for(let k=0;k<7;k++){const w=Math.sin(a*f+sd*(k+1)*2.3+Math.sin(a*f*0.5+sd)*1.3);r+=am*(k<2?w:1-2*Math.abs(w));t+=am;am*=0.52;f*=2.2;}r=0.5+0.5*r/t;return Math.max(0,Math.min(1,r))**1.9;},
   build(px,pz){const N=this.N,gy=(pl.terrH||NW.Hg(px,pz)||0);
     for(const Ly of this.L){const P=Ly.me.geometry.attributes.position.array;
       for(let k=0;k<=N;k++){const a=k/N*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);let land=0,hm=-1e9,n=0;
@@ -401,5 +401,5 @@ const HZN={L:[],cx:null,cz:null,N:200,
     this.cx=px;this.cz=pz;this.color();},
   tick(){if(!NW||!started)return;this.init();if(!this.L.length)return;const x=camera.position.x,z=camera.position.z;
     if(this.cx==null||Math.hypot(x-this.cx,z-this.cz)>350)this.build(x,z);else for(const Ly of this.L)Ly.me.position.set(this.cx,0,this.cz);},
-  color(fc,day){if(fc){this.fc=fc.clone();this.day=day;}if(!this.L.length||!this.fc)return;fc=this.fc;day=this.day;const base=fc.clone().multiplyScalar(0.42+0.06*day).lerp(new THREE.Color(DUSK?0x4d4a72:0x35506a),(DUSK?0.6:0.45)*day);
+  color(fc,day){if(fc){this.fc=fc.clone();this.day=day;}if(!this.L.length||!this.fc)return;fc=this.fc;day=this.day;const base=fc.clone().multiplyScalar(0.34+0.05*day).lerp(new THREE.Color(DUSK?0x4d4a72:0x35506a),(DUSK?0.6:0.45)*day);
     for(const Ly of this.L){Ly.me.material.color.copy(base).lerp(fc,Ly.hz);Ly.me.visible=WX!=='fog'&&this.cx!=null;}}};
