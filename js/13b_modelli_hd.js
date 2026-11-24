@@ -125,7 +125,7 @@ const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk
   D.board=()=>{if(D.skipBoard){D.skipBoard=false;D.inCar=D.catIn=true;return false;}if(!attach())return false;D.inCar=D.catIn=false;D.ph='wait';D.done=false;
     if(!D.walk){D.walk=HDX.guido();scene.add(D.walk);}
     const e=pl.ck.eye,sd=Math.sign(e.z)||-1,ps=-sd,W=pl.T.W/2,hl=pl.T.L/2;D.sd=sd;
-    D.g={u:-hl-1.6,v:sd*(W+1.4),h:Math.PI/2,sp:0};D.c={u:0,v:0,h:0,sp:0};D.catIn=true;D.t=0;D.k=0;D.kt=0;
+    D.g={u:-hl-1.6,v:sd*(W+1.4),h:Math.PI/2,sp:0};D.pre=null;D.fromW=D.from;D.from=null;D.c={u:0,v:0,h:0,sp:0};D.catIn=true;D.t=0;D.k=0;D.kt=0;
     D.walk.visible=true;D.place();return true;};
   D.go=()=>{if(D.ph!=='wait')return false;const e=pl.ck.eye,sd=D.sd,ps=-sd,W=pl.T.W/2,hl=pl.T.L/2,cp=/hellcat/.test(selKey),back=e.x-(cp?1.05:0.62)-0.35;
     const dD=door(sd),G=D.g,C=D.c;let jump=null;
@@ -145,7 +145,7 @@ const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk
         if(k>=1){D.inCar=true;D.walk.visible=false;G.sit=0;}return k>=1;};};
     const reach=on=>dt=>{D.reach=on;return true;};
     D.seq=[
-      walk(G,[[back,sd*(W+0.6)]],1.3),face(G,Math.PI/2),reach(true),anim(dD,0,1,0.9),reach(false),
+      ...(D.pre?[walk(G,D.pre,2.1)]:[]),walk(G,[[back,sd*(W+0.6)]],1.3),face(G,Math.PI/2),reach(true),anim(dD,0,1,0.9),reach(false),
       walk(G,[[e.x-0.25,sd*(W+0.5)]],0.9),sitIn(),wait(0.3),
       anim(dD,1,0,0.6),wait(0.6),dt=>{D.done=true;return true;}];
     D.ph='run';return true;};
@@ -155,6 +155,7 @@ const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk
   D.place=()=>{if(D.walk&&D.walk.visible){const p=toW(D.g.u,D.g.v),gy=NW.H(p.x,p.z),st=D.g.sit||0;let y=gy+(D.g.dy||0);D.walk.position.set(p.x,y,p.z);D.walk.rotation.y=dirW(D.g);}
     if(D.wcat&&D.wcat.visible){const c=D.c,p=toW(c.u,c.v,c.y||0),gy=NW.H(p.x,p.z);D.wcat.position.set(p.x,c.y?Math.max(p.y,gy):gy,p.z);D.wcat.rotation.set(0,dirW(c),0);D.wcat.rotateX(c.pitch||0);D.wcat.scale.set(1,c.sq||1,1);}};
   D.tick=(dt)=>{if(!pl.mesh||!started)return;attach();
+    if(D.fromW&&D.ph==='wait'){pl.mesh.updateMatrixWorld(true);V.set(D.fromW.x,0,D.fromW.z);pl.mesh.worldToLocal(V);let u0=V.x,v0=V.z;const g=D.g,dd=Math.hypot(u0-g.u,v0-g.v);if(dd>15){u0=g.u+(u0-g.u)*15/dd;v0=g.v+(v0-g.v)*15/dd;}if(dd<80){D.pre=[[g.u,g.v]];D.g={u:u0,v:v0,h:Math.atan2(g.u-u0,g.v-v0),sp:0};}D.fromW=null;}
     if(D.walk&&(D.walk.visible||(D.wcat&&D.wcat.visible))){D.t+=dt;
       if(D.ph==='run'&&D.seq){while(D.seq.length&&D.seq[0](dt))D.seq.shift();}
       if(D.walk.visible)HDX.poseGuido(D.walk,dt,D.g.sp,D.g.sit>0.15?'sit':D.reach?'reach':'walk',simT);

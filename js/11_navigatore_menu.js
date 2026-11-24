@@ -43,7 +43,7 @@ function manText(m){if(m.nw)return NWT.manText(m);const a=m.ang*57.3;if(G2.nodes
 const VOCE=(()=>{const MAN={},LD={};let cur=[],seq=0;const buf=new Map();
   const norm=t=>t.toLowerCase().normalize('NFC').replace(/’/g,"'").replace(/[^a-z0-9àèéìòóù' ]+/g,' ').replace(/\s+/g,' ').trim();
   // due set registrati: voce femminile (voce/) e maschile (voce/m/); le battute di Radio Guido stanno nel primo
-  const load=d=>LD[d]||(LD[d]=fetch(d+'voce.json').then(r=>r.json()).then(j=>{MAN[d]=j;}).catch(()=>{MAN[d]={};}));
+  const load=d=>CFG.voce==='sys'?Promise.resolve():LD[d]||(LD[d]=fetch(d+'voce.json').then(r=>r.json()).then(j=>{MAN[d]=j;}).catch(()=>{MAN[d]={};}));
   const dirOf=dj=>dj||CFG.voce!=='natm'?'voce/':'voce/m/';load('voce/');if(CFG.voce==='natm')load('voce/m/');
   const seg=(t,pre,d)=>{const man=MAN[d];if(!man)return null;const w=norm(t).split(' ').filter(Boolean),out=[];let i=0;
     while(i<w.length){let ok=0;for(let k=Math.min(14,w.length-i);k>0;k--){const f=man[pre+w.slice(i,i+k).join(' ')];if(f){out.push(d+f);i+=k;ok=1;break;}}if(!ok)return null;}return out.length?out:null;};
@@ -199,7 +199,7 @@ const selMode=document.getElementById('selMode'),selDest=document.getElementById
 tuneUI();document.getElementById('tuneSave').onclick=()=>{try{localStorage.setItem('sim_tune',JSON.stringify(TUNES));document.getElementById('tuneNote').textContent='Assetto salvato ✓';}catch(e){}};
 document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune(selKey);tuneUI();try{localStorage.setItem('sim_tune',JSON.stringify(TUNES));}catch(e){}document.getElementById('tuneNote').textContent='Valori originali ripristinati';};
 {const a=document.getElementById('selAids');a.value=String(CFG.aids??1);a.onchange=()=>{CFG.aids=+a.value;savePrefs();};}
-{const si=document.getElementById('selIntro');si.value=CFG.intro===false?'0':'1';si.onchange=()=>{CFG.intro=si.value==='1';savePrefs();};document.getElementById('homeSkip').onclick=e=>{e.currentTarget.blur();if(HOME.mode==='return')HOME.finish();else HOME.enter(selKey);};}
+{CFG.intro=true;document.getElementById('homeSkip').onclick=e=>{e.currentTarget.blur();if(HOME.mode==='return')HOME.finish();else HOME.enter(selKey);};}
 {const f=document.getElementById('selFuel');f.value=String(CFG.fuel??1);f.onchange=()=>{CFG.fuel=+f.value;savePrefs();};
  const c=document.getElementById('selCyc');c.value=String(CFG.cycSp??1);c.onchange=()=>{CFG.cycSp=+c.value;savePrefs();};
  const c2=document.getElementById('selCycS');c2.value=String(CFG.cycStart??5.5);if(!c2.value)c2.value='5.5';CFG.cycStart=+c2.value;c2.onchange=()=>{CFG.cycStart=+c2.value;savePrefs();};
@@ -219,8 +219,8 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
   document.getElementById('radioNote').textContent=RADIO.web?'Tasto M: Radio Guido, Rai Radio 1-2-3, Radio 105, Virgin Radio, R101':'Tasto M: Radio Guido. Le radio vere funzionano nella versione su GitHub.';}
 {const a=document.getElementById('cfgBlur'),b=document.getElementById('cfgShake');if(a){a.checked=CFG.blur??!document.body.classList.contains('mob');a.onchange=()=>{CFG.blur=a.checked;savePrefs();};}if(b){b.checked=CFG.shake!==false;b.onchange=()=>{CFG.shake=b.checked;savePrefs();};}}
 {const a=document.getElementById('cfgAutoQ');if(a){a.checked=CFG.autoQ!==false;a.onchange=()=>{CFG.autoQ=a.checked;savePrefs();if(!a.checked){AUTOQ.sc=1;renderer.setPixelRatio(AUTOQ.base);renderer.setSize(innerWidth,innerHeight);if(window.HDTQ)HDTQ(0);AUTOQ.lvl=0;}};}const b=document.getElementById('cfgAmb');if(b){b.checked=CFG.amb!==false;b.onchange=()=>{CFG.amb=b.checked;savePrefs();};}}
-{const w=document.getElementById('cfgWg');if(w){w.checked=CFG.wg!==false;w.onchange=()=>{CFG.wg=w.checked?null:false;window.__wgOff=false;savePrefs();try{if(AC)initAudio();}catch(e){}};}}
-{const e=document.getElementById('cfgVoce');if(e){e.value=CFG.voce||'nat';e.onchange=()=>{CFG.voce=e.value;savePrefs();VOCE.load();};}const b=document.getElementById('voceTest');if(b)b.onclick=()=>{if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(x){}}VOCE.load().then(()=>VOCE.speak('Tra 300 metri, alla rotatoria prendi la seconda uscita',{cancel:true}));};}
+{const w=null;if(w){w.checked=CFG.wg!==false;w.onchange=()=>{CFG.wg=w.checked?null:false;window.__wgOff=false;savePrefs();try{if(AC)initAudio();}catch(e){}};}}
+{const e=null;if(e){e.value=CFG.voce||'nat';e.onchange=()=>{CFG.voce=e.value;savePrefs();VOCE.load();};}const b=document.getElementById('voceTest');if(b)b.onclick=()=>{if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(x){}}VOCE.load().then(()=>VOCE.speak('Tra 300 metri, alla rotatoria prendi la seconda uscita',{cancel:true}));};}
 {const el=document.getElementById('cfgMir');el.checked=CFG.mir!==false;el.onchange=()=>{CFG.mir=el.checked;savePrefs();};}
 document.getElementById('ctrlBtn').onclick=()=>{document.getElementById('ctrlOv').style.display='flex';ctrlUI();};
 document.getElementById('ctrlClose').onclick=()=>{ctrlWait=null;document.getElementById('ctrlOv').style.display='none';};

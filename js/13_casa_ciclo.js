@@ -170,12 +170,12 @@ HOME.begin=function(){HOME.mode='walk';HOME.stillT=0;HOME.t=0;document.getElemen
   HOME.guido.visible=true;pl.mesh.visible=false;pl.x=x;pl.z=z;pl.vx=pl.vy=0;muteCar(true);HOME.camInit=true;ckOverlay();
   const ui=document.getElementById('homeUI');ui.style.display='flex';document.getElementById('homeCard').style.display='none';
   pl.navMsg='Ciao Guido! Vai in garage e scegli il mezzo: avvicinati e premi Invio.';pl.navMsgT=6;
-  if(CFG.intro===false)HOME.enter(selKey,true);};
+  HOME.enter(selKey,true,true);};
 function fade(cb){const f=document.getElementById('fadeOv');f.style.opacity=1;setTimeout(()=>{cb();setTimeout(()=>f.style.opacity=0,120);},380);}
-HOME.enter=function(k,instant){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on&&!CAR.s.own[k]){if(CAR.buy(k)){HOME.near=null;}return;}HOME.busy=true;const go=()=>{HOME.busy=false;const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
+HOME.enter=function(k,instant,board){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on&&!CAR.s.own[k]){if(CAR.buy(k)){HOME.near=null;}return;}HOME.busy=true;const go=()=>{HOME.busy=false;const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
     resetPlayer();pl.x=C.x;pl.z=C.z;pl.h=C.pad?C.h:HOME.carH;pl.vx=pl.vy=pl.r=0;NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;C.m.visible=false;if(C.dyn){NWT.remDyn(C.dyn);C.dyn=null;}
     HOME.guido.visible=false;HOME.mode=null;HOME.doorA=0;document.getElementById('homeUI').style.display='none';applyView();pl.camInit=false;RADIO.pause(false);try{savePrefs();}catch(e){}
-    HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;if(DRV)DRV.skipBoard=true;startDrive();};
+    HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;if(DRV){if(board){const[dx,dz]=hW(5.0,-1);DRV.from={x:dx,z:dz};}else DRV.skipBoard=true;}startDrive();};
   if(instant)go();else fade(go);};
 HOME.finish=function(){if(HOME.done)return;HOME.done=true;document.getElementById('homeUI').style.display='none';fade(()=>{HOME.guido.visible=false;HOME.doorA=0;setTimeout(()=>{HOME.cat.visible=true;HOME.mode=null;endRun('casa');},700);});};
 HOME.arrive=function(){if(CAR.on){CAR.repair();CAR.save();}HOME.mode='return';HOME.t=0;muteCar(true);pl.vx=pl.vy=0;pl.hb=true;if(pl.lights)toggleLights();
@@ -273,7 +273,10 @@ function loop(now){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);if(ios&&!standalone)ib.style.display='';
   ib.onclick=async()=>{if(dp){dp.prompt();try{await dp.userChoice;}catch(e){}dp=null;ib.style.display='none';}else if(ios)alert('Per installare Guido: tocca il pulsante Condividi di Safari (il quadrato con la freccia) e scegli «Aggiungi alla schermata Home».');};
   addEventListener('appinstalled',()=>{ib.style.display='none';});}
-document.getElementById('credBtn').onclick=()=>{const o=document.getElementById('credOv'),r=o.firstElementChild;o.style.display='flex';r.classList.remove('roll');void r.offsetWidth;r.classList.add('roll');};document.getElementById('credOv').addEventListener('click',e=>{if(e.target.id==='credOv')e.currentTarget.style.display='none';});document.getElementById('credClose').onclick=()=>{document.getElementById('credOv').style.display='none';};
+/* titoli di coda nella scheda Info: scorrono in loop, si fermano col dito o il mouse sopra */
+(function(){const w=document.getElementById('credWin'),r=document.getElementById('credRoll');if(!w||!r)return;let y=null,t0=0,hold=false;
+w.addEventListener('pointerenter',()=>hold=true);w.addEventListener('pointerleave',()=>hold=false);w.addEventListener('pointerdown',()=>hold=true);w.addEventListener('pointerup',e=>{if(e.pointerType!=='mouse')hold=false;});w.addEventListener('pointercancel',()=>hold=false);
+const f=t=>{requestAnimationFrame(f);const dt=Math.min(0.1,(t-(t0||t))/1000);t0=t;if(!w.offsetParent){y=null;return;}const H=w.clientHeight;if(y===null)y=H*0.35;if(!hold)y-=30*dt;if(y<-r.offsetHeight)y=H;r.style.transform='translateY('+y.toFixed(1)+'px)';};requestAnimationFrame(f);})();
 buildMaples();
 /* ESCI: salva, ferma audio e prova a chiudere l'app (PWA/finestra) */
 (function(){const b=document.getElementById('exitBtn'),ov=document.getElementById('byeOv');if(!b)return;

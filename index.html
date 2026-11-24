@@ -58,6 +58,10 @@
   #ext{position:fixed;right:12px;bottom:12px;background:rgba(0,0,0,.5);padding:8px 12px;border-radius:10px;font-variant-numeric:tabular-nums;display:none;pointer-events:none}
   #ext b{font-size:26px}
   .tabp .sup{background:linear-gradient(135deg,rgba(179,36,43,.32),rgba(30,20,22,.7))!important;border:1px solid rgba(255,255,255,.16)!important}.tabp .sup h2{color:#fff!important}.tabp .sup h2::first-letter{color:#e0565d}.tabp .sup p{color:#c9ccd1;margin:6px 0 12px}.supBtn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.35);color:#fff!important;text-decoration:none;font-weight:600}.supBtn:hover{background:rgba(255,255,255,.1)}
+  .credBox{padding:0!important;overflow:hidden}.credWin{position:relative;height:min(52vh,460px);overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent)}
+  .credRoll{position:absolute;left:0;right:0;text-align:center;padding:0 18px;will-change:transform;font-size:14px;line-height:1.5}
+  .credBox ul{list-style:none;padding:0!important;margin:0 0 10px!important}.credBox li{margin:8px 0;color:#d5d7da}.credBox h2{margin-top:30px!important;font-size:13px!important;letter-spacing:.3em;text-transform:uppercase;color:#9aa3ad!important}
+  .credBox .studio{flex-direction:column;background:none!important;border:0!important;margin:20px 0 40px!important}.credBox .studio img{width:min(320px,62vw)!important}.credBox .studio .st{font-size:38px!important}
 </style>
 <style>
   /* ===== identità di Guido: rosso del logo, vino scuro, cielo chiaro, verde colline ===== */
@@ -104,8 +108,8 @@
   details.keys{margin-top:14px;background:#fff;border-radius:14px;border:1px solid var(--line);padding:10px 14px;color:var(--ink);opacity:1}
   details.keys summary{cursor:pointer;font:800 16px "Baloo 2",Nunito,sans-serif;color:var(--wine)}
   details.keys kbd{background:#f3ece8;color:var(--wine);border:1px solid var(--line)}
-  #sum .box,#credOv>div,#ctrlOv>div{background:#fff!important;color:var(--ink);border:2px solid var(--line)!important;border-radius:18px!important}
-  #sum h2,#credOv h2,#ctrlOv h2{font-family:"Baloo 2",Nunito,sans-serif;color:var(--red)}
+  #sum .box,.credBox>div,#ctrlOv>div{background:#fff!important;color:var(--ink);border:2px solid var(--line)!important;border-radius:18px!important}
+  #sum h2,.credBox h2,#ctrlOv h2{font-family:"Baloo 2",Nunito,sans-serif;color:var(--red)}
   #sum td{border-color:var(--line)!important}#ctrlBody td{border-color:var(--line)!important}
   #sum button,#credClose,#ctrlClose{background:var(--red)!important;color:#fff!important;border:0!important;border-radius:22px!important;padding:9px 20px!important;font:800 15px Nunito,sans-serif;margin-right:8px;cursor:pointer}
   #ctrlOv .sm,#ctrlBody button{background:#fff;color:var(--wine);border:2px solid var(--line);border-radius:8px}
@@ -218,8 +222,8 @@
   details.keys{background:var(--glass)!important;border:1px solid var(--hair)!important;color:var(--txt)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
   details.keys summary{color:#fff!important;font-weight:600!important;font-size:12px!important;letter-spacing:.2em;text-transform:uppercase}
   details.keys kbd,kbd{background:rgba(255,255,255,.1)!important;color:#fff!important;border:1px solid rgba(255,255,255,.18)!important}
-  #sum .box,#credOv>div,#ctrlOv>div,#jobOv>div{background:var(--glass2)!important;color:var(--txt)!important;border:1px solid var(--hair)!important;border-radius:12px!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
-  #sum h2,#credOv h2,#ctrlOv h2,#jobOv h2{color:#fff!important;font-weight:600!important;letter-spacing:.04em}
+  #sum .box,.credBox>div,#ctrlOv>div,#jobOv>div{background:var(--glass2)!important;color:var(--txt)!important;border:1px solid var(--hair)!important;border-radius:12px!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+  #sum h2,.credBox h2,#ctrlOv h2,#jobOv h2{color:#fff!important;font-weight:600!important;letter-spacing:.04em}
   #sum td{border-color:var(--hair)!important}#ctrlBody td{border-color:var(--hair)!important}
   #sum button,#credClose,#ctrlClose{background:var(--acc)!important;border-radius:6px!important;font-weight:600!important;letter-spacing:.08em}
   #jobOv .job{border-color:var(--hair)!important}#jobOv .job span{color:var(--mut)}
@@ -255,7 +259,7 @@
   #go{background:linear-gradient(180deg,#d23a40,#8f1a20)!important;border:1px solid rgba(255,255,255,.35)!important;box-shadow:0 4px 18px rgba(179,36,43,.45),inset 0 1px 0 rgba(255,255,255,.35)!important;border-radius:8px!important}
   #go:hover{background:linear-gradient(180deg,#e2464c,#a01f26)!important}
   .pcGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:10px}.pc{margin:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}.pc img{width:100%;display:block;aspect-ratio:3/2;object-fit:cover}.pc .q{aspect-ratio:3/2;display:flex;align-items:center;justify-content:center;font-size:34px;filter:grayscale(1);opacity:.35;background:repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 8px,transparent 8px 16px)}.pc figcaption{font-size:12px;padding:6px 8px;color:#c9ccd1}.pc.got figcaption{color:#fff}
-  #credOv .studio{display:flex;align-items:center;gap:18px;padding:16px 18px;margin:-4px 0 18px;border-radius:12px;background:linear-gradient(135deg,rgba(179,36,43,.28),rgba(30,30,36,.6));border:1px solid rgba(255,255,255,.14)}#credOv .studio img{width:190px;height:auto}#credOv .studio .by{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#c9ccd1}#credOv .studio .st{font:800 30px Inter,system-ui;letter-spacing:.14em;color:#fff;margin:2px 0}#credOv .studio .yr{font-size:12px;color:#9aa3ad}
+  .credBox .studio{display:flex;align-items:center;gap:18px;padding:16px 18px;margin:-4px 0 18px;border-radius:12px;background:linear-gradient(135deg,rgba(179,36,43,.28),rgba(30,30,36,.6));border:1px solid rgba(255,255,255,.14)}.credBox .studio img{width:190px;height:auto}.credBox .studio .by{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#c9ccd1}.credBox .studio .st{font:800 30px Inter,system-ui;letter-spacing:.14em;color:#fff;margin:2px 0}.credBox .studio .yr{font-size:12px;color:#9aa3ad}
   .modes h2{font-size:15px!important}
   .modeGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin:6px 0 8px}
   .mode{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px 14px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#e6e8eb;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
@@ -263,13 +267,9 @@
   .mode:hover{border-color:rgba(255,255,255,.35);transform:translateY(-1px)}
   .mode.sel{background:linear-gradient(180deg,rgba(179,36,43,.38),rgba(120,20,26,.3));border-color:#d8333a;box-shadow:0 0 0 1px rgba(216,51,58,.4),0 8px 22px rgba(179,36,43,.25)}
   /* titoli di coda: scorrono dal basso verso l'alto come al cinema */
-  #credOv{background:#000!important;overflow:hidden!important;align-items:flex-start!important}
-  #credOv>div{background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;text-align:center;max-width:720px!important;margin:0 auto;padding-bottom:20vh!important}
-  #credOv>div.roll{animation:credRoll 60s linear forwards}#credOv:hover>div.roll{animation-play-state:paused}
-  @keyframes credRoll{from{transform:translateY(55vh)}to{transform:translateY(-100%)}}
-  #credOv ul{list-style:none;padding:0!important;margin:0 0 10px!important}#credOv li{margin:8px 0;color:#d5d7da}
-  #credOv h2{margin-top:34px!important;font-size:13px!important;letter-spacing:.3em;text-transform:uppercase;color:#9aa3ad!important}
-  #credOv .studio{flex-direction:column;background:none!important;border:0!important;margin:0 0 50px!important}#credOv .studio img{width:min(380px,70vw)!important}#credOv .studio .st{font-size:42px!important}
+  .credBox ul{list-style:none;padding:0!important;margin:0 0 10px!important}.credBox li{margin:8px 0;color:#d5d7da}
+  .credBox h2{margin-top:34px!important;font-size:13px!important;letter-spacing:.3em;text-transform:uppercase;color:#9aa3ad!important}
+  .credBox .studio{flex-direction:column;background:none!important;border:0!important;margin:0 0 50px!important}.credBox .studio img{width:min(380px,70vw)!important}.credBox .studio .st{font-size:42px!important}
   #credClose{position:fixed;top:18px;right:22px;z-index:10}
   .pc{cursor:pointer}.pc video{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;background:#000}.pc .clipTag{position:absolute;margin:6px;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.6);font-size:11px;color:#fff}
   #lbx{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center}#lbx.on{display:flex}
@@ -325,35 +325,6 @@
 <body>
 <div id="splash"><div class="shots"><img alt="" src="shots/s1.webp" class="on"><img alt="" src="shots/s3.webp"><img alt="" src="shots/s2.webp"><img alt="" src="shots/s5.webp"><img alt="" src="shots/s4.webp"></div><div class="grade"></div><div class="lbT"></div><div class="lbB"></div><img alt="Guido" class="logo" src="img/logo_plate.webp"><div class="sub">Driving in Valdonia</div><div id="loadBox"><div class="bar"><i id="ldBar"></i></div></div><div class="st" id="ldTxt">Accendo il motore… <b>0%</b></div><button id="splGo">Let's go !</button><div class="copy">© 2026 · Hopthop Studio</div></div>
 <script>(()=>{const L=document.querySelectorAll('#splash .shots img');let i=0;const t=setInterval(()=>{const sp=document.getElementById('splash');if(!sp||sp.style.display==='none'){clearInterval(t);return;}L[i].classList.remove('on');i=(i+1)%L.length;L[i].classList.add('on');},5200);})();</script>
-<div id="credOv" style="position:fixed;inset:0;background:rgba(8,10,14,.9);display:none;align-items:center;justify-content:center;z-index:9;overflow:auto"><div style="background:#141a22;border:1px solid #2f3a48;border-radius:14px;padding:20px 24px;max-width:640px;width:92%;font-size:14px;line-height:1.5">
-<div class="studio"><img src="img/logo_plate.webp" alt="Guido"><div><div class="by">Un gioco realizzato da</div><div class="st">HOPTHOP STUDIO</div><div class="yr">© 2026 · ideazione, programmazione, mondo di Valdonia</div></div></div>
-<h2 style="margin:0 0 8px">Crediti dei modelli 3D</h2><p style="opacity:.8;margin:0 0 10px">Modelli scaricati da Sketchfab, usati con licenza Creative Commons Attribution 4.0 (CC BY 4.0) salvo dove indicato. Sono stati ridotti e ottimizzati per il browser.</p>
-<ul style="padding-left:18px;margin:0">
-<li>"Kiri '86", "Fairheaven SW '84", "Doutrive '78", "LCT 3000 '07", "French delivery van" – Daniel Zhabotinsky, CC BY 4.0</li>
-<li>"Maple trees pack (lowpoly, game ready, LODs)" – LOLIPOP, CC BY 4.0</li>
-<li>"Nathan Animated 003 – Walking 3D Man" – Renderpeople, CC BY 4.0</li>
-<li>"Farm Cow Animated Dairy cattle" – Rukh3D, CC BY 4.0</li>
-<li>"Generic Building Models" – QuintusHortensiusHortalus, CC BY 4.0</li>
-<li>"Low-poly Brick House" – Vitalii.Sandula, CC BY 4.0</li>
-<li>"FIAT Panda 4x4" – Duhyeen, licenza Sketchfab Standard</li>
-<li>"Volvo 240" – wallon · "Jeep Grand Wagoneer (1991)" – geyges · "Dodge Challenger - Muscle Car - Low-Poly" – Allay Design · "ZIL 133540" e "Ford Crown Victoria Taxi" – Korolv; licenza Sketchfab Standard</li>
-<li>Voce del navigatore e di Radio Guido: modello di sintesi vocale Kokoro-82M (hexgrad, licenza Apache 2.0), voci italiane "Sara" e "Nicola"</li>
-<li>"Free Lowpoly City Props Pack" – MaHa / Low Poly Models, licenza Sketchfab Standard</li>
-<li>Pedoni: "Ultimate Modular Men" e "Ultimate Modular Women" – Quaternius (quaternius.com), licenza CC0</li>
-<li>"Iveco Daily 1982 - Lowpoly" – kekis69, CC BY 4.0</li></ul>
-<p><b>Modelli dettagliati</b> (Sketchfab, licenza Sketchfab Standard salvo dove indicato):</p><ul>
-<li>"Tree 3d model linden tree" – High Quality Work; "Tree 3d model Fir Spruce Pine" – Qruad; "Tropical Palm Tree" – assetfactory (non più usato)</li>
-<li>"Brisbane City Scania L94UB Bus (RHD)" e "Hungry Jack's Restaurant (low poly)" – Jotrain Models (insegne ridipinte come "Orna Burger")</li>
-<li>"Cow" – kenchoo; "Cow" – stylo0; "Trotting Cat" – miyapCG; "Low Poly People Free Sample Pack" – Denys Almaral</li>
-<li>"Road Pack" e "Neighbourhood City Modular lowpoly" – golukumar; "Building" e "Procedural City 3" – abhayexe; "street city buildings (8)" – dasy444; "Desert rocks" – WeSVa</li>
-<li>"Modern Night Building (Game-ready)" – Ishxxn, CC BY 4.0</li>
-<li>"Cypress tree" – ElectroNick, CC BY 4.0; "Poplar tree" – Georgeous, CC BY 4.0; "Date Palm" – evolveduk, CC BY 4.0</li>
-<li>"PSXprop - Male Character 02 (Rigged)" (Guido) – Wardster</li></ul>
-<h2 style="margin:14px 0 6px">Suono dei motori</h2><p style="opacity:.8;margin:0 0 6px">Modello a guide d'onda adattato da "engine-sound-generator" di Antonio-R1, licenza MIT.</p>
-<h2 style="margin:14px 0 6px">Musica</h2><p style="opacity:.8;margin:0 0 6px">Brani da Pixabay, licenza Pixabay Content License.</p>
-<ul style="padding-left:18px;margin:0"><li>Sigla: "Driving" – nastelbom</li><li>Radio Guido: "Broken Radio" – mangmaru · "Radio Active" – BearStockMusic · "Radio Jingle" – Alex Morgan · "Got a Space Shuttle Parked in My Yard" (cover) – Tim Kraaijvanger</li></ul>
-<p style="opacity:.7;margin:10px 0 0">Licenza CC BY 4.0: creativecommons.org/licenses/by/4.0 · Tutto il resto (mondo, fisica, audio, plancia) è generato dal programma.</p>
-<button id="credClose" style="margin-top:12px">Chiudi</button></div></div>
 <div id="ctrlOv" style="position:fixed;inset:0;background:rgba(8,10,14,.92);display:none;align-items:flex-start;justify-content:center;z-index:9;overflow:auto"><div style="background:#141a22;border:1px solid #2f3a48;border-radius:14px;padding:16px 20px;max-width:620px;width:94%;margin:20px 0;font-size:14px">
 <h2 style="margin:0 0 6px">Comandi</h2><div id="ctrlBody"></div><button id="ctrlReset" class="sm">Ripristina predefiniti</button> <button id="ctrlClose">Chiudi</button></div></div>
 <style>#ctrlBody table{width:100%;border-collapse:collapse}#ctrlBody td{padding:3px 4px;border-bottom:1px solid #222b36}#ctrlBody button{min-width:110px}#ctrlBody h3{margin:12px 0 4px;font-size:15px}</style>
@@ -365,7 +336,7 @@
       <div class="row"><label id="lblDest">Destinazione <select id="selDest"></select></label></div><div class="row" id="lbView"></div></section>
     <section class="card"><h2>Partenza</h2>
       <div class="row"><label id="lblStart">Partenza <select id="selStart"><option>Milano</option><option>Como</option><option>Biella</option></select></label><input id="selVia" type="hidden" value=""><span id="lblVia" style="display:none"></span></div><div id="viaRes" style="display:none"></div>
-      <div class="row"><label>Da casa <select id="selIntro"><option value="1">esci a piedi e scegli l'auto in garage</option><option value="0">parti subito in auto</option></select></label></div>
+      
       <div class="row" id="seedRow"><span>Mondo n° <b id="seedLbl"></b></span><button id="newWorld" class="sm">Nuovo mondo</button><input id="seedIn" placeholder="numero" size="7"><button id="loadWorld" class="sm">Carica</button></div>
     </section>
     <section class="card"><h2>Ora e meteo</h2>
@@ -392,7 +363,7 @@
   <div class="mgrid tabp" data-t="audio">
     <section class="card span"><h2>Audio</h2>
       <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label><label>Suoni d'ambiente <input type="checkbox" id="cfgAmb"></label></div>
-      <div class="row"><label>Motore audio dettagliato <input type="checkbox" id="cfgWg"></label><label>Voce del navigatore <select id="cfgVoce"><option value="nat">Femminile (registrata)</option><option value="natm">Maschile (registrata)</option><option value="sys">Del sistema</option></select></label> <button id="voceTest" class="sm">Prova</button></div>
+      
     </section>
   </div>
   <div class="mgrid tabp" data-t="musica">
@@ -420,7 +391,34 @@
   </div>
   <div class="mgrid tabp" data-t="cart"><section class="card span"><h2>Foto e clip</h2><p class="note">Tasto O (o il pulsante Foto) per scattare, J per registrare una clip: finiscono qui. Tocca per ingrandire e salvare.</p><div id="mediaAlbum" class="pcGrid"></div></section><section class="card span"><h2>Cartoline di Valdonia · <span id="pcCount">0 / 20</span></h2><p class="note">Venti punti panoramici sparsi per Valdonia: valichi e belvedere, lungolaghi e coste, le piazze delle città più grandi. Passandoci in auto scatti la cartolina.</p><div id="pcAlbum" class="pcGrid"></div></section></div>
 <div id="lbx"><div class="in"><div class="media"></div><div class="cap"></div><div class="bt"><button id="lbxSave">⬇ Salva</button><button id="lbxDel" class="sm">Elimina</button><button id="lbxClose" class="sm">Chiudi</button></div></div></div>
-  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><section class="card span"><h2>Guido</h2><p class="note">Driving in Valdonia</p><p style="font:700 18px Inter;letter-spacing:.12em;color:#fff;margin:6px 0">2026, Hopthop Studio</p><div class="row"><button id="credBtn" class="sm">Crediti</button><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div></section></div>
+  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
+<div class="studio"><img src="img/logo_plate.webp" alt="Guido"><div><div class="by">Un gioco realizzato da</div><div class="st">HOPTHOP STUDIO</div><div class="yr">© 2026 · ideazione, programmazione, mondo di Valdonia</div></div></div>
+<h2 style="margin:0 0 8px">Crediti dei modelli 3D</h2><p style="opacity:.8;margin:0 0 10px">Modelli scaricati da Sketchfab, usati con licenza Creative Commons Attribution 4.0 (CC BY 4.0) salvo dove indicato. Sono stati ridotti e ottimizzati per il browser.</p>
+<ul style="padding-left:18px;margin:0">
+<li>"Kiri '86", "Fairheaven SW '84", "Doutrive '78", "LCT 3000 '07", "French delivery van" – Daniel Zhabotinsky, CC BY 4.0</li>
+<li>"Maple trees pack (lowpoly, game ready, LODs)" – LOLIPOP, CC BY 4.0</li>
+<li>"Nathan Animated 003 – Walking 3D Man" – Renderpeople, CC BY 4.0</li>
+<li>"Farm Cow Animated Dairy cattle" – Rukh3D, CC BY 4.0</li>
+<li>"Generic Building Models" – QuintusHortensiusHortalus, CC BY 4.0</li>
+<li>"Low-poly Brick House" – Vitalii.Sandula, CC BY 4.0</li>
+<li>"FIAT Panda 4x4" – Duhyeen, licenza Sketchfab Standard</li>
+<li>"Volvo 240" – wallon · "Jeep Grand Wagoneer (1991)" – geyges · "Dodge Challenger - Muscle Car - Low-Poly" – Allay Design · "ZIL 133540" e "Ford Crown Victoria Taxi" – Korolv; licenza Sketchfab Standard</li>
+<li>"Free Lowpoly City Props Pack" – MaHa / Low Poly Models, licenza Sketchfab Standard</li>
+<li>Pedoni: "Ultimate Modular Men" e "Ultimate Modular Women" – Quaternius (quaternius.com), licenza CC0</li>
+<li>"Iveco Daily 1982 - Lowpoly" – kekis69, CC BY 4.0</li></ul>
+<p><b>Modelli dettagliati</b> (Sketchfab, licenza Sketchfab Standard salvo dove indicato):</p><ul>
+<li>"Tree 3d model linden tree" – High Quality Work; "Tree 3d model Fir Spruce Pine" – Qruad; "Tropical Palm Tree" – assetfactory (non più usato)</li>
+<li>"Brisbane City Scania L94UB Bus (RHD)" e "Hungry Jack's Restaurant (low poly)" – Jotrain Models (insegne ridipinte come "Orna Burger")</li>
+<li>"Cow" – kenchoo; "Cow" – stylo0; "Trotting Cat" – miyapCG; "Low Poly People Free Sample Pack" – Denys Almaral</li>
+<li>"Road Pack" e "Neighbourhood City Modular lowpoly" – golukumar; "Building" e "Procedural City 3" – abhayexe; "street city buildings (8)" – dasy444; "Desert rocks" – WeSVa</li>
+<li>"Modern Night Building (Game-ready)" – Ishxxn, CC BY 4.0</li>
+<li>"Cypress tree" – ElectroNick, CC BY 4.0; "Poplar tree" – Georgeous, CC BY 4.0; "Date Palm" – evolveduk, CC BY 4.0</li>
+<li>"PSXprop - Male Character 02 (Rigged)" (Guido) – Wardster</li></ul>
+<h2 style="margin:14px 0 6px">Suono dei motori</h2><p style="opacity:.8;margin:0 0 6px">Modello a guide d'onda adattato da "engine-sound-generator" di Antonio-R1, licenza MIT.</p>
+<h2 style="margin:14px 0 6px">Musica</h2><p style="opacity:.8;margin:0 0 6px">Brani da Pixabay, licenza Pixabay Content License.</p>
+<ul style="padding-left:18px;margin:0"><li>Sigla: "Driving" – nastelbom</li><li>Radio Guido: "Broken Radio" – mangmaru · "Radio Active" – BearStockMusic · "Radio Jingle" – Alex Morgan · "Got a Space Shuttle Parked in My Yard" (cover) – Tim Kraaijvanger</li></ul>
+<p style="opacity:.7;margin:10px 0 0">Licenza CC BY 4.0: creativecommons.org/licenses/by/4.0 · Tutto il resto (mondo, fisica, audio, plancia) è generato dal programma.</p>
+</div></div></section></div>
   <footer style="margin-top:14px;text-align:center;color:var(--muted);font-size:13px;font-weight:700">Guido · © 2026, Hopthop Studio</footer>
 </div></div>
 <div id="hud"></div>
@@ -458,7 +456,7 @@
 // ================= MODELLI 3D DA SKETCHFAB (caricati prima di costruire il mondo) =================
 const MODELS={};
 // pacchetto "modelli dettagliati": si può spegnere dalle impostazioni e si torna esattamente alla grafica di prima
-window.HDON=(()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');return c.hd!=null?!!c.hd:c.q!=='bassa';}catch(e){return true;}})();
+window.HDON=(()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');if(c.dv!==48)return true;return c.hd!=null?!!c.hd:c.q!=='bassa';}catch(e){return true;}})();
 window.HDIMG={};
 (function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','guido','hd_linden_far','hd_fir_far','hd_palm_far','hd_cypress_far','hd_poplar_far','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
   const upd=()=>{let a=0;files.forEach(f=>a+=prog[f]||0);const p=Math.round(a/files.length*100);const b=document.getElementById('ldBar'),t=document.getElementById('ldTxt');if(b)b.style.width=p+'%';if(t)t.innerHTML=(p<40?'Accendo il motore…':p<80?'Scaldo le gomme…':'Controllo gli specchietti…')+' <b>'+p+'%</b>';};

@@ -5,6 +5,10 @@ let NW=null,NWT=null;
 let SEED=null;try{const h=/^#w(\d+)$/.exec(location.hash);if(h)SEED=+h[1];else{const v=localStorage.getItem('sim_seed');if(v)SEED=+v;}}catch(e){}
 if(!SEED){SEED=1+Math.floor(Math.random()*99999);try{localStorage.setItem('sim_seed',SEED);}catch(e){}}
 const CFG={rap:1,prec:1,rit:1};try{Object.assign(CFG,JSON.parse(localStorage.getItem('sim_cfg')||'{}'));}catch(e){}
+/* sempre: voce del navigatore di sistema, motore audio semplice */
+CFG.voce='sys';CFG.wg=false;
+/* v48: nuove impostazioni predefinite (una volta sola): tutti i dettagli, qualità media, automatica */
+if(CFG.dv!==48){CFG.dv=48;CFG.q='media';CFG.autoQ=true;CFG.hd=true;CFG.blur=true;CFG.shake=true;CFG.mir=true;try{localStorage.setItem('sim_cfg',JSON.stringify(CFG));}catch(e){}}
 const PREF=(()=>{try{return JSON.parse(localStorage.getItem('sim_pref')||'{}');}catch(e){return{};}})();
 const RNG=(a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(SEED);
 const _rnd=Math.random;Math.random=RNG;
@@ -12,7 +16,7 @@ const rr=(a,b)=>a+Math.random()*(b-a);
 // ================= RENDERER / SCENA =================
 const renderer = new THREE.WebGLRenderer({antialias:true,logarithmicDepthBuffer:true});
 // qualità grafica scelta nel menu (bassa/media/alta): risoluzione, ombre, distanza di visibilità, dettagli
-const QG=(()=>{const mob=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<900,q=CFG.q||(mob?'media':'alta');return{q,lo:q==='bassa',mid:q==='media',hi:q==='alta',pr:q==='bassa'?Math.min(devicePixelRatio,1)*0.8:q==='media'?Math.min(devicePixelRatio,mob?1.1:1.2):Math.min(devicePixelRatio,mob?1.25:1.5),fog:q==='bassa'?0.6:q==='media'?0.82:1,mir:q==='bassa'?4:q==='media'?2:1};})();
+const QG=(()=>{const mob=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<900,q=CFG.q||'media';return{q,lo:q==='bassa',mid:q==='media',hi:q==='alta',pr:q==='bassa'?Math.min(devicePixelRatio,1)*0.8:q==='media'?Math.min(devicePixelRatio,mob?1.1:1.2):Math.min(devicePixelRatio,mob?1.25:1.5),fog:q==='bassa'?0.6:q==='media'?0.82:1,mir:q==='bassa'?4:q==='media'?2:1};})();
 renderer.setPixelRatio(QG.pr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = !QG.lo;
