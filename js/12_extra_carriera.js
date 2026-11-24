@@ -1,7 +1,17 @@
 // Guido · 12 extra carriera — parte del codice del gioco (i file in js/ condividono lo stesso spazio globale e vengono eseguiti in ordine)
 // ================= EXTRA: telecamera orbitale, mappa, modalità foto, clip, carburante, sfide =================
 // ---- uscita audio comune: tutto passa da qui, così le clip registrano anche i suoni ----
-function ACOUT(){if(!AC.__m){AC.__m=AC.createGain();AC.__m.connect(AC.destination);}return AC.__m;}
+// uscita audio comune: limitatore (niente distorsione quando tanti suoni si sommano) e sorveglianza: se un nodo produce valori
+// non validi (NaN) tutto il mix diventerebbe muto per sempre, clacson compreso; allora si stacca il motore e si ricostruiscono motore e limitatore
+function ACOUT(){if(!AC.__m){AC.__m=AC.createGain();AC.__an=AC.createAnalyser();AC.__an.fftSize=1024;AC.__m.connect(AC.__an);busTail();if(!AC.__w)AC.__w=setInterval(busWatch,250);}return AC.__m;}
+function busTail(){if(AC.__lim){try{AC.__m.disconnect(AC.__lim);}catch(e){}try{AC.__lim.disconnect();}catch(e){}}
+  const L=AC.createDynamicsCompressor();L.threshold.value=-3;L.knee.value=3;L.ratio.value=20;L.attack.value=0.002;L.release.value=0.15;AC.__m.connect(L);L.connect(AC.destination);AC.__lim=L;}
+const BUSW={b:new Float32Array(1024),e:new Float32Array(512),bad:0,n:0};
+function busWatch(){if(!AC)return;if(AC.state==='suspended'&&started&&!paused){AC.resume().catch(()=>{});return;}if(AC.state!=='running')return;const bad=(an,buf)=>{if(!an)return false;an.getFloatTimeDomainData(buf);for(let i=0;i<buf.length;i++){const v=buf[i];if(!(v>-30&&v<30))return true;}return false;};
+  const eb=eng&&bad(eng.an,BUSW.e),mb=bad(AC.__an,BUSW.b);if(!eb&&!mb){BUSW.bad=0;return;}
+  BUSW.n++;console.warn('audio: valori non validi',eb?'nel motore':'nel mix');
+  if(eb||BUSW.bad>=1){try{initAudio();}catch(e){}}busTail();BUSW.bad++;
+  if(BUSW.bad>=3){BUSW.bad=0;try{AC.__m.disconnect();}catch(e){}AC.__m=null;AC.__lim=null;ACOUT();try{initAudio();}catch(e){}if(window.__busReset)window.__busReset();}}
 // ---- telecamera orbitale nella vista esterna ----
 const ORB={yaw:0,pitch:0,zoom:1,w:0,t:-99,drag:null,touch:null};
 function orbOK(){return started&&!paused&&view==='chase'&&!PHOTO.on;}

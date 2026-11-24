@@ -396,9 +396,9 @@ class EngineSoundGenerator extends AudioWorkletProcessor {
       }
       // protezione (Guido): se il modello diventa instabile si tace invece di gracchiare
       for (const ch of [channelIntake, channelEngineBlockVibrations, channelOutlet]) {
-         for (let i=0; i<this.chunkSize; i++) { const v = ch[i]; if (!(Math.abs(v) < 60)) { this.dead = true; break; } }
+         for (let i=0; i<this.chunkSize; i++) { const v = ch[i]; if (!(Math.abs(v) < 40)) { this.dead = true; break; } }
       }
-      if (this.dead) { channelIntake.fill(0); channelEngineBlockVibrations.fill(0); channelOutlet.fill(0); }
+      if (this.dead) { channelIntake.fill(0); channelEngineBlockVibrations.fill(0); channelOutlet.fill(0); if (!this.told) { this.told = true; try { this.port.postMessage('dead'); } catch (e) {} } }
       return true;
    }
 

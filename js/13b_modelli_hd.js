@@ -49,8 +49,8 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
     // rotazione "nel riferimento del personaggio" applicata a un osso: q_locale = P^-1 · D · P · q_locale
     const rotC=(u,b,D)=>{if(!b)return;b.parent.getWorldQuaternion(Qp);Qp.premultiply(Qr);Qa.copy(Qp).invert().multiply(D).multiply(Qp);b.quaternion.premultiply(Qa);b.updateMatrixWorld(true);};
     const R=(ax,an)=>new THREE.Quaternion().setFromAxisAngle(ax,an);
-    X.poseGuido=(g,dt,sp,mode,t)=>{const u=g.userData,B=u.B;if(!u.rest){u.rest=new Map();['LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftArm','RightArm','LeftForeArm','RightForeArm','Spine'].forEach(n=>B[n]&&u.rest.set(B[n],B[n].quaternion.clone()));}u.rest.forEach((q,b)=>b.quaternion.copy(q));u.mx.update(dt);u.root.updateMatrixWorld(true);u.root.getWorldQuaternion(Qr);Qr.invert();
-      if(mode==='sit'){rotC(u,B.LeftUpLeg,R(AX,-1.5));rotC(u,B.RightUpLeg,R(AX,-1.5));rotC(u,B.LeftLeg,R(AX,1.35));rotC(u,B.RightLeg,R(AX,1.35));
+    X.poseGuido=(g,dt,sp,mode,t)=>{const u=g.userData,B=u.B;if(!u.rest){u.rest=new Map();['LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftFoot','RightFoot','LeftArm','RightArm','LeftForeArm','RightForeArm','Spine'].forEach(n=>B[n]&&u.rest.set(B[n],B[n].quaternion.clone()));}u.rest.forEach((q,b)=>b.quaternion.copy(q));u.mx.update(dt);u.root.updateMatrixWorld(true);u.root.getWorldQuaternion(Qr);Qr.invert();
+      if(mode==='sit'){rotC(u,B.LeftUpLeg,R(AX,-1.42));rotC(u,B.RightUpLeg,R(AX,-1.42));rotC(u,B.LeftLeg,R(AX,0.62));rotC(u,B.RightLeg,R(AX,0.62));rotC(u,B.LeftFoot,R(AX,-0.5));rotC(u,B.RightFoot,R(AX,-0.5));
         rotC(u,B.Spine,R(AX,-0.12));
         rotC(u,B.LeftArm,R(AX,-0.5));rotC(u,B.RightArm,R(AX,-0.5));return;}
       const k=Math.min(1,sp/1.4),run=sp>2.2;u.ph+=dt*(run?9:6.3)*Math.min(1.6,0.3+sp/1.4);const sn=Math.sin(u.ph),cs=Math.cos(u.ph);
@@ -98,27 +98,62 @@ const DRV=(()=>{if(!HDX||!HDX.guido)return null;const D={seat:null,cat:null,walk
       const e=pl.ck.eye;D.seat.position.set(e.x+0.14,e.y-1.73,e.z);D.seat.rotation.y=Math.PI/2;
       if(D.cat){D.cat.position.set(e.x+0.05,e.y-0.62,-e.z*0.95);D.cat.rotation.y=-Math.PI/2;}
       HDX.poseGuido(D.seat,0.016,0,'sit',0);}return true;};
-  // salita a bordo durante la ripresa iniziale
-  D.board=()=>{if(D.skipBoard){D.skipBoard=false;D.inCar=D.catIn=true;return false;}if(!attach())return false;D.inCar=D.catIn=false;
+  // portiera apribile: si ritagliano dalla carrozzeria i triangoli della porta (lato, tra montante A e B) e si appendono a un cardine
+  const MI=new THREE.Matrix4(),MW=new THREE.Matrix4(),VA=new THREE.Vector3(),DS=new Map();
+  const door=(side)=>{const car=pl.mesh,ud=car&&car.userData,body=ud&&ud.body;if(!body||!ud.glb||!pl.ck)return null;const key='dr'+side;if(ud[key])return ud[key];
+    car.updateMatrixWorld(true);const e=pl.ck.eye,T=pl.T,W=T.W/2,cp=/hellcat/.test(selKey),u1=e.x+0.72,u0=e.x-(cp?1.05:0.62),y0=0.25,y1=(T.Hm||T.H)-0.1,zIn=W-0.3;
+    const gi=new THREE.Matrix4().copy(car.matrixWorld).invert(),piv=new THREE.Group();VA.set(u1,0,side*(W-0.08)).applyMatrix4(car.matrixWorld);body.add(piv);body.worldToLocal(VA);piv.position.copy(VA);piv.updateMatrixWorld(true);
+    const pinv=new THREE.Matrix4().copy(piv.matrixWorld).invert(),L=[];body.traverse(o=>{if(o.isMesh&&o.userData.role!=='wheel'&&!Array.isArray(o.material)&&o.geometry&&o.geometry.attributes.position)L.push(o);});
+    L.forEach(o=>{const geo=o.geometry,P=geo.attributes.position,idx=geo.index?geo.index.array:null,nT=(idx?idx.length:P.count)/3,keep=[],mv=[];MW.multiplyMatrices(gi,o.matrixWorld);
+      for(let t=0;t<nT;t++){let cx=0,cy=0,cz=0,ok=true;for(let k=0;k<3;k++){const i=idx?idx[t*3+k]:t*3+k;VA.set(gRd(P,i,0),gRd(P,i,1),gRd(P,i,2)).applyMatrix4(MW);cx+=VA.x;cy+=VA.y;cz+=VA.z;if(VA.x<u0-0.12||VA.x>u1+0.12||VA.y<y0-0.1)ok=false;}cx/=3;cy/=3;cz/=3;
+        (ok&&cx>u0&&cx<u1&&cy>y0&&cy<y1&&cz*side>zIn?mv:keep).push(t);}
+      if(!mv.length)return;const sub=(list)=>{const g2=geo.clone();g2.userData=geo.userData;const ia=new Uint32Array(list.length*3);list.forEach((t,j)=>{for(let k=0;k<3;k++)ia[j*3+k]=idx?idx[t*3+k]:t*3+k;});g2.setIndex(new THREE.BufferAttribute(ia,1));g2.computeBoundingBox();g2.computeBoundingSphere();return g2;};
+      let dmat=o.material;if(dmat.side!==THREE.DoubleSide){dmat=DS.get(o.material);if(!dmat){dmat=o.material.clone();dmat.side=THREE.DoubleSide;DS.set(o.material,dmat);}}const dm=new THREE.Mesh(sub(mv),dmat);dm.matrixAutoUpdate=false;dm.matrix.multiplyMatrices(pinv,o.matrixWorld);dm.castShadow=o.castShadow;dm.userData.role=o.userData.role;piv.add(dm);o.geometry=sub(keep);});
+    const D2={piv,side,a:0,set(x){this.a=x;piv.rotation.y=side*x*1.15;}};ud[key]=D2;return D2;};
+  const doorsShut=()=>{if(!pl.mesh)return;const ud=pl.mesh.userData;[1,-1].forEach(sd=>{if(ud['dr'+sd])ud['dr'+sd].set(0);});};
+  // salita a bordo: dopo il volo del drone, Guido apre la portiera al gatto, lo fa salire, la chiude, gira dietro l'auto e sale lui
+  D.board=()=>{if(D.skipBoard){D.skipBoard=false;D.inCar=D.catIn=true;return false;}if(!attach())return false;D.inCar=D.catIn=false;D.ph='wait';D.done=false;
     if(!D.walk){D.walk=HDX.guido();scene.add(D.walk);if(HDX.cat){D.wcat=HDX.cat();scene.add(D.wcat);}}
-    const e=pl.ck.eye,sd=Math.sign(e.z)||-1,W=pl.T.W/2;D.sd=sd;D.door=[e.x-0.15,sd*(W+0.45)];D.g={u:e.x-3.8,v:sd*(W+3.2),h:0,sp:0};D.c={u:e.x-4.8,v:sd*(W+2.2),h:0,sp:0};D.t=0;
-    D.walk.visible=true;if(D.wcat)D.wcat.visible=true;return true;};
-  const toW=(u,v)=>{V.set(u,0,v);pl.mesh.localToWorld(V);return V;};
-  const step=(o,tu,tv,sp,dt)=>{const du=tu-o.u,dv=tv-o.v,d=Math.hypot(du,dv);if(d<0.06){o.sp=0;return d;}const w=Math.min(sp,d*2);o.sp+=(w-o.sp)*Math.min(1,dt*5);o.u+=du/d*o.sp*dt;o.v+=dv/d*o.sp*dt;o.h=Math.atan2(du,dv);return d;};
+    const e=pl.ck.eye,sd=Math.sign(e.z)||-1,ps=-sd,W=pl.T.W/2,hl=pl.T.L/2;D.sd=sd;
+    D.g={u:-hl-0.7,v:ps*(W+1.1),h:Math.PI/2,sp:0};D.c={u:-hl-1.4,v:ps*(W+0.6),h:Math.PI/2,sp:0};D.t=0;D.k=0;D.kt=0;
+    D.walk.visible=true;if(D.wcat)D.wcat.visible=true;D.place();return true;};
+  D.go=()=>{if(D.ph!=='wait')return false;const e=pl.ck.eye,sd=D.sd,ps=-sd,W=pl.T.W/2,hl=pl.T.L/2,cp=/hellcat/.test(selKey),back=e.x-(cp?1.05:0.62)-0.35;
+    const dP=door(ps),dD=door(sd),G=D.g,C=D.c;let jump=null;
+    const walk=(o,pts,sp)=>dt=>{const q=pts[0];if(!q)return true;if(step(o,q[0],q[1],sp,dt)<0.1){pts.shift();}return !pts.length;};
+    const anim=(dr,a,b,dur)=>{let t=0;return dt=>{t+=dt;const k=Math.min(1,t/dur),s2=k*k*(3-2*k);if(dr)dr.set(a+(b-a)*s2);return k>=1;};};
+    const wait=d=>{let t=0;return dt=>(t+=dt)>=d;};
+    const face=(o,h)=>dt=>{let dh=h-o.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));o.h+=dh*Math.min(1,dt*8);return Math.abs(dh)<0.05;};
+    const both=(...f)=>{const dn=f.map(()=>false);return dt=>{f.forEach((g,i)=>{if(!dn[i])dn[i]=g(dt);});return dn.every(Boolean);};};
+    const catJump=()=>{let t=0;const p0={u:C.u,v:C.v},sp=D.cat?D.cat.position:null,p1=sp?{u:sp.x,v:sp.z,y:sp.y}:{u:e.x,v:ps*0.4,y:0.5};return dt=>{t+=dt;const k=Math.min(1,t/0.6);C.u=p0.u+(p1.u-p0.u)*k;C.v=p0.v+(p1.v-p0.v)*k;C.y=(p1.y*0.85)*k+Math.sin(k*Math.PI)*0.55;C.h=Math.atan2(p1.u-p0.u,p1.v-p0.v);C.sp=1.2;if(k>=1){C.y=0;D.catIn=true;if(D.wcat)D.wcat.visible=false;}return k>=1;};};
+    D.seq=[
+      both(walk(G,[[back,ps*(W+0.75)]],1.4),walk(C,[[back-0.9,ps*(W+0.55)]],1.5)),
+      face(G,Math.PI/2*Math.sign(1)),
+      dt=>true,anim(dP,0,1,1.0),dt=>{D.wave=false;return true;},
+      walk(C,[[e.x-0.05,ps*(W+0.7)]],1.7),wait(0.15),catJump(),wait(0.35),
+      dt=>true,anim(dP,1,0,0.7),dt=>{D.wave=false;return true;},wait(0.2),
+      walk(G,[[-hl-0.9,ps*(W+0.5)],[-hl-0.9,sd*(W+0.5)],[back,sd*(W+0.75)]],1.45),
+      face(G,Math.PI/2),dt=>true,anim(dD,0,1,0.9),dt=>{D.wave=false;return true;},
+      walk(G,[[e.x-0.2,sd*(W+0.45)]],1.0),dt=>{D.inCar=true;D.walk.visible=false;return true;},wait(0.35),
+      anim(dD,1,0,0.6),wait(0.6),dt=>{D.done=true;return true;}];
+    D.ph='run';return true;};
+  const toW=(u,v,y=0)=>{V.set(u,y,v);pl.mesh.localToWorld(V);return V;};
+  const step=(o,tu,tv,sp,dt)=>{const du=tu-o.u,dv=tv-o.v,d=Math.hypot(du,dv);if(d<0.06){o.sp=0;return d;}const w=Math.min(sp,d*2.2+0.15);o.sp+=(w-o.sp)*Math.min(1,dt*5);const m=Math.min(d,o.sp*dt);o.u+=du/d*m;o.v+=dv/d*m;
+    let dh=Math.atan2(du,dv)-o.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));o.h+=dh*Math.min(1,dt*9);return d;};
+  D.place=()=>{if(D.walk&&D.walk.visible){const p=toW(D.g.u,D.g.v);D.walk.position.set(p.x,NW.H(p.x,p.z),p.z);D.walk.rotation.y=dirW(D.g);}
+    if(D.wcat&&D.wcat.visible){const c=D.c,p=toW(c.u,c.v,c.y||0),gy=NW.H(p.x,p.z);D.wcat.position.set(p.x,c.y?p.y:gy,p.z);D.wcat.rotation.y=dirW(c);}};
   D.tick=(dt)=>{if(!pl.mesh||!started)return;attach();
-    if(D.walk&&(D.walk.visible||(D.wcat&&D.wcat.visible))){D.t+=dt;const o=D.g,c=D.c;
-      if(D.t>2.4){const d=step(o,D.door[0],D.door[1],1.45,dt);if(d<0.15&&!D.inCar){D.inCar=true;D.walk.visible=false;}}
-      if(D.t>2.7){const tu=D.inCar?D.door[0]:o.u-0.7,tv=D.inCar?D.door[1]:o.v+D.sd*0.4,d=step(c,tu,tv,D.inCar?2.2:1.6,dt);if(D.inCar&&d<0.2){D.catIn=true;if(D.wcat)D.wcat.visible=false;}}
-      if(!D.wcat&&D.inCar)D.catIn=true;
-      if(D.walk.visible){HDX.poseGuido(D.walk,dt,o.sp,'walk',simT);const p=toW(o.u,o.v);D.walk.position.set(p.x,NW.H(p.x,p.z),p.z);D.walk.rotation.y=dirW(o);}
-      if(D.wcat&&D.wcat.visible){const u=D.wcat.userData;if(u.a)u.a.timeScale=c.sp>0.05?Math.min(2,0.4+c.sp/0.9):0;u.mx.update(dt);const p=toW(c.u,c.v);D.wcat.position.set(p.x,NW.H(p.x,p.z),p.z);D.wcat.rotation.y=dirW(c);}
-      if(D.inCar&&D.catIn){D.walk.visible=false;if(D.wcat)D.wcat.visible=false;}}
+    if(D.walk&&(D.walk.visible||(D.wcat&&D.wcat.visible))){D.t+=dt;
+      if(D.ph==='run'&&D.seq){while(D.seq.length&&D.seq[0](dt))D.seq.shift();}
+      if(D.walk.visible)HDX.poseGuido(D.walk,dt,D.g.sp,D.wave?'wave':'walk',simT);
+      if(D.wcat&&D.wcat.visible){const u=D.wcat.userData,c=D.c;if(u.a)u.a.timeScale=c.sp>0.05?Math.min(2,0.4+c.sp/0.9):0;u.mx.update(dt);}
+      D.place();if(D.inCar&&D.catIn&&D.done){D.walk.visible=false;if(D.wcat)D.wcat.visible=false;}}
+    else if(D.ph==='run'&&D.seq&&D.seq.length){while(D.seq.length&&D.seq[0](dt))D.seq.shift();}
     if(HOME.cat&&HOME.ok){if(HOME.mode)HOME.cat.visible=HOME.vis!==false;else if(D.catIn&&D.cat)HOME.cat.visible=false;}
     const out=view!=='cockpit'||PHOTO.on;D.seat.visible=D.inCar&&out&&!HOME.mode;if(D.cat)D.cat.visible=D.catIn&&!HOME.mode;
     if(D.seat.visible)HDX.poseGuido(D.seat,dt,0,'sit',simT);};
   // direzione di marcia (coordinate auto -> angolo nel mondo: il modello guarda verso +z)
   const dirW=(o)=>{const a=toW(o.u,o.v).clone(),du=Math.sin(o.h),dv=Math.cos(o.h),b=toW(o.u+du,o.v+dv);return Math.atan2(b.x-a.x,b.z-a.z);};
-  D.hideAll=()=>{if(D.walk)D.walk.visible=false;if(D.wcat)D.wcat.visible=false;D.inCar=D.catIn=true;};
+  D.hideAll=()=>{if(D.walk)D.walk.visible=false;if(D.wcat)D.wcat.visible=false;D.inCar=D.catIn=true;D.ph=null;D.seq=null;D.done=true;D.wave=false;doorsShut();};
   return D;})();
 
 // ---- spruzzi quando un'auto finisce in acqua (si animano da soli a ogni fotogramma) ----

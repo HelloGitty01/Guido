@@ -12,13 +12,17 @@ function engineParams(k,P){const base={cylinders:P.cyl||4,intakeWaveguideLength:
     taxi:{exhaustWaveguideLength:125,extractorWaveguideLength:110,straightPipeWaveguideLength:180,mufflerElementsLength:[12,18,26,34],action:0.06,offsets:[0,0,0.02,-0.02,0,0,0.02,-0.02]},
     daily:{exhaustWaveguideLength:100,straightPipeWaveguideLength:150,mufflerElementsLength:[12,18,24,30],action:0.15}};
   return Object.assign(base,T[k]||{});}
+// livello di ogni motore a guide d'onda, misurato perché al massimo dei giri il picco resti sotto 0,7 (prima i V8 e la Volvo saturavano e gracchiavano)
+const WKN={utilitaria:1.1,volvo:0.38,wagoneer:0.5,hellcat:0.42,zil:0.37,daily:1.05,taxi:0.85};
 function initAudio(){
   if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();}
   if(eng){eng.stopAll();}
+  // bus del motore: tutto il motore passa da qui, così se un filtro impazzisce si stacca solo questo e si ricostruisce
+  const EB=AC.createGain();EB.connect(ACOUT());const EAN=AC.createAnalyser();EAN.fftSize=512;EB.connect(EAN);
   const P=PHYS[selKey],nodes=[];
   const buf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),dd=buf.getChannelData(0);{let b=0;for(let i=0;i<dd.length;i++){const w=Math.random()*2-1;b=0.97*b+0.03*w;dd[i]=w*0.6+b*3;}}
   const nz=AC.createBufferSource();nz.buffer=buf;nz.loop=true;nodes.push(nz);
-  const master=AC.createGain();master.gain.value=0;master.connect(ACOUT());
+  const master=AC.createGain();master.gain.value=0;master.connect(EB);
   // filtro "abitacolo": i suoni del motore arrivano smorzati, con il corpo sui bassi
   const cab=AC.createBiquadFilter();cab.type='lowpass';cab.frequency.value=900;cab.Q.value=0.5;
   const body=AC.createBiquadFilter();body.type='lowshelf';body.frequency.value=160;body.gain.value=6;
@@ -39,9 +43,9 @@ function initAudio(){
   // irregolarità di giri (nessun motore è perfettamente regolare)
   const lfo=AC.createOscillator();lfo.frequency.value=P.cyl===8?2.1:3.3;const lfoG=AC.createGain();lfoG.gain.value=6+(SN.lope||0)*14+(SN.rough?(SN.rough-1)*20:0);lfo.connect(lfoG);osc.forEach(x=>lfoG.connect(x.os.detune));lfo.start();nodes.push(lfo);
   // gomme che stridono, vento, rotolamento
-  const tb=AC.createBiquadFilter();tb.type='bandpass';tb.frequency.value=500;tb.Q.value=1.5;const tg=AC.createGain();tg.gain.value=0;nz.connect(tb).connect(tg).connect(ACOUT());
+  const tb=AC.createBiquadFilter();tb.type='bandpass';tb.frequency.value=500;tb.Q.value=1.5;const tg=AC.createGain();tg.gain.value=0;nz.connect(tb).connect(tg).connect(EB);
   // stridio delle gomme: toni stretti su rumore, con un tremolio irregolare (come la gomma che vibra sull'asfalto)
-  const sqg=AC.createGain();sqg.gain.value=0;const sqhs=AC.createBiquadFilter();sqhs.type='highshelf';sqhs.frequency.value=2500;sqhs.gain.value=-6;sqg.connect(sqhs).connect(ACOUT());
+  const sqg=AC.createGain();sqg.gain.value=0;const sqhs=AC.createBiquadFilter();sqhs.type='highshelf';sqhs.frequency.value=2500;sqhs.gain.value=-6;sqg.connect(sqhs).connect(EB);
   const sq=AC.createOscillator();sq.type='triangle';sq.frequency.value=900;const sq2=AC.createOscillator();sq2.type='sine';sq2.frequency.value=1780;
   const v1=AC.createOscillator();v1.frequency.value=6.3;const v1g=AC.createGain();v1g.gain.value=26;v1.connect(v1g);v1g.connect(sq.frequency);
   const v2=AC.createOscillator();v2.frequency.value=13.7;const v2g=AC.createGain();v2g.gain.value=12;v2.connect(v2g);v2g.connect(sq.frequency);const v3g=AC.createGain();v3g.gain.value=44;v1.connect(v3g);v3g.connect(sq2.frequency);
@@ -49,35 +53,35 @@ function initAudio(){
   const sqb1=AC.createBiquadFilter();sqb1.type='bandpass';sqb1.Q.value=16;sqb1.frequency.value=900;const sqb1g=AC.createGain();sqb1g.gain.value=2.2;nz.connect(sqb1).connect(sqb1g).connect(sqg);
   const sqb2=AC.createBiquadFilter();sqb2.type='bandpass';sqb2.Q.value=12;sqb2.frequency.value=1850;const sqb2g=AC.createGain();sqb2g.gain.value=1.1;nz.connect(sqb2).connect(sqb2g).connect(sqg);
   sq.start();sq2.start();v1.start();v2.start();nodes.push(sq,sq2,v1,v2);
-  const wf=AC.createBiquadFilter();wf.type='bandpass';wf.frequency.value=700;wf.Q.value=0.4;const wg=AC.createGain();wg.gain.value=0;nz.connect(wf).connect(wg).connect(ACOUT());
-  const rf=AC.createBiquadFilter();rf.type='lowpass';rf.frequency.value=380;const rg=AC.createGain();rg.gain.value=0;nz.connect(rf).connect(rg).connect(ACOUT());
+  const wf=AC.createBiquadFilter();wf.type='bandpass';wf.frequency.value=700;wf.Q.value=0.4;const wg=AC.createGain();wg.gain.value=0;nz.connect(wf).connect(wg).connect(EB);
+  const rf=AC.createBiquadFilter();rf.type='lowpass';rf.frequency.value=380;const rg=AC.createGain();rg.gain.value=0;nz.connect(rf).connect(rg).connect(EB);
   // fruscio d'aria quando si incrocia o si sorpassa un'auto (o si sfiora un muro)
-  const pbf=AC.createBiquadFilter();pbf.type='bandpass';pbf.frequency.value=900;pbf.Q.value=0.8;const pbg=AC.createGain();pbg.gain.value=0;const pbp=AC.createStereoPanner?AC.createStereoPanner():null;nz.connect(pbf).connect(pbg);if(pbp)pbg.connect(pbp).connect(ACOUT());else pbg.connect(ACOUT());
+  const pbf=AC.createBiquadFilter();pbf.type='bandpass';pbf.frequency.value=900;pbf.Q.value=0.8;const pbg=AC.createGain();pbg.gain.value=0;const pbp=AC.createStereoPanner?AC.createStereoPanner():null;nz.connect(pbf).connect(pbg);if(pbp)pbg.connect(pbp).connect(EB);else pbg.connect(EB);
   // fischio dell'aria sui montanti ad alta velocità
-  const whf=AC.createBiquadFilter();whf.type='bandpass';whf.frequency.value=2200;whf.Q.value=3;const whg=AC.createGain();whg.gain.value=0;nz.connect(whf).connect(whg).connect(ACOUT());
+  const whf=AC.createBiquadFilter();whf.type='bandpass';whf.frequency.value=2200;whf.Q.value=3;const whg=AC.createGain();whg.gain.value=0;nz.connect(whf).connect(whg).connect(EB);
   // gomme al limite: prima dello stridio si sente lo "strisciare" sordo del battistrada
-  const scf=AC.createBiquadFilter();scf.type='bandpass';scf.frequency.value=320;scf.Q.value=0.8;const scg=AC.createGain();scg.gain.value=0;nz.connect(scf).connect(scg).connect(ACOUT());
+  const scf=AC.createBiquadFilter();scf.type='bandpass';scf.frequency.value=320;scf.Q.value=0.8;const scg=AC.createGain();scg.gain.value=0;nz.connect(scf).connect(scg).connect(EB);
   // compressore volumetrico (Hellcat): fischio acuto che sale coi giri e col carico
   let bl=null;if(SN.blower){const o1=AC.createOscillator(),o2=AC.createOscillator();o1.type='sine';o2.type='triangle';const g=AC.createGain();g.gain.value=0;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=500;
-    const g2=AC.createGain();g2.gain.value=0.35;o1.connect(g);o2.connect(g2).connect(g);g.connect(hp).connect(ACOUT());o1.start();o2.start();nodes.push(o1,o2);bl={o1,o2,g};}
+    const g2=AC.createGain();g2.gain.value=0.35;o1.connect(g);o2.connect(g2).connect(g);g.connect(hp).connect(EB);o1.start();o2.start();nodes.push(o1,o2);bl={o1,o2,g};}
   // riverbero della galleria: risposta all'impulso sintetica (2 s), dosata da tunnelUpdate
   const cv=AC.createConvolver();{const n=AC.sampleRate*2,b=AC.createBuffer(2,n,AC.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.2)*(i<200?i/200:1);}cv.buffer=b;}
-  const rvg=AC.createGain();rvg.gain.value=0;master.connect(cv).connect(rvg).connect(ACOUT());
+  const rvg=AC.createGain();rvg.gain.value=0;master.connect(cv).connect(rvg).connect(EB);
   // motore a guide d'onda (AudioWorklet): il suono nasce da cilindri, collettori e marmitta; gli oscillatori restano sotto come corpo
   if(AC.audioWorklet&&CFG.wg!==false){const KP=P,mk=()=>{if(!eng||eng.P!==KP)return;try{const n=new AudioWorkletNode(AC,'engine-sound-processor',{numberOfInputs:0,numberOfOutputs:3,processorOptions:engineParams(selKey,P)});
       const gI=AC.createGain(),gB=AC.createGain(),gO=AC.createGain();gI.gain.value=0.3;gB.gain.value=0.55;gO.gain.value=1;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=30;
       const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;lp.Q.value=0.4;const g=AC.createGain();g.gain.value=0;n.connect(gI,0);n.connect(gB,1);n.connect(gO,2);[gI,gB,gO].forEach(x=>x.connect(hp));hp.connect(lp).connect(g).connect(master);
-      eng.wk={n,g,lp,rpm:n.parameters.get('rpm'),thr:n.parameters.get('throttle')};nodes.push({stop(){try{n.disconnect();g.disconnect();}catch(e){}}});}catch(e){console.warn('motore a guide d\'onda',e);}};
+      eng.wk={n,g,lp,rpm:n.parameters.get('rpm'),thr:n.parameters.get('throttle')};n.port.onmessage=()=>{console.warn('motore a guide d\'onda instabile: si riavvia');setTimeout(()=>{if(eng&&eng.wk&&eng.wk.n===n)initAudio();},250);};nodes.push({stop(){try{n.disconnect();g.disconnect();}catch(e){}}});}catch(e){console.warn('motore a guide d\'onda',e);}};
     if(window.__wkReady)setTimeout(mk,0);else AC.audioWorklet.addModule('js/motore_worklet.js').then(()=>{window.__wkReady=1;mk();}).catch(e=>console.warn(e));}
   nz.start();
-  eng={P,SN,bl,rvg,scf,scg,osc,cab,master,cbp,mod,cg,dmod,tg,sqg,sq,sq2,sqf,sqb1,sqb2,wg,wf,rg,rf,pbf,pbg,pbp,whf,whg,stopAll:()=>nodes.forEach(n=>{try{n.stop();}catch(e){}})};
+  eng={P,SN,bl,rvg,scf,scg,osc,cab,master,cbp,mod,cg,dmod,tg,sqg,sq,sq2,sqf,sqb1,sqb2,wg,wf,rg,rf,pbf,pbg,pbp,whf,whg,bus:EB,an:EAN,stopAll:()=>{nodes.forEach(n=>{try{n.stop();}catch(e){}});try{EB.disconnect();}catch(e){}}};
   initTrafficVoices();initSirens();
 }
 function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
   const f=Math.max(10,st.rpm/60*P.cyl/2),load=st.load,r=st.rpm/P.red;
   if(!isFinite(f)||!isFinite(load)||!isFinite(r))return;
   const wk=eng.wk,ok=wk?0.45:1;
-  if(wk){wk.rpm.setTargetAtTime(Math.max(300,st.rpm),t,0.02);wk.thr.setTargetAtTime(Math.max(0.06,load),t,0.05);wk.g.gain.setTargetAtTime(0.62*Math.pow(4/(P.cyl||4),0.6)*(0.55+load*0.65+r*0.25),t,0.05);wk.lp.frequency.setTargetAtTime((view==='cockpit'?850:1500)+load*1600+r*1400,t,0.06);}
+  if(wk){wk.rpm.setTargetAtTime(Math.max(300,st.rpm),t,0.02);wk.thr.setTargetAtTime(Math.max(0.06,load),t,0.05);wk.g.gain.setTargetAtTime(0.62*Math.pow(4/(P.cyl||4),0.6)*(WKN[selKey]??0.6)*(0.55+load*0.65+r*0.25),t,0.05);wk.lp.frequency.setTargetAtTime((view==='cockpit'?850:1500)+load*1600+r*1400,t,0.06);}
   eng.osc.forEach(x=>{x.os.frequency.setTargetAtTime(f*x.o,t,0.025);x.g.gain.setTargetAtTime(ok*x.a*(x.o<=1?0.55:0.25+load*0.55+r*0.3),t,0.05);});
   eng.mod.frequency.setTargetAtTime(f,t,0.025);eng.dmod.frequency.setTargetAtTime(f*0.5,t,0.03);
   eng.cbp.frequency.setTargetAtTime(150+f*2.5+load*300,t,0.05);eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9)*(wk?0.6:1),t,0.05);

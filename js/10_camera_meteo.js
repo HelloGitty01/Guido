@@ -246,13 +246,19 @@ const CINE={shot:null,t:0,list:null,i:0,intro:null,used:false,env:false,
   startIntro(){if(CFG.intro===false||!pl.mesh)return;const ck=view==='cockpit';if(ck){view='chase';applyView();}
     this.intro={t:0,dur:6.4,ck,side:Math.random()<0.5?1:-1};document.body.classList.add('cine');
     // Guido e Gatto salgono in auto mentre la ripresa scende
-    if(DRV&&DRV.board())this.intro.dur=9.2;
+    if(DRV&&DRV.board())this.intro.brd=true;
     const tt=document.getElementById('cineTitle');if(tt){const st=document.getElementById('selStart'),wx=document.getElementById('selWx'),tm=document.getElementById('selTime');
       tt.innerHTML='<div class="c1">'+pl.P.label+'</div><div class="c2">'+((NWT&&st&&st.value)?st.value+' · ':'')+'Repubblica di Ornavia</div><div class="c3">'+(tm?tm.selectedOptions[0].textContent:'')+(wx?' · '+wx.selectedOptions[0].textContent:'')+'</div>';}},
-  introCam(dt){const I=this.intro;I.t+=dt;const u=Math.min(1,I.t/I.dur),e=u<0.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,cx=pl.x,cz=pl.z,cy=(pl.yb??pl.terrH);
+  introCam(dt){const I=this.intro;if(I.bt!=null)return this.boardCam(dt);I.t+=dt;const u=Math.min(1,I.t/I.dur),e=u<0.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,cx=pl.x,cz=pl.z,cy=(pl.yb??pl.terrH);
     const a1=Math.atan2(tmpV.z-cz,tmpV.x-cx),r1=Math.hypot(tmpV.x-cx,tmpV.z-cz),h1=tmpV.y-cy,a0=a1+I.side*2.5,r0=110,h0=88;
     const a=a0+(a1-a0)*e,r=r0+(r1-r0)*e,h=h0+(h1-h0)*Math.pow(e,0.85);camera.position.set(cx+Math.cos(a)*r,cy+h,cz+Math.sin(a)*r);
-    _cl.set(cx,cy+1,cz).lerp(camLook,e);camera.lookAt(_cl);if(u>=1)this.endIntro();},
+    _cl.set(cx,cy+1,cz).lerp(camLook,e);camera.lookAt(_cl);if(u>=1){if(I.brd&&DRV&&DRV.go()){I.bt=0;I.cv=0;I.lk=_cl.clone();}else this.endIntro();}},
+  // salita a bordo: la telecamera resta alle spalle dell'auto, un po' più alta, e segue Guido da un lato all'altro
+  boardCam(dt){const I=this.intro;I.bt+=dt;const m=pl.mesh,G=DRV.g,hl=pl.T.L/2,k=1-Math.exp(-dt*1.8);
+    I.cv+=(Math.max(-3.2,Math.min(3.2,G.v*1.1))-I.cv)*Math.min(1,dt*1.2);
+    tmpV.set(-hl-4.1,2.35,I.cv);m.localToWorld(tmpV);tmpV.y=Math.max(tmpV.y,NW.H(tmpV.x,tmpV.z)+1.5);camera.position.lerp(tmpV,k);
+    const L=new THREE.Vector3((G.u+0.3)*0.5,0.9,G.v*0.55);m.localToWorld(L);I.lk.lerp(L,k);camera.lookAt(I.lk);
+    if(DRV.done||I.bt>30){I.hold=(I.hold||0)+dt;if(I.hold>0.3)this.endIntro();}},
   endIntro(){const I=this.intro;this.intro=null;if(DRV)DRV.hideAll();document.body.classList.remove('cine');if(I&&I.ck){view='cockpit';applyView();}}};
 const _cl=new THREE.Vector3();
 ['keydown','pointerdown','touchstart'].forEach(ev=>addEventListener(ev,()=>{if(CINE.intro&&CINE.intro.t>0.5)CINE.endIntro();},{passive:true}));
