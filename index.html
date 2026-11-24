@@ -258,7 +258,8 @@
 <li>"Brisbane City Scania L94UB Bus (RHD)" e "Hungry Jack's Restaurant (low poly)" – Jotrain Models (insegne ridipinte come "Orna Burger")</li>
 <li>"Cow" – kenchoo; "Cow" – stylo0; "Trotting Cat" – miyapCG; "Low Poly People Free Sample Pack" – Denys Almaral</li>
 <li>"Road Pack" e "Neighbourhood City Modular lowpoly" – golukumar; "Building" e "Procedural City 3" – abhayexe; "street city buildings (8)" – dasy444; "Desert rocks" – WeSVa</li>
-<li>"Modern Night Building (Game-ready)" – Ishxxn, CC BY 4.0</li></ul>
+<li>"Modern Night Building (Game-ready)" – Ishxxn, CC BY 4.0</li>
+<li>"Cypress tree" – ElectroNick, CC BY 4.0; "Poplar tree" – Georgeous, CC BY 4.0</li></ul>
 <h2 style="margin:14px 0 6px">Suono dei motori</h2><p style="opacity:.8;margin:0 0 6px">Modello a guide d'onda adattato da "engine-sound-generator" di Antonio-R1, licenza MIT.</p>
 <h2 style="margin:14px 0 6px">Musica</h2><p style="opacity:.8;margin:0 0 6px">Brani da Pixabay, licenza Pixabay Content License.</p>
 <ul style="padding-left:18px;margin:0"><li>Sigla: "Driving" – nastelbom</li><li>Radio Guido: "Broken Radio" – mangmaru · "Radio Active" – BearStockMusic · "Radio Jingle" – Alex Morgan · "Got a Space Shuttle Parked in My Yard" (cover) – Tim Kraaijvanger</li></ul>
@@ -341,7 +342,7 @@ const MODELS={};
 // pacchetto "modelli dettagliati": si può spegnere dalle impostazioni e si torna esattamente alla grafica di prima
 window.HDON=(()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');return c.hd!=null?!!c.hd:c.q!=='bassa';}catch(e){return true;}})();
 window.HDIMG={};
-(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
+(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
   const upd=()=>{let a=0;files.forEach(f=>a+=prog[f]||0);const p=Math.round(a/files.length*100);const b=document.getElementById('ldBar'),t=document.getElementById('ldTxt');if(b)b.style.width=p+'%';if(t)t.innerHTML=(p<40?'Accendo il motore…':p<80?'Scaldo le gomme…':'Controllo gli specchietti…')+' <b>'+p+'%</b>';};
   const go=()=>{const t=document.getElementById('ldTxt');if(t)t.innerHTML='Preparo le strade…';setTimeout(()=>MAIN().then(()=>{if(box)box.remove();
       const sp=document.getElementById('splash'),bt=document.getElementById('splGo');if(t)t.textContent='Pronto!';bt.style.display='block';bt.focus();
@@ -366,8 +367,12 @@ window.HDIMG={};
 // sigla: "Driving" di nastelbom nel caricamento e nel menu (parte al primo tocco, come vogliono i browser)
 window.SIGLA=(()=>{let a=null,fd=null,want=false;const vol=()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');return Math.min(1,(c.vol??0.6)*0.9);}catch(e){return 0.5;}};
   const to=(v,ms,end)=>{clearInterval(fd);const s0=a.volume,t0=performance.now();fd=setInterval(()=>{const k=Math.min(1,(performance.now()-t0)/ms);a.volume=s0+(v-s0)*k;if(k>=1){clearInterval(fd);if(end)end();}},50);};
-  const S={play(){want=true;if(!a){a=new Audio('music/sigla.mp3');a.loop=true;a.volume=0;}a.play().then(()=>{if(want)to(vol(),1800);}).catch(()=>{});},stop(ms=1400){want=false;if(a&&!a.paused)to(0,ms,()=>{if(!want)a.pause();});},vol(){if(a&&want)a.volume=vol();}};
-  const first=()=>{if(!S.started){S.started=true;if(!window.__running)S.play();}removeEventListener('pointerdown',first);removeEventListener('keydown',first);};addEventListener('pointerdown',first);addEventListener('keydown',first);
+  const S={play(){want=true;if(!a){a=new Audio('music/sigla.mp3');a.loop=true;a.volume=0;}a.play().then(()=>{S.on=true;hint(false);if(want)to(vol(),1800);}).catch(()=>{if(want&&!S.on)hint(true);});},stop(ms=1400){want=false;hint(false);if(a&&!a.paused)to(0,ms,()=>{if(!want)a.pause();});},vol(){if(a&&want)a.volume=vol();}};
+  // Chrome non lascia partire l'audio prima di un tocco o un tasto (tranne che per l'app installata): si prova subito, e se è bloccato compare un invito discreto
+  const hint=on=>{let h=document.getElementById('sigHint');if(!h&&on){h=document.createElement('button');h.id='sigHint';h.textContent='🔊 Tocca per la musica';h.style.cssText='position:fixed;right:18px;bottom:18px;z-index:60;padding:9px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.35);background:rgba(10,12,16,.55);color:#f2f2f2;font:600 13px system-ui,sans-serif;letter-spacing:.02em;cursor:pointer;backdrop-filter:blur(6px);animation:sigP 2.4s ease-in-out infinite';
+    const st=document.createElement('style');st.textContent='@keyframes sigP{0%,100%{opacity:.75}50%{opacity:1}}';document.head.appendChild(st);(document.body||document.documentElement).appendChild(h);}if(h)h.style.display=on?'':'none';};
+  const first=()=>{if(!S.started||!S.on){S.started=true;if(!window.__running)S.play();}removeEventListener('pointerdown',first);removeEventListener('keydown',first);};addEventListener('pointerdown',first);addEventListener('keydown',first);
+  addEventListener('DOMContentLoaded',()=>{if(!window.__running)S.play();});
   return S;})();
 function MAIN(){const P=['01_base','02_citta','03_mondo_dati','04_modelli_auto','05_traffico_pedoni','06_veicolo','07_audio','08_comandi','09_fisica_autoradio','10_camera_meteo','11_navigatore_menu','12_extra_carriera','13_casa_ciclo','13b_modelli_hd','14_mondo_ornavia'];
   // il codice del gioco è diviso in parti (cartella js/): si scaricano in parallelo e si eseguono insieme, come un unico programma
