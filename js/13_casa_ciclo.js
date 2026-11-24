@@ -152,7 +152,7 @@ HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign
   // Guido e Gatto
   G.updateMatrixWorld(true);G.traverse(o=>{o.matrixAutoUpdate=false;});dp.traverse(o=>{o.matrixAutoUpdate=true;});
   Object.values(HOME.cars).forEach(c=>{[c.m,c.tr].forEach(o=>{if(!o)return;o.updateMatrixWorld(true);o.traverse(q=>{q.matrixAutoUpdate=false;});});});
-  HOME.guido=makeGuido();HOME.guido.visible=false;scene.add(HOME.guido);HOME.cat=makeCat();scene.add(HOME.cat);
+  HOME.guido=makeGuido();HOME.guido.visible=false;scene.add(HOME.guido);HOME.cat=new THREE.Group();HOME.cat.visible=false;// niente gatto
   HOME.c={x:0,z:0,h:0,sp:0,sit:1,tl:0,lick:0,st:'porch',stT:0};HOME.catTo(4.6,1.6,true);
   HOME.gd={x:0,z:0,h:0,sp:0};
   // menu: partenza e destinazione
@@ -169,7 +169,7 @@ function muteCar(on){if(eng&&AC){const t=AC.currentTime;eng.master.gain.setTarge
 HOME.begin=function(){HOME.mode='walk';HOME.stillT=0;HOME.t=0;document.getElementById('homeSkip').textContent='Salta: parti con l\'auto del menu';const g=HOME.gd,[x,z]=hW(5.0,-1);g.x=x;g.z=z;g.h=Math.atan2(-HOME.ca,-HOME.sa);g.sp=0;HOME.doorA=1.6;
   HOME.guido.visible=true;pl.mesh.visible=false;pl.x=x;pl.z=z;pl.vx=pl.vy=0;muteCar(true);HOME.camInit=true;ckOverlay();
   const ui=document.getElementById('homeUI');ui.style.display='flex';document.getElementById('homeCard').style.display='none';
-  pl.navMsg='Ciao Guido! Vai in garage e scegli il mezzo: avvicinati e premi Invio. Gatto ti segue.';pl.navMsgT=6;
+  pl.navMsg='Ciao Guido! Vai in garage e scegli il mezzo: avvicinati e premi Invio.';pl.navMsgT=6;
   if(CFG.intro===false)HOME.enter(selKey,true);};
 function fade(cb){const f=document.getElementById('fadeOv');f.style.opacity=1;setTimeout(()=>{cb();setTimeout(()=>f.style.opacity=0,120);},380);}
 HOME.enter=function(k,instant){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on&&!CAR.s.own[k]){if(CAR.buy(k)){HOME.near=null;}return;}HOME.busy=true;const go=()=>{HOME.busy=false;const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
@@ -177,13 +177,13 @@ HOME.enter=function(k,instant){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on
     HOME.guido.visible=false;HOME.mode=null;HOME.doorA=0;document.getElementById('homeUI').style.display='none';applyView();pl.camInit=false;RADIO.pause(false);try{savePrefs();}catch(e){}
     HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;if(DRV)DRV.skipBoard=true;startDrive();};
   if(instant)go();else fade(go);};
-HOME.finish=function(){if(HOME.done)return;HOME.done=true;document.getElementById('homeUI').style.display='none';fade(()=>{HOME.guido.visible=false;HOME.cat.visible=false;HOME.doorA=0;setTimeout(()=>{HOME.cat.visible=true;HOME.mode=null;endRun('casa');},700);});};
+HOME.finish=function(){if(HOME.done)return;HOME.done=true;document.getElementById('homeUI').style.display='none';fade(()=>{HOME.guido.visible=false;HOME.doorA=0;setTimeout(()=>{HOME.cat.visible=true;HOME.mode=null;endRun('casa');},700);});};
 HOME.arrive=function(){if(CAR.on){CAR.repair();CAR.save();}HOME.mode='return';HOME.t=0;muteCar(true);pl.vx=pl.vy=0;pl.hb=true;if(pl.lights)toggleLights();
   const ch=Math.cos(pl.h),sh=-Math.sin(pl.h),lx=sh,lz=-ch,d=pl.T.W/2+0.55,g=HOME.gd;g.x=pl.x+lx*d;g.z=pl.z+lz*d;g.h=Math.atan2(lx,lz);g.sp=0;
   fade(()=>{HOME.guido.visible=true;if(view==='cockpit'){view='chase';applyView();HOME.wasCk=true;}});
   {const ui=document.getElementById('homeUI');ui.style.display='flex';document.getElementById('homeCard').style.display='none';document.getElementById('homeSkip').textContent='Entra subito in casa';}
   const[u,vv]=hL(g.x,g.z);HOME.path=vv>3?[[-57.8,vv],[-57.8,2.5],[-29,0],[-3,-1],[4.6,-1],[7.2,-1]]:[[u,-22.5],[-3,-1],[4.6,-1],[7.2,-1]];HOME.c.st='greet';HOME.c.stT=0;
-  pl.navMsg='Bentornato a casa, Guido! Gatto ti corre incontro.';pl.navMsgT=4;say('Bentornato a casa');};
+  pl.navMsg='Bentornato a casa, Guido!';pl.navMsgT=4;say('Bentornato a casa');};
 // ---------- aggiornamento a ogni fotogramma ----------
 function walkInput(){let f=(kd(KEYMAP.thr)||keys.ArrowUp||keys.KeyW?1:0)-(kd(KEYMAP.brk)||keys.ArrowDown||keys.KeyS?1:0),t=(kd(KEYMAP.right)||keys.ArrowRight?1:0)-(kd(KEYMAP.left)||keys.ArrowLeft?1:0);
   if(touch.on){f=Math.max(f,touch.thr>0.1?touch.thr:0)-(touch.brk>0.1?touch.brk:0);t=touch.steer;}
@@ -192,7 +192,7 @@ function walkInput(){let f=(kd(KEYMAP.thr)||keys.ArrowUp||keys.KeyW?1:0)-(kd(KEY
 function pushOut(o,r){if(!NWT)return;for(let it=0;it<2;it++)for(const s of NWT.segQ(o.x,o.z)){const ax=s[0],az=s[1],bx=s[2],bz=s[3],dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1;let t=((o.x-ax)*dx+(o.z-az)*dz)/L2;t=t<0?0:t>1?1:t;const px=ax+dx*t,pz=az+dz*t,ex=o.x-px,ez=o.z-pz,d=Math.hypot(ex,ez);if(d<r&&d>1e-6){o.x=px+ex/d*r;o.z=pz+ez/d*r;}}}
 function walkTo(g,tx,tz,sp,dt){const dx=tx-g.x,dz=tz-g.z,d=Math.hypot(dx,dz);if(d<0.08){g.sp+=(0-g.sp)*Math.min(1,dt*8);return d;}const th=Math.atan2(dx,dz);let dh=th-g.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));g.h+=Math.sign(dh)*Math.min(Math.abs(dh),dt*5);
   const want=Math.min(sp,d*2.2)*Math.max(0,Math.cos(dh));g.sp+=(want-g.sp)*Math.min(1,dt*6);g.x+=Math.sin(g.h)*g.sp*dt;g.z+=Math.cos(g.h)*g.sp*dt;return d;}
-HOME.setVis=function(v){if(HOME.vis===v)return;HOME.vis=v;HOME.G.visible=v;HOME.cat.visible=v;Object.values(HOME.cars).forEach(c=>{if(!v){c.m.userData._v=c.m.visible;c.m.visible=false;if(c.tr){c.tr.userData._v=c.tr.visible;c.tr.visible=false;}}else{c.m.visible=c.m.userData._v!==false;if(c.tr)c.tr.visible=c.tr.userData._v!==false;}});};
+HOME.setVis=function(v){if(HOME.vis===v)return;HOME.vis=v;HOME.G.visible=v;Object.values(HOME.cars).forEach(c=>{if(!v){c.m.userData._v=c.m.visible;c.m.visible=false;if(c.tr){c.tr.userData._v=c.tr.visible;c.tr.visible=false;}}else{c.m.visible=c.m.userData._v!==false;if(c.tr)c.tr.visible=c.tr.userData._v!==false;}});};
 HOME.tick=function(dt){if(!HOME.ok)return;const far=Math.abs(camera.position.x-HOME.x)+Math.abs(camera.position.z-HOME.z)>900&&!HOME.mode;HOME.setVis(!far);if(far)return;HOME.t+=dt;const t=simT;
   // luci di casa al buio, porta
   const n=NIGHT||DUSK;if(HOME.lit!==n){HOME.lit=n;HOME.nm.forEach(([m,i])=>m.emissiveIntensity=n?i:0);}
@@ -212,25 +212,7 @@ HOME.tick=function(dt){if(!HOME.ok)return;const far=Math.abs(camera.position.x-H
         if(!HOME.path.length&&!HOME.done)HOME.finish();}}
     hud.textContent='Casa di Guido';}
   if(HOME.guido.visible){poseGuido(HOME.guido,dt,Math.abs(g.sp),HOME.mode==='return'&&c.st==='rub'&&HOME.t>1,t);HOME.guido.position.set(g.x,NW.H(g.x,g.z),g.z);HOME.guido.rotation.y=g.h;}
-  // ---- Gatto ----
-  let tx=c.tx,tz=c.tz,spd=1.0,sitT=0,tl=0.3,lick=0;c.stT+=dt;
-  const gx=g.x,gz=g.z,gh=g.h,guidoOut=HOME.guido.visible;
-  if(HOME.mode==='walk'&&guidoOut){const dG=Math.hypot(c.x-gx,c.z-gz);
-    if(HOME.stillT>2.5&&dG<1.6){c.st='rub';}else if(c.st==='rub'&&HOME.stillT<0.2)c.st='follow';else if(c.st!=='rub')c.st='follow';
-    if(c.st==='follow'){const bx=gx-Math.sin(gh)*0.9+Math.cos(gh)*0.55,bz=gz-Math.cos(gh)*0.9-Math.sin(gh)*0.55;tx=bx;tz=bz;spd=Math.hypot(c.x-bx,c.z-bz)>3?3.4:1.5;tl=0.8;}
-    if(c.st==='rub'){const a=c.stT*0.9;tx=gx+Math.cos(a)*0.42;tz=gz+Math.sin(a)*0.42;spd=0.45;tl=1;if(!c.meowed&&c.stT>0.5){c.meowed=true;meow();}}else c.meowed=false;}
-  else if(HOME.mode==='return'&&guidoOut){const dG=Math.hypot(c.x-gx,c.z-gz);
-    if(c.st==='greet'){tx=gx;tz=gz;spd=4.2;tl=1;if(dG<0.7){c.st='rub';c.stT=0;meow();pl.navMsg='Gatto ti fa le fusa';pl.navMsgT=2.5;}}
-    else if(c.st==='rub'){const a=c.stT*1.0;tx=gx+Math.cos(a)*0.42;tz=gz+Math.sin(a)*0.42;spd=0.45;tl=1;if(c.stT>2.6){c.st='follow';}}
-    else{tx=gx+Math.sin(gh)*0.7+Math.cos(gh)*0.4;tz=gz+Math.cos(gh)*0.7-Math.sin(gh)*0.4;spd=1.7;tl=0.9;}}
-  else{// Guido in auto: Gatto aspetta sul gradino, scappa se l'auto si avvicina
-    const[px,pz]=hW(4.6,1.6);const dC=Math.hypot(pl.x-c.x,pl.z-c.z),mov=Math.abs(pl.vx)>0.5;tx=px;tz=pz;spd=dC<7&&mov?3.4:0.9;tl=0.3;
-    if(Math.hypot(c.x-px,c.z-pz)<0.3){sitT=1;if(c.stT%11>8)lick=1;}}
-  const d=walkTo(c,tx,tz,spd,dt);if(c.st==='rub'&&HOME.guido.visible){const a=Math.atan2(gx-c.x,gz-c.z)+Math.PI/2;let dh=a-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=dh*Math.min(1,dt*4);}
-  if(c.st!=='rub'&&HOME.mode&&guidoOut&&d<0.25&&Math.abs(c.sp)<0.1)sitT=1;
-  c.sit+=(sitT-c.sit)*Math.min(1,dt*3);c.tl+=(tl-c.tl)*Math.min(1,dt*3);
-  {const[u,v]=hL(c.x,c.z);const cu=Math.max(-29.4,Math.min(29.4,u)),cv=Math.max(-37.4,Math.min(37.4,v));if(cu!==u||cv!==v){const[x,z]=hW(cu,cv);c.x=x;c.z=z;}}
-  poseCat(HOME.cat,dt,Math.abs(c.sp),c.sit,c.tl,lick,t);HOME.cat.position.set(c.x,NW.H(c.x,c.z),c.z);HOME.cat.rotation.y=c.h;
+  /* il gatto è stato tolto */
   // rientro: auto ferma dentro il garage
   if(!HOME.mode&&started&&!pl.ended&&['free','nav','deliv'].includes(MODE)&&simT-runStart>3){const ing=inGarage(pl.x,pl.z);if(!ing&&Math.hypot(pl.x-HOME.x,pl.z-HOME.z)>45)HOME.wasOut=true;if(ing&&HOME.wasOut&&Math.abs(pl.vx)<0.15){HOME.parkT+=dt;if(HOME.parkT>1.6){HOME.done=false;HOME.arrive();}}else HOME.parkT=0;}};
 HOME.camera=function(dt){const g=HOME.gd,ret=HOME.mode==='return',back=ret?5.2:3.6,up=ret?2.6:2.0,side=ret?1.8:0,bx=g.x-Math.sin(g.h)*back+Math.cos(g.h)*side,bz=g.z-Math.cos(g.h)*back-Math.sin(g.h)*side,gy=NW.H(g.x,g.z);

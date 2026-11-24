@@ -4,7 +4,7 @@ let AC=null,eng=null;
 // parametri acustici di ogni motore: lunghezze dei tubi (in campioni), marmitta, durata dello scoppio (diesel = più secco)
 function engineParams(k,P){const base={cylinders:P.cyl||4,intakeWaveguideLength:90,exhaustWaveguideLength:100,extractorWaveguideLength:100,intakeOpenReflectionFactor:0.01,intakeClosedReflectionFactor:0.95,
   exhaustOpenReflectionFactor:0.01,exhaustClosedReflectionFactor:0.95,ignitionTime:P.diesel?0.009:0.016,straightPipeWaveguideLength:128,straightPipeReflectionFactor:0.01,mufflerElementsLength:[10,15,20,25],action:0.1,outletWaveguideLength:5,outletReflectionFactor:0.01};
-  const T={utilitaria:{exhaustWaveguideLength:70,extractorWaveguideLength:80,straightPipeWaveguideLength:100,mufflerElementsLength:[8,12,16,20],action:0.12,ignitionTime:0.018},
+  const T={utilitaria:{intakeWaveguideLength:55,exhaustWaveguideLength:42,extractorWaveguideLength:48,straightPipeWaveguideLength:58,mufflerElementsLength:[5,7,9,12],action:0.16,ignitionTime:0.011,outletWaveguideLength:3},
     volvo:{exhaustWaveguideLength:110,straightPipeWaveguideLength:160,mufflerElementsLength:[12,18,24,30],action:0.15},
     wagoneer:{exhaustWaveguideLength:140,extractorWaveguideLength:120,straightPipeWaveguideLength:200,mufflerElementsLength:[14,20,28,36],action:0.08,ignitionTime:0.02,offsets:[0,0,0.03,-0.03,0,0,0.03,-0.03]},
     hellcat:{exhaustWaveguideLength:100,extractorWaveguideLength:90,straightPipeWaveguideLength:150,mufflerElementsLength:[10,15,20,25],action:0.05,ignitionTime:0.013,offsets:[0,0,0.035,-0.035,0,0,0.035,-0.035]},
@@ -13,7 +13,7 @@ function engineParams(k,P){const base={cylinders:P.cyl||4,intakeWaveguideLength:
     daily:{exhaustWaveguideLength:100,straightPipeWaveguideLength:150,mufflerElementsLength:[12,18,24,30],action:0.15}};
   return Object.assign(base,T[k]||{});}
 // livello di ogni motore a guide d'onda, misurato perché al massimo dei giri il picco resti sotto 0,7 (prima i V8 e la Volvo saturavano e gracchiavano)
-const WKN={utilitaria:1.1,volvo:0.38,wagoneer:0.5,hellcat:0.42,zil:0.37,daily:1.05,taxi:0.85};
+const WKN={utilitaria:0.8,volvo:0.38,wagoneer:0.5,hellcat:0.42,zil:0.37,daily:1.05,taxi:0.85};
 function initAudio(){
   if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)({latencyHint:0.06});}catch(e){AC=new (window.AudioContext||window.webkitAudioContext)();}}
   if(eng){eng.stopAll();}
@@ -25,12 +25,14 @@ function initAudio(){
   const master=AC.createGain();master.gain.value=0;master.connect(EB);
   // filtro "abitacolo": i suoni del motore arrivano smorzati, con il corpo sui bassi
   const cab=AC.createBiquadFilter();cab.type='lowpass';cab.frequency.value=900;cab.Q.value=0.5;
-  const body=AC.createBiquadFilter();body.type='lowshelf';body.frequency.value=160;body.gain.value=6;
+  const body=AC.createBiquadFilter();body.type='lowshelf';body.frequency.value=160;body.gain.value=(P.snd&&P.snd.small)?-3:6;
   cab.connect(body).connect(master);
   // ordini armonici del motore (rispetto alla frequenza di scoppio)
   const SN=P.snd||{};
   // V8 con albero a croce: scoppi irregolari fra le due bancate → mezzi ordini forti (il "borbottio"); 4 cilindri: secondo ordine ruvido
   const orders=P.cyl===3?[[0.5,0.55],[1,0.7],[1.5,0.35],[2,0.25],[3,0.1]]:P.cyl===8?(P.diesel?[[0.25,0.2],[0.5,0.5],[1,0.8],[2,0.3],[3,0.14]]:[[0.25,0.16*(SN.lope||1)],[0.5,0.55],[1,0.75],[1.5,0.2],[2,0.35],[3,0.1]]):(P.diesel?[[0.5,0.35],[1,0.8],[2,0.35],[3,0.18],[4,0.08]]:[[0.5,0.25],[1,0.75],[2,0.4],[3,0.15],[4,0.1]]);
+  // motore piccolo (Panda 1000 a carburatore): niente borbottio, armoniche alte, timbro ronzante
+  if(SN.small)orders.splice(0,orders.length,[1,0.6],[2,0.6],[3,0.3],[4,0.22],[6,0.08]);
   const osc=orders.map(([o,a])=>{const os=AC.createOscillator();os.type=o===1?'triangle':'sine';const g=AC.createGain();g.gain.value=a*0.5;os.connect(g).connect(cab);os.start();nodes.push(os);return{os,o,g,a};});
   // combustione: rumore filtrato modulato in ampiezza alla frequenza di scoppio (dà la "grana" reale)
   const cbp=AC.createBiquadFilter();cbp.type='bandpass';cbp.Q.value=0.9;const am=AC.createGain();am.gain.value=0;const cg=AC.createGain();cg.gain.value=P.diesel?0.5:0.3;
@@ -85,7 +87,7 @@ function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
   eng.osc.forEach(x=>{x.os.frequency.setTargetAtTime(f*x.o,t,0.025);x.g.gain.setTargetAtTime(ok*x.a*(x.o<=1?0.55:0.25+load*0.55+r*0.3),t,0.05);});
   eng.mod.frequency.setTargetAtTime(f,t,0.025);eng.dmod.frequency.setTargetAtTime(f*0.5,t,0.03);
   eng.cbp.frequency.setTargetAtTime(150+f*2.5+load*300,t,0.05);eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9)*(wk?0.6:1),t,0.05);
-  eng.cab.frequency.setTargetAtTime((P.diesel?420:520)+load*(P.diesel?500:900)+r*600,t,0.06);
+  eng.cab.frequency.setTargetAtTime((P.diesel?420:eng.SN.small?900:520)+load*(P.diesel?500:900)+r*600,t,0.06);
   eng.master.gain.setTargetAtTime((0.10+load*0.10+r*0.07)*(eng.SN.exh||1)*(CFG.engVol??1),t,0.06);
   if(eng.bl){const bf=st.rpm/60*11.5;eng.bl.o1.frequency.setTargetAtTime(bf,t,0.03);eng.bl.o2.frequency.setTargetAtTime(bf*2.02,t,0.03);eng.bl.g.gain.setTargetAtTime(Math.min(0.06,(0.004+load*0.05)*r*r*1.6)*(CFG.engVol??1),t,0.05);}
   if(eng.SN.rough)eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9)*eng.SN.rough,t,0.05);
