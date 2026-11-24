@@ -253,6 +253,12 @@
 <li>"Free Lowpoly City Props Pack" – MaHa / Low Poly Models, licenza Sketchfab Standard</li>
 <li>Pedoni: "Ultimate Modular Men" e "Ultimate Modular Women" – Quaternius (quaternius.com), licenza CC0</li>
 <li>"Iveco Daily 1982 - Lowpoly" – kekis69, CC BY 4.0</li></ul>
+<p><b>Modelli dettagliati</b> (Sketchfab, licenza Sketchfab Standard salvo dove indicato):</p><ul>
+<li>"Tree 3d model linden tree" – High Quality Work; "Tree 3d model Fir Spruce Pine" – Qruad; "Tropical Palm Tree" – assetfactory</li>
+<li>"Brisbane City Scania L94UB Bus (RHD)" e "Hungry Jack's Restaurant (low poly)" – Jotrain Models (insegne ridipinte come "Orna Burger")</li>
+<li>"Cow" – kenchoo; "Cow" – stylo0; "Trotting Cat" – miyapCG; "Low Poly People Free Sample Pack" – Denys Almaral</li>
+<li>"Road Pack" e "Neighbourhood City Modular lowpoly" – golukumar; "Building" e "Procedural City 3" – abhayexe; "street city buildings (8)" – dasy444; "Desert rocks" – WeSVa</li>
+<li>"Modern Night Building (Game-ready)" – Ishxxn, CC BY 4.0</li></ul>
 <h2 style="margin:14px 0 6px">Suono dei motori</h2><p style="opacity:.8;margin:0 0 6px">Modello a guide d'onda adattato da "engine-sound-generator" di Antonio-R1, licenza MIT.</p>
 <h2 style="margin:14px 0 6px">Musica</h2><p style="opacity:.8;margin:0 0 6px">Brani da Pixabay, licenza Pixabay Content License.</p>
 <ul style="padding-left:18px;margin:0"><li>Sigla: "Driving" – nastelbom</li><li>Radio Guido: "Broken Radio" – mangmaru · "Radio Active" – BearStockMusic · "Radio Jingle" – Alex Morgan · "Got a Space Shuttle Parked in My Yard" (cover) – Tim Kraaijvanger</li></ul>
@@ -283,6 +289,7 @@
       <div class="row"><label>Zona morta joystick <input type="range" id="cfgJdz" min="0" max="0.3" step="0.01"></label><label>Sensibilità joystick <input type="range" id="cfgJgain" min="0.6" max="1.6" step="0.05"></label></div>
       <div class="row"><label>Ritorno al centro <input type="range" id="cfgRit" min="0.3" max="2" step="0.1"></label><label>Specchietti in cabina <input type="checkbox" id="cfgMir"></label></div>
       <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label><label>Comandi su smartphone <select id="cfgTouch"><option value="volante">Volante e pedali</option><option value="tilt">Inclina il telefono e pedali</option><option value="cursori">Due cursori</option></select></label><label>Qualità grafica <select id="cfgQ"><option value="bassa">Bassa (più fluida)</option><option value="media">Media</option><option value="alta">Alta</option></select></label></div>
+      <div class="row"><label>Modelli dettagliati <input type="checkbox" id="cfgHd"></label><span class="note">alberi veri, autobus, mucche, facciate fotografiche, cantieri (togli la spunta se il gioco va a scatti)</span></div>
       <div class="row"><label>Volume autoradio <input type="range" id="cfgVol" min="0" max="1" step="0.05"></label></div>
       <div class="row"><b>Stazioni radio</b><span class="note">(indirizzi di flussi audio MP3/AAC; funzionano nella versione su GitHub)</span></div><div id="radioList"></div><div class="row"><button id="radioAdd" class="sm">Aggiungi stazione</button><button id="radioDef" class="sm">Ripristina predefinite</button><span class="note" id="radioNote"></span></div>
     </section>
@@ -331,7 +338,10 @@
 <script>
 // ================= MODELLI 3D DA SKETCHFAB (caricati prima di costruire il mondo) =================
 const MODELS={};
-(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'],box=document.getElementById('loadBox'),prog={};
+// pacchetto "modelli dettagliati": si può spegnere dalle impostazioni e si torna esattamente alla grafica di prima
+window.HDON=(()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');return c.hd!=null?!!c.hd:c.q!=='bassa';}catch(e){return true;}})();
+window.HDIMG={};
+(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
   const upd=()=>{let a=0;files.forEach(f=>a+=prog[f]||0);const p=Math.round(a/files.length*100);const b=document.getElementById('ldBar'),t=document.getElementById('ldTxt');if(b)b.style.width=p+'%';if(t)t.innerHTML=(p<40?'Accendo il motore…':p<80?'Scaldo le gomme…':'Controllo gli specchietti…')+' <b>'+p+'%</b>';};
   const go=()=>{const t=document.getElementById('ldTxt');if(t)t.innerHTML='Preparo le strade…';setTimeout(()=>MAIN().then(()=>{if(box)box.remove();
       const sp=document.getElementById('splash'),bt=document.getElementById('splGo');if(t)t.textContent='Pronto!';bt.style.display='block';bt.focus();
@@ -348,7 +358,8 @@ const MODELS={};
   const nwP=window.DecompressionStream?fetch('models/ornavia.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json();}).then(async j=>{const [a,b,c]=await Promise.all([gunz(j.gz),gunz(j.hm),gunz(j.lm)]);
       const J=JSON.parse(new TextDecoder().decode(a));if(J.meta.enc)decNW(J);const d=new Int16Array(b),NX=J.meta.grid[3],NZ=J.meta.grid[4],hm=new Float32Array(d.length);
       for(let r=0;r<NZ;r++){let acc=0;for(let q=0;q<NX;q++){acc+=d[r*NX+q];hm[r*NX+q]=acc/10;}}window.NWDATA={j:J,hm,lm:new Uint8Array(c)};}).catch(e=>console.warn('mondo non caricato',e)):Promise.resolve();
-  Promise.all([nwP].concat(files.map(f=>new Promise(res=>{const fail=err=>{console.warn('modello non caricato: '+f,err);prog[f]=1;upd();res();};
+  const imgP=HDON?Promise.all(['asfalto','roccia','roccia_n','pietra','pietra_n','intonaco','mattoni','facciate','blocchi1','blocchi2','blocchi3','vetro','condominio'].map(n=>new Promise(r=>{const im=new Image();im.onload=()=>{HDIMG[n]=im;r();};im.onerror=()=>r();im.src='tex/'+n+'.jpg';}))):Promise.resolve();
+  Promise.all([nwP,imgP].concat(files.map(f=>new Promise(res=>{const fail=err=>{console.warn('modello non caricato: '+f,err);prog[f]=1;upd();res();};
     fetch('models/'+f+'.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json();}).then(j=>{const bs=atob(j.glb),u=new Uint8Array(bs.length);for(let i=0;i<bs.length;i++)u[i]=bs.charCodeAt(i);
       LD.parse(u.buffer,'',g=>{MODELS[f]=g;prog[f]=1;upd();res();},fail);}).catch(fail);}))))
    .then(go,go);})();
@@ -358,7 +369,7 @@ window.SIGLA=(()=>{let a=null,fd=null,want=false;const vol=()=>{try{const c=JSON
   const S={play(){want=true;if(!a){a=new Audio('music/sigla.mp3');a.loop=true;a.volume=0;}a.play().then(()=>{if(want)to(vol(),1800);}).catch(()=>{});},stop(ms=1400){want=false;if(a&&!a.paused)to(0,ms,()=>{if(!want)a.pause();});},vol(){if(a&&want)a.volume=vol();}};
   const first=()=>{if(!S.started){S.started=true;if(!window.__running)S.play();}removeEventListener('pointerdown',first);removeEventListener('keydown',first);};addEventListener('pointerdown',first);addEventListener('keydown',first);
   return S;})();
-function MAIN(){const P=['01_base','02_citta','03_mondo_dati','04_modelli_auto','05_traffico_pedoni','06_veicolo','07_audio','08_comandi','09_fisica_autoradio','10_camera_meteo','11_navigatore_menu','12_extra_carriera','13_casa_ciclo','14_mondo_ornavia'];
+function MAIN(){const P=['01_base','02_citta','03_mondo_dati','04_modelli_auto','05_traffico_pedoni','06_veicolo','07_audio','08_comandi','09_fisica_autoradio','10_camera_meteo','11_navigatore_menu','12_extra_carriera','13_casa_ciclo','13b_modelli_hd','14_mondo_ornavia'];
   // il codice del gioco è diviso in parti (cartella js/): si scaricano in parallelo e si eseguono insieme, come un unico programma
   return Promise.all(P.map(n=>fetch('js/'+n+'.js').then(r=>{if(!r.ok)throw new Error(n+' '+r.status);return r.text();}))).then(T=>{const s=document.createElement('script');
     s.textContent='(function MAIN(){\n'+T.join('\n')+'\n})();\n//# sourceURL=guido.js';document.body.appendChild(s);});}

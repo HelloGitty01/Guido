@@ -36,7 +36,7 @@ function poseGuido(g,dt,sp,wave,t){const u=g.userData,k=Math.min(1,sp/1.4),run=s
   u.arms.forEach((A,i)=>{const q=i?s:-s;if(i===1&&wave){A.A.rotation.set(0,0,2.5);A.E.rotation.set(0,0,0.35+Math.sin(t*7)*0.35);return;}A.A.rotation.set(-q*0.45*k*(run?1.4:1),0,(i?1:-1)*0.07);A.E.rotation.set(-0.25*k-(run?0.7:0),0,0);});
   u.T.position.y=1.0+Math.abs(c)*0.025*k;u.T.rotation.x=run?0.12:0.02*k;u.H.rotation.set(-0.04,0,wave?0.08:0);}
 // ---------- Gatto: rosso tigrato, con il petto bianco ----------
-function makeCat(){
+function makeCat(){try{if(HDX&&HDX.cat)return HDX.cat();}catch(e){}
   const M=(c,r=0.85)=>new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(),roughness:r,flatShading:true});
   const fur=M(0xd9873a),wh=M(0xf3ede2),st=M(0xa45a20),pink=M(0xe58f98),eyeM=M(0x9ad24a,0.3),pup=M(0x111111,0.3);
   const G=new THREE.Group(),add=(geo,mat,x,y,z,p)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(p||G).add(m);return m;};
@@ -55,7 +55,7 @@ function makeCat(){
   for(let i=0;i<7;i++){const g=new THREE.Group();if(i)g.position.y=0.045;par.add(g);add(C(0.017-i*0.0012,0.019-i*0.0012,0.05),i===6?st:(i%2?st:fur),0,0.022,0,g);tail.push(g);par=g;}
   G.userData={Bd,Hd,legs,tail,ph:0};return G;}
 // sit: 0 in piedi, 1 seduto; tl: coda (0 bassa e rilassata, 1 dritta in su); lick: testa giù a lavarsi
-function poseCat(g,dt,sp,sit,tl,lick,t){const u=g.userData,k=Math.min(1,sp/0.8),run=sp>1.6;u.ph+=dt*(run?13:8)*Math.min(2,0.25+sp/0.6);const s=Math.sin(u.ph),c=Math.cos(u.ph);
+function poseCat(g,dt,sp,sit,tl,lick,t){if(g.userData.hd){const u=g.userData;if(u.a){u.a.timeScale=sp>0.05?Math.min(2.2,0.35+sp/0.9):0;}u.mx.update(dt);return;}const u=g.userData,k=Math.min(1,sp/0.8),run=sp>1.6;u.ph+=dt*(run?13:8)*Math.min(2,0.25+sp/0.6);const s=Math.sin(u.ph),c=Math.cos(u.ph);
   u.legs.forEach(L=>{const diag=(L.front===(L.s>0))?0:Math.PI,q=Math.sin(u.ph+diag+(run&&!L.front?0.9:0));let a=-q*0.6*k*(run?1.3:1),b=Math.max(0,Math.cos(u.ph+diag))*0.7*k;
     if(!L.front){a=a*(1-sit)-1.25*sit;b=b*(1-sit)+2.0*sit;}else{a=a*(1-sit)+0.18*sit;}L.L.rotation.x=a;L.K.rotation.x=b;});
   u.Bd.rotation.x=-0.62*sit;u.Bd.position.y=0.25-0.035*sit+Math.abs(c)*0.012*k*(run?2:1);u.Bd.position.z=-0.03*sit;

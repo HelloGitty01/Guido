@@ -290,7 +290,7 @@ function findPasture(region,tries){for(let i=0;i<tries;i++){const [x0,x1,z0,z1]=
 const cowTex=canvasTex(128,(g,n)=>{g.fillStyle='#f1eee6';g.fillRect(0,0,n,n);g.fillStyle='#1c1a18';for(let i=0;i<7;i++){g.beginPath();g.ellipse(Math.random()*n,Math.random()*n,10+Math.random()*16,8+Math.random()*12,Math.random()*3,0,7);g.fill();}});
 const cowMs=[mat(0xffffff,{map:cowTex}),mat(0x8a5a3a),mat(0x5a3a26),mat(0xc9a27a)],woolM=mat(0xece6da,{roughness:1}),darkM=mat(0x2a2522);
 const COWX=(()=>{if(!MODELS.cow||!THREE.SkeletonUtils)return null;const g=MODELS.cow;const cl=g.animations.filter(a=>/idle/i.test(a.name));if(!cl.length)return null;return{sc:g.scene,clips:cl};})();
-function makeAnimal(kind){if(kind==='cow'&&COWX){const g=new THREE.Group(),hi=THREE.SkeletonUtils.clone(COWX.sc),w=new THREE.Group();
+function makeAnimal(kind){if(kind==='cow'){try{if(HDX&&HDX.cow)return HDX.cow();}catch(e){}}if(kind==='cow'&&COWX){const g=new THREE.Group(),hi=THREE.SkeletonUtils.clone(COWX.sc),w=new THREE.Group();
     hi.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});w.add(hi);w.scale.setScalar(2.35+Math.random()*0.3);w.rotation.y=Math.PI/2;g.add(w);
     const mx=new THREE.AnimationMixer(hi),c=COWX.clips[(Math.random()*COWX.clips.length)|0],a=mx.clipAction(c);a.play();mx.setTime(Math.random()*c.duration);
     g.userData={legs:[],head:new THREE.Group(),mixer:mx};return g;}

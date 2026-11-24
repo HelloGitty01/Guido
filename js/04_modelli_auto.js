@@ -245,7 +245,7 @@ function updateCarLOD(){if(!CARLOD.inst)buildCarLOD();const cx=camera.position.x
 function makeCar(k,color,shadow=true,fine=false,opt={}){
   if(CARX[k])return makeCarGLB(k,color,shadow,fine,opt);
   if(TYPES[k].truck)return makeTruck(color);
-  if(TYPES[k].bus)return makeBus();
+  if(TYPES[k].bus){try{if(HDX&&HDX.bus)return HDX.bus();}catch(e){}return makeBus();}
   const T=TYPES[k],g=new THREE.Group(),hl=T.L/2,paint=new THREE.MeshStandardMaterial({color,roughness:0.28,metalness:0.3,envMapIntensity:0.9});
   g.rotation.order='YZX';
   // carrozzeria
