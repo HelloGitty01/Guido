@@ -56,7 +56,8 @@ const RADIO=(()=>{const web=/github\.io$|^localhost$|^127\./.test(location.hostn
     const fail=()=>{if(audio!==me)return;tag(s.n+': non raggiungibile');setTimeout(()=>{if(audio===me)next();},900);};
     audio.onerror=fail;audio.play().catch(fail);}
   function next(){idx++;if(idx>=ST.length){idx=-1;stop();window.RADIO_LBL='Radio spenta';tag('Radio spenta');return;}if(!paused)play();else window.RADIO_LBL='♪ '+ST[idx].n;}
-  return {web,DEF,user,reload(){stop();idx=-1;window.RADIO_LBL='Radio spenta';build();},next,pause(b){if(b===paused)return;paused=b;if(b){if(audio)audio.pause();}else if(idx>=0){if(audio)audio.play().catch(()=>{});else if(!gen)play();}},
+  function prev(){idx--;if(idx<-1)idx=ST.length-1;if(idx===-1){stop();window.RADIO_LBL='Radio spenta';tag('Radio spenta');return;}stop();if(!paused)play();else window.RADIO_LBL='♪ '+ST[idx].n;}
+  return {prev,web,DEF,user,reload(){stop();idx=-1;window.RADIO_LBL='Radio spenta';build();},next,prev,pause(b){if(b===paused)return;paused=b;if(b){if(audio)audio.pause();}else if(idx>=0){if(audio)audio.play().catch(()=>{});else if(!gen)play();}},
     setVol(v){vol=v;if(audio)audio.volume=v*duck;if(gen)gen.vol(v);},duck(on){duck=on?0.28:1;if(audio)audio.volume=vol*duck;},el:()=>audio};
 })();
 // cambio d'auto al volo: stessa posizione, stessa velocità, la corsa continua
@@ -96,7 +97,14 @@ function waterRescue(){const W=pl.wat;if(!W)return false;let best=null;for(const
   else{// nessuna strada vicina: si torna a riva, dove l'auto è entrata in acqua, voltati verso terra
     let x=W.ex,z=W.ez;for(let k=0;k<60&&waterLv(x,z);k++){x-=Math.cos(W.eh)*3;z+=Math.sin(W.eh)*3;}x-=Math.cos(W.eh)*6;z+=Math.sin(W.eh)*6;pl.x=x;pl.z=z;pl.h=W.eh+Math.PI;}pl.wat=null;pl.vx=pl.vy=pl.r=0;pl.yb=null;pl.terrH=TH(pl.x,pl.z);
   Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.sel='D';pl.gear=1;pl.infrT=0;pl.navMsg='Recuperata e riportata in strada';pl.navMsgT=3;return true;}
-function unflip(){if(pl.wat){waterRescue();return;}if(!pl.flip)return;pl.flip=null;pl.vx=pl.vy=pl.r=0;Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.sel='D';pl.gear=1;}
+// raddrizza: l'auto torna sulla strada più vicina alla stessa quota (in galleria resta in galleria, non sale sul monte),
+// al centro della corsia di destra e allineata alla carreggiata; se non c'è strada vicina si raddrizza sul posto
+function unflip(){if(pl.wat){waterRescue();return;}if(!pl.flip)return;pl.flip=null;pl.vx=pl.vy=pl.r=0;Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.sel='D';pl.gear=1;
+  if(!NW)return;const y=pl.yb??pl.terrH;let best=null;for(const r of [12,30,60])if(!best)for(const q of NW.near(pl.x,pl.z,r)){if(q.R.priv)continue;const h=q.R.Hh[q.i];if(Math.abs(h-y)>4)continue;const sc=q.d+Math.abs(h-y)*3;if(!best||sc<best.sc)best={q,sc};}
+  if(!best)return;const q=best.q,R=q.R,i=Math.min(q.i,R.N-2);let tx=R.X[i+1]-R.X[i],tz=R.Z[i+1]-R.Z[i];const l=Math.hypot(tx,tz)||1;tx/=l;tz/=l;
+  let hh=Math.atan2(-tz,tx);if(Math.cos(hh-pl.h)<0&&!R.o){hh+=Math.PI;tx=-tx;tz=-tz;}
+  const t=Math.max(0,Math.min(1,((pl.x-R.X[i])*(R.X[i+1]-R.X[i])+(pl.z-R.Z[i])*(R.Z[i+1]-R.Z[i]))/(l*l))),cx=R.X[i]+(R.X[i+1]-R.X[i])*t,cz=R.Z[i]+(R.Z[i+1]-R.Z[i])*t,h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t;
+  const off=R.o?0:Math.max(0,R.w/4);pl.x=cx-tz*off;pl.z=cz+tx*off;pl.h=hh;NW.yh=h;pl.yb=h;pl.terrH=TH(pl.x,pl.z);pl.navMsg='Auto raddrizzata e rimessa in strada';pl.navMsgT=2.5;}
 // ---- fisica a quattro ruote: carichi dinamici con molle e ammortizzatori, gomme con curva di aderenza, differenziale, aiuti alla guida ----
 function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   if(pl.flip){stepFlip(dt);return;}

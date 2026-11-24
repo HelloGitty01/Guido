@@ -146,26 +146,35 @@ function applyView(){if(!pl.ck)return;ckRestore();pl.camInit=false;pl.ck.g.visib
 const tmpV=new THREE.Vector3(),camLook=new THREE.Vector3(),CAMS={y:0,vy:0,ax:0,ay:0};
 // abitacoli disegnati (immagini scelte da Giorgio): i vetri sono trasparenti e mostrano il mondo vero, gli specchi mostrano la vista dietro
 // schermo del navigatore negli abitacoli disegnati: centro e larghezza nell'immagine (sulla Challenger è lo schermo di bordo)
-const CKNAV={volvo:[712,328,170],utilitaria:[660,292,150],wagoneer:[700,290,160],taxi:[835,318,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
-const CKIMG={volvo:{man:true,wheel:{src:'cockpit/volvo_w.webp',c:[475,436],a:123,b:136,box:[348,296,603,572]},src:'cockpit/volvo.webp',size:[1024,572],glass:{C:[647,73,815,121],L:[143,296,240,348]},spd:[481,366],fs:9,turnL:[447,342],turnR:[515,342],beam:[481,343]},
+const CKNAV={volvo:[712,328,170],utilitaria:[660,292,150],wagoneer:[700,352,140],taxi:[831,343,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
+const CKIMG={volvo:{g:[[480,357,16,'s',180,'#ff8a2a'],[435,356,14,'r',0,'#ff8a2a']],man:true,wheel:{src:'cockpit/volvo_w.webp',c:[475,436],a:123,b:136,box:[348,296,603,572]},src:'cockpit/volvo.webp',size:[1024,572],glass:{C:[647,73,815,121],L:[143,296,240,348]},spd:[481,366],fs:9,turnL:[447,342],turnR:[515,342],beam:[481,343]},
   utilitaria:{man:true,wheel:{src:'cockpit/panda_w.webp',c:[472,381],a:120,b:111,box:[348,266,597,497]},src:'cockpit/panda.webp',size:[1024,503],glass:{C:[592,64,743,115],L:[172,272,244,304]},spd:[519,322],fs:9,turnL:[405,305],turnR:[552,305],beam:[466,305]},
-  wagoneer:{wheel:{src:'cockpit/jeep_w.webp',c:[462,420],a:135,b:135,box:[323,281,602,560]},src:'cockpit/jeep.webp',size:[1024,572],glass:{C:[626,83,796,118],L:[123,287,229,333]},spd:[490,361],fs:8,gear:[490,371],turnL:[466,331],turnR:[514,331],beam:[490,331]},
-  taxi:{wheel:{src:'cockpit/taxi_w.webp',c:[462,421],a:136,b:136,box:[322,281,603,562]},src:'cockpit/taxi.webp',size:[1024,572],glass:{C:[627,84,796,119],L:[121,276,223,330]},spd:[473,346],fs:8,gear:[476,357],turnL:[430,324],turnR:[515,324],beam:[500,324]},
-  hellcat:{wheel:{src:'cockpit/hellcat_w.webp',c:[469,421],a:129,b:134,box:[336,283,603,560]},src:'cockpit/hellcat.webp',size:[1024,572],glass:{C:[612,142,773,177],L:[76,309,172,349]},spd:[473,357],fs:7,gear:[424,357],turnL:[447,323],turnR:[499,323],beam:[473,323]},
-  zil:{wheel:{src:'cockpit/zil_w.webp',c:[524,384],a:112,b:103,box:[408,277,641,492]},man:true,src:'cockpit/zil.webp',size:[1024,503],glass:{C:[681,80,815,116],L:[30,112,190,298]},spd:[472,352],fs:7,gear:[472,361],turnL:[503,330],turnR:[538,330],beam:[520,330]},
-  daily:{wheel:{src:'cockpit/daily_w.webp',c:[507,423],a:130,b:126,box:[373,293,642,554]},man:true,src:'cockpit/daily.webp',size:[1024,572],glass:{C:[668,76,806,112],L:[103,222,193,358]},spd:[463,378],fs:7,gear:[507,372],turnL:[482,345],turnR:[532,345],beam:[507,344]}};
+  wagoneer:{g:[[488,348,17,'s',180,'#f2f2ec'],[436,351,16,'r',0,'#f2f2ec']],zoom:1.16,wheel:{src:'cockpit/jeep_w.webp',c:[462,420],a:135,b:135,box:[323,281,602,560]},src:'cockpit/jeep.webp',size:[1024,572],glass:{C:[626,83,796,118],L:[123,287,229,333]},spd:[490,361],fs:8,gear:[490,371],turnL:[466,331],turnR:[514,331],beam:[490,331]},
+  taxi:{g:[[472,346,19,'s',200,'#ff3b20'],[527,345,13,'r',0,'#ff3b20']],wheel:{src:'cockpit/taxi_w.webp',c:[456,418],a:112,b:129,box:[340,285,573,552]},src:'cockpit/taxi.webp',size:[1024,572],glass:{C:[620,114,790,153],L:[121,290,216,346]},spd:[475,353],fs:7,gear:[445,353],turnL:[455,325],turnR:[497,325],beam:[476,325]},
+  hellcat:{g:[[476,344,19,'s',240,'#ff4a1c'],[421,345,14,'r',0,'#ff4a1c']],wheel:{src:'cockpit/hellcat_w.webp',c:[469,421],a:129,b:134,box:[336,283,603,560]},src:'cockpit/hellcat.webp',size:[1024,572],glass:{C:[612,142,773,177],L:[76,309,172,349]},spd:[473,357],fs:7,gear:[424,357],turnL:[447,323],turnR:[499,323],beam:[473,323]},
+  zil:{g:[[478,343,14,'s',120,'#ff9a3a'],[558,344,14,'r',0,'#ff9a3a']],wheel:{src:'cockpit/zil_w.webp',c:[524,384],a:112,b:103,box:[408,277,641,492]},man:true,src:'cockpit/zil.webp',size:[1024,503],glass:{C:[681,80,815,116],L:[30,112,190,298]},spd:[472,352],fs:7,gear:[472,361],turnL:[503,330],turnR:[538,330],beam:[520,330]},
+  daily:{g:[[466,367,18,'s',140,'#ffa040'],[550,367,15,'r',0,'#ffa040']],wheel:{src:'cockpit/daily_w.webp',c:[507,423],a:130,b:126,box:[373,293,642,554]},man:true,src:'cockpit/daily.webp',size:[1024,572],glass:{C:[668,76,806,112],L:[103,222,193,358]},spd:[463,378],fs:7,gear:[507,372],turnL:[482,345],turnR:[532,345],beam:[507,344]}};
 const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
 function ckQuad(k,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}const m=new THREE.Mesh(g,mirrorM);CKO.hud.add(m);CKO.q[k]=m;return m;}
 ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
+// lancette vere sui quadranti dell'abitacolo (tachimetro e contagiri), sopra la foto e sotto il volante
+function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,key=Math.round(kmh*2)+'|'+Math.round(rpm/25);if(key===CKO.nv)return;CKO.nv=key;
+  const c=document.getElementById('ckNdl'),g=c.getContext('2d'),k=CKO.nk||1;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.setTransform(k,0,0,k,0,0);g.lineCap='round';
+  for(const[x,y,r,t,max,col]of C.g){const f=t==='s'?Math.min(1.04,kmh/max):Math.min(1.04,rpm/(pl.P.red*1.2)),a=(135+270*f)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=1.9;g.beginPath();g.moveTo(x-ca*r*0.22+0.5,y-sa*r*0.22+0.6);g.lineTo(x+ca*r*0.92+0.5,y+sa*r*0.92+0.6);g.stroke();
+    g.strokeStyle=col;g.lineWidth=1.3;g.beginPath();g.moveTo(x-ca*r*0.22,y-sa*r*0.22);g.lineTo(x+ca*r*0.92,y+sa*r*0.92);g.stroke();
+    g.fillStyle='#1a1a1c';g.beginPath();g.arc(x,y,Math.max(1.4,r*0.12),0,7);g.fill();}}
 function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();return;}
-  const W=innerWidth,H=innerHeight,[iw,ih]=C.size,s=Math.max(W/iw,H/ih),w=iw*s,h=ih*s,l=(W-w)/2,t=H-h;Object.assign(CKO,{s,l,t});
-  const img=document.getElementById('ckImg');img.style.width=w+'px';img.style.height=h+'px';img.style.left=l+'px';img.style.top=t+'px';
+  const W=innerWidth,H=innerHeight,[iw,ih]=C.size,s0=Math.max(W/iw,H/ih),w0=iw*s0,h0=ih*s0,l0=(W-w0)/2,t0=H-h0;
+  // zoom: l'immagine dell'abitacolo si ingrandisce ancorata in alto, il cofano scende e si vede più strada (la scena resta dov'è)
+  const s=s0*(C.zoom||1),w=iw*s,h=ih*s,l=(W-w)/2,t=t0;Object.assign(CKO,{s,l,t});
+  const img=document.getElementById('ckImg');img.style.width=w+'px';img.style.height=h+'px';img.style.left=l+'px';img.style.top=t+'px';{const c=document.getElementById('ckNdl');c.style.display=C.g?'block':'none';if(C.g){const k=Math.min(2.5,(window.devicePixelRatio||1)*s);c.width=Math.round(iw*k);c.height=Math.round(ih*k);c.style.width=w+'px';c.style.height=h+'px';c.style.left=l+'px';c.style.top=t+'px';CKO.nk=k;CKO.nv=null;}}
   const at=(id,p,fs)=>{const e=document.getElementById(id);e.style.left=(l+p[0]*s)+'px';e.style.top=(t+p[1]*s)+'px';if(fs)e.style.fontSize=(fs*s)+'px';};
   if(C.wheel){const B=C.wheel.box,wi=document.getElementById('ckWheel');wi.style.left=(l+B[0]*s)+'px';wi.style.top=(t+B[1]*s)+'px';wi.style.width=((B[2]-B[0])*s)+'px';wi.style.height=((B[3]-B[1])*s)+'px';wi.style.transformOrigin=((C.wheel.c[0]-B[0])*s)+'px '+((C.wheel.c[1]-B[1])*s)+'px';}
   {const N=CKNAV[selKey];if(N&&pl.ck){const e=pl.ck.scv;e.style.left=(l+N[0]*s)+'px';e.style.top=(t+N[1]*s)+'px';e.style.width=(N[2]*s)+'px';e.style.height=(N[2]*s/2)+'px';}}
   at('ckSpd',C.spd,C.fs);at('ckGear',C.gear||[C.spd[0],C.spd[1]+C.fs*1.05],C.fs*0.7);at('ckTL',C.turnL,7);at('ckTR',C.turnR,7);at('ckBeam',C.beam,6);
   // la telecamera inquadra come nella foto: stesso campo visivo riferito all'immagine intera, poi ritagliato come lo schermo
-  camera.aspect=w/h;camera.setViewOffset(w,h,-l,-t,W,H);camera.updateProjectionMatrix();
+  camera.aspect=w0/h0;camera.setViewOffset(w0,h0,-l0,-t0,W,H);camera.updateProjectionMatrix();
   CKO.cam.left=0;CKO.cam.right=W;CKO.cam.top=H;CKO.cam.bottom=0;CKO.cam.updateProjectionMatrix();
   ['C','L','R'].forEach(k=>{const q=CKO.q[k],g=C.glass[k];q.visible=!!g;if(!g)return;const x0=l+g[0]*s,x1=l+g[2]*s,y0=t+g[1]*s,y1=t+g[3]*s;q.position.set((x0+x1)/2,H-(y0+y1)/2,0);q.scale.set(x1-x0,y1-y0,1);});}
 function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HOME.mode)?CKIMG[selKey]:null;CKO.on=!!C;CKO.cfg=C||null;const ov=document.getElementById('ckOv');ov.style.display=C?'block':'none';
@@ -189,6 +198,7 @@ function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
   const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
   pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;
+  if(CKO.on&&CKO.cfg.g)ckNeedles();
   if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,th=pl.delta*pl.P.ratio,c=Math.cos(th),sn=Math.sin(th),k=Wh.a/Wh.b;if(Math.abs(th-(CKO.th??99))>0.002){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
   if(pl.ck.wipers.length){const on=WX==='rain';pl.wipT=(pl.wipT||0)+(on?dt:0);const th=on?(1-Math.cos(pl.wipT*Math.PI*1.25))/2*1.35:0;
     pl.ck.wipers.forEach(w=>{const dir=new THREE.Vector3(0,0,1).multiplyScalar(Math.cos(th)).add(w.u.clone().multiplyScalar(Math.sin(th)));w.bl.position.copy(w.piv).addScaledVector(dir,0.29);w.bl.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir);w.bl.visible=on||true;});}

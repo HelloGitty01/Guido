@@ -1,5 +1,9 @@
 // Guido · 13 casa ciclo — parte del codice del gioco (i file in js/ condividono lo stesso spazio globale e vengono eseguiti in ordine)
 // ================= CASA DI GUIDO: villetta in collina sul lago, grande garage, Guido a piedi e Gatto =================
+// limite di velocità della zona e livello del carburante, sempre visibili durante la guida
+const DW={l:null,f:null,on:false};function dashW(limit){const show=started&&!pl.ended&&!HOME.mode;if(show!==DW.on){DW.on=show;document.getElementById('dashW').style.display=show?'flex':'none';}if(!show)return;
+  const L=limit?Math.round(limit):null;if(L!==DW.l){DW.l=L;const e=document.getElementById('limSign');e.style.visibility=L?'visible':'hidden';e.firstChild.textContent=L||'';}
+  const fo=(CFG.fuel??1)!==0&&pl.fuel!=null,f=fo?Math.round(pl.fuel/tankOf(pl.P)*100):null;if(f!==DW.f){DW.f=f;const w=document.getElementById('fuelW');w.style.display=fo?'flex':'none';if(fo){w.querySelector('#fuelBar i').style.width=f+'%';w.classList.toggle('low',f<12);}}}
 function makeGuido(){try{if(HDX&&HDX.guido)return HDX.guido();}catch(e){}
   const M=(c,r=0.75)=>new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(),roughness:r,flatShading:true});
   const skin=M(0xe8b48c,0.7),hair=M(0x3a2618,0.85),jacket=M(0x24365a,0.7),tee=M(0xf6f4ef,0.8),jeans=M(0x3f5f8f,0.85),shoe=M(0x4a3020,0.6),eye=M(0x1a1410,0.3),white=M(0xffffff,0.4),lip=M(0xb5705a,0.7),belt=M(0x2a1c12,0.6);
@@ -260,8 +264,8 @@ function loop(now){
     screenT-=dt;if(screenT<=0&&view==='cockpit'){screenT=route?0.15:0.5;if(route)drawNavScreen(pl.ck);else drawScreen(pl.ck,st);}
     fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);if(DRV)DRV.tick(dt);drawMini(dt);
     lodT-=dt;if(lodT<=0){lodT=0.5;parked.forEach(c=>c.visible=Math.abs(c.position.x-camera.position.x)+Math.abs(c.position.z-camera.position.z)<420);}
-    document.getElementById('tGear').textContent=pl.sel==='R'?'D':'R';document.getElementById('extSpd').textContent=Math.round(kmh);document.getElementById('extGear').textContent=gearTxt+(over?' · ⚠ limite '+limit:'')+fuelTxt();
-    {const fx=document.getElementById('tFix'),need=!!((pl.flip&&pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5)||(pl.wat&&pl.wat.sunk));fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
+    dashW(limit);document.getElementById('tGear').textContent=pl.sel==='R'?'D':'R';document.getElementById('extSpd').textContent=Math.round(kmh);document.getElementById('extGear').textContent=gearTxt+(over?' · ⚠ limite '+limit:'')+fuelTxt();
+    {pl.flipT=pl.flip?(pl.flipT||0)+dt:0;const fx=document.getElementById('tFix'),need=!!((pl.flip&&((pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5)||pl.flipT>3))||(pl.wat&&pl.wat.sunk));fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
     navBox.style.display=(pl.navMsgT>0)?'block':'none';if(pl.navMsgT>0)navBox.textContent=pl.navMsg+(route&&route.next&&view!=='cockpit'?'':'');
     if(route&&view!=='cockpit'&&route.next){navBox.style.display='block';navBox.textContent=Math.round(Math.max(0,route.next.s-route.ps))+' m · '+manText(route.next);}
     if(MOB)hud.textContent=pl.infrT>0?'⚠ '+pl.infrMsg:'';else hud.textContent=(pl.infrT>0?'⚠ '+pl.infrMsg+'  ':'')+`${pl.P.label} · ${pl.km.toFixed(2)} km · urti: ${pl.hits} · rossi: ${pl.infr.rosso} · contromano: ${pl.infr.contromano}`+licTxt()+fuelTxt()+(isTouch?'':' · C: vista · Tab: mappa · O: foto · J: clip · Esc: menu');

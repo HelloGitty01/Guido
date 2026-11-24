@@ -3,11 +3,11 @@
 const keys={};
 // ================= COMANDI RIMAPPABILI (tastiera e gamepad) =================
 const CTRL_DEF={keys:{thr:['KeyA','ArrowUp'],brk:['KeyZ','ArrowDown'],hold:['KeyS',''],left:['Comma','ArrowLeft'],right:['Period','ArrowRight'],hb:['Space',''],horn:['KeyH',''],
-    gD:['KeyD',''],gR:['KeyR',''],gN:['KeyN',''],lights:['KeyL',''],view:['KeyC',''],blL:['KeyQ',''],blR:['KeyE',''],haz:['KeyX',''],pause:['KeyP',''],end:['KeyF',''],unflip:['Enter',''],car:['KeyV',''],radio:['KeyM',''],flash:['KeyG',''],volUp:['Equal','NumpadAdd'],volDn:['Minus','NumpadSubtract'],map:['Tab','KeyT'],photo:['KeyO',''],rec:['KeyJ','']},
+    gD:['KeyD',''],gR:['KeyR',''],lights:['KeyL',''],view:['KeyC',''],blL:['KeyQ',''],blR:['KeyE',''],haz:['KeyX',''],pause:['KeyP',''],end:['KeyF',''],unflip:['Enter',''],car:['KeyV',''],radio:['KeyM',''],radioP:['KeyN',''],navMute:['KeyU',''],flash:['KeyG',''],volUp:['Equal','NumpadAdd'],volDn:['Minus','NumpadSubtract'],map:['Tab','KeyT'],photo:['KeyO',''],rec:['KeyJ','']},
   pad:{steer:{a:0,s:1},pedal:{mode:'one',a:'auto',s:-1},thrA:{a:-1,rest:0,full:1},brkA:{a:-1,rest:0,full:1},
-    btn:{gear:7,horn:6,view:0,lights:3,haz:2,blL:14,blR:15,hb:1,unflip:1,car:-1,radio:-1,flash:-1,volUp:-1,volDn:-1,map:-1,photo:-1,rec:-1}}};
-const CTRL_LBL={thr:'Acceleratore',brk:'Freno',hold:'Mantieni velocità (tenere premuto)',left:'Sterzo a sinistra',right:'Sterzo a destra',hb:'Freno a mano',horn:'Clacson',gD:'Marcia D',gR:'Retromarcia R',gN:'Folle N',
-  lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D→N→R',car:'Cambia auto',radio:'Autoradio (stazione successiva)',flash:'Lampeggio abbaglianti',volUp:'Volume radio +',volDn:'Volume radio −',map:'Mappa grande',photo:'Modalità foto',rec:'Registra clip (avvia/ferma)'};
+    btn:{radioP:-1,navMute:-1,gear:7,horn:6,view:0,lights:3,haz:2,blL:14,blR:15,hb:1,unflip:1,car:-1,radio:-1,flash:-1,volUp:-1,volDn:-1,map:-1,photo:-1,rec:-1}}};
+const CTRL_LBL={thr:'Acceleratore',brk:'Freno',hold:'Mantieni velocità (tenere premuto)',left:'Sterzo a sinistra',right:'Sterzo a destra',hb:'Freno a mano',horn:'Clacson',gD:'Marcia D',gR:'Retromarcia R',
+  lights:'Fari',view:'Cambia vista',blL:'Freccia sinistra',blR:'Freccia destra',haz:'Quattro frecce',pause:'Pausa',end:'Fine corsa',unflip:'Raddrizza auto',gear:'Cambio D↔R',car:'Cambia auto',radio:'Autoradio (stazione successiva)',radioP:'Autoradio (stazione precedente)',navMute:'Voce del navigatore sì/no',flash:'Lampeggio abbaglianti',volUp:'Volume radio +',volDn:'Volume radio −',map:'Mappa grande',photo:'Modalità foto',rec:'Registra clip (avvia/ferma)'};
 let CTRL=JSON.parse(JSON.stringify(CTRL_DEF));
 try{const sv=JSON.parse(localStorage.getItem('sim_ctrl')||'null');if(sv){Object.assign(CTRL.keys,sv.keys||{});if(sv.pad){Object.assign(CTRL.pad,sv.pad);CTRL.pad.btn=Object.assign({},CTRL_DEF.pad.btn,sv.pad.btn||{});}}}catch(e){}
 function saveCtrl(){try{localStorage.setItem('sim_ctrl',JSON.stringify(CTRL));}catch(e){}}
@@ -66,11 +66,11 @@ addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPU
   if(started&&!paused){
     if(A==='view')toggleView();
     if(A==='horn')setHorn(true);
-    if(A==='gR')selectGear('R');if(A==='gD')selectGear('D');if(A==='gN')selectGear('N');
+    if(A==='gR')selectGear('R');if(A==='gD')selectGear('D');
     if(A==='lights')toggleLights();
-    if(A==='unflip'){if(pl.wat)unflip();else if(pl.flip&&pl.flip.done)unflip();else fuelRescue();}
+    if(A==='unflip'){if(pl.wat)unflip();else if(pl.flip)unflip();else fuelRescue();}
     if(A==='car')cycleCar(1);
-    if(A==='radio')RADIO.next();
+    if(A==='radio')RADIO.next();if(A==='radioP')RADIO.prev();if(A==='navMute')navMute();
     if(A==='volDn')radioVol((CFG.vol??0.6)-0.1);if(A==='volUp')radioVol((CFG.vol??0.6)+0.1);
     if(A==='end')endRun('fine');
     if(A==='blL')manualBlink(-1);if(A==='blR')manualBlink(1);if(A==='haz')pl.hazard=!pl.hazard;
@@ -168,10 +168,10 @@ function readInput(dt){
   for(const gp of gps){if(!gp||ctrlWait)continue;const CP=CTRL.pad,BT=CP.btn,ax=(gp.axes[CP.steer.a]||0)*CP.steer.s;
     const B=i=>i>=0&&gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>0.5),prev=pl.gpPrev||{};if(B(BT.hb))pl.hb=true;if(B(BT.flash))pl.flash=true;const now={};Object.keys(BT).forEach(k=>now[k]=B(BT[k]));
     const ed=k=>now[k]&&!prev[k];
-    if(ed('gear')){const seq=['D','N','R','N'];pl.gpGi=((pl.gpGi||0)+1)%4;selectGear(seq[pl.gpGi]);if(pl.sel!==seq[pl.gpGi])pl.gpGi=(pl.gpGi+3)%4;}
+    if(ed('gear')){selectGear(pl.sel==='R'?'D':'R');}
     if(now.horn!==!!prev.horn)setHorn(now.horn);
     if(ed('view'))toggleView();if(ed('lights'))toggleLights();if(ed('haz'))pl.hazard=!pl.hazard;
-    if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&(pl.wat||(pl.flip&&pl.flip.done)))unflip();if(ed('car'))cycleCar(1);if(ed('radio'))RADIO.next();if(ed('volUp'))radioVol((CFG.vol??0.6)+0.1);if(ed('volDn'))radioVol((CFG.vol??0.6)-0.1);
+    if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&(pl.wat||pl.flip))unflip();if(ed('car'))cycleCar(1);if(ed('radio'))RADIO.next();if(ed('radioP'))RADIO.prev();if(ed('navMute'))navMute();if(ed('volUp'))radioVol((CFG.vol??0.6)+0.1);if(ed('volDn'))radioVol((CFG.vol??0.6)-0.1);
     pl.gpPrev=now;
     let gT=0,gB=0;
     if(CP.pedal.mode==='two'){const nv=(A)=>{if(A.a<0)return 0;const r=gp.axes[A.a]||0,d=(A.full-A.rest)||1;return Math.max(0,Math.min(1,(r-A.rest)/d));};gT=nv(CP.thrA);gB=nv(CP.brkA);}

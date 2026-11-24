@@ -60,7 +60,7 @@ const VOCE=(()=>{const MAN={},LD={};let cur=[],seq=0;const buf=new Map();
       const last=cur[cur.length-1];if(last)last.onended=()=>{if(my===seq){cur=[];if(o.duck)RADIO.duck(false);}};}).catch(()=>{if(my===seq)sys(t,o);});}
   const pre=t=>{const fs=seg(t,'',dirOf());if(fs&&AC)fs.forEach(get);};
   return{speak,stop,pre,load:()=>load(dirOf()),has:t=>!!seg(t,'',dirOf())};})();
-function say(t){VOCE.speak(t,{cancel:true,duck:true});pl.navMsg=t;pl.navMsgT=4;}
+function say(t){if(!CFG.navMute)VOCE.speak(t,{cancel:true,duck:true});pl.navMsg=t;pl.navMsgT=4;}
 let navT=0,offRouteT=0;
 function updateNav(dt){if(!route)return;navT-=dt;if(navT>0)return;navT=0.2;
   const q=route.P.proj(pl.x,pl.z);route.ps=q.s;route.left=route.P.len-q.s;
@@ -83,6 +83,9 @@ function drawNavScreen(ck){const g=ck.scv.getContext('2d'),W=512,H=256;g.fillSty
     g.fillStyle='#fff';g.font='bold 34px system-ui';g.textAlign='center';g.fillText(d>950?(d/1000).toFixed(1)+' km':Math.round(d/10)*10+' m',420,150);g.font='17px system-ui';wrapText(g,manText(nm),420,178,170);}
   else{g.font='bold 22px system-ui';g.textAlign='center';g.fillText('Destinazione',420,80);g.font='bold 34px system-ui';g.fillText(Math.round(route.left)+' m',420,130);}
   g.font='16px system-ui';g.fillStyle='#9fc2a8';g.textAlign='center';g.fillText('Arrivo: '+(route.left/1000).toFixed(1)+' km',420,236);
+  // stazione radio anche col navigatore attivo
+  g.fillStyle='rgba(8,12,10,.78)';g.fillRect(0,222,330,34);g.fillStyle='#8fb6e0';g.font='19px system-ui';g.textAlign='left';{let t=window.RADIO_LBL||'Radio spenta';while(t.length>4&&g.measureText(t).width>300)t=t.slice(0,-2)+'…';g.fillText(t,12,246);}
+  if(CFG.navMute){g.fillStyle='#ffb020';g.textAlign='right';g.fillText('🔇',322,246);}
   ck.stex.needsUpdate=true;}
 function wrapText(g,t,x,y,w){const ws=t.split(' ');let line='',yy=y;ws.forEach(wd=>{const tl=line?line+' '+wd:wd;if(g.measureText(tl).width>w){g.fillText(line,x,yy);line=wd;yy+=20;}else line=tl;});g.fillText(line,x,yy);}
 // colonna luminosa sulla destinazione
@@ -156,7 +159,10 @@ function showMenu(){paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();m
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;RADIO.pause(paused);document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
 document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};
-document.getElementById('radioBtn').onclick=e=>{RADIO.next();e.currentTarget.blur();};
+document.getElementById('radioBtn').onclick=e=>{const d=e.target&&e.target.dataset&&e.target.dataset.d;if(d==='-1')RADIO.prev();else RADIO.next();e.currentTarget.blur();};
+document.getElementById('navMuteBtn').onclick=e=>{navMute();e.currentTarget.blur();};
+// voce del navigatore spenta: le indicazioni restano a schermo
+function navMute(){CFG.navMute=!CFG.navMute;savePrefs();if(CFG.navMute)VOCE.stop();const b=document.getElementById('navMuteBtn');if(b)b.textContent=CFG.navMute?'🔇 Voce':'🔊 Voce';pl.navMsg=CFG.navMute?'Voce del navigatore spenta':'Voce del navigatore accesa';pl.navMsgT=2;}
 document.getElementById('jobBtn').onclick=e=>{e.currentTarget.blur();const ov=document.getElementById('jobOv');if(ov.style.display==='flex')JOB.close();else JOB.open();};
 function radioVol(v){CFG.vol=Math.max(0,Math.min(1,v));RADIO.setVol(CFG.vol);try{localStorage.setItem('sim_cfg',JSON.stringify(CFG));}catch(e){}if(window.SIGLA)SIGLA.vol();const h=document.getElementById('radioVolHud'),c=document.getElementById('cfgVol');if(h)h.value=CFG.vol;if(c)c.value=CFG.vol;try{savePrefs();}catch(e){}pl.navMsg='Volume radio '+Math.round(CFG.vol*100)+'%';pl.navMsgT=1.5;}
 
@@ -211,7 +217,7 @@ if(WORLD_NW){document.getElementById('lblStart').style.display='';const ss=docum
 function goWorld(n){try{localStorage.setItem('sim_seed',n);}catch(e){}location.hash='#w'+n;location.reload();}
 document.getElementById('newWorld').onclick=()=>goWorld(1+Math.floor(_rnd()*99999));
 document.getElementById('loadWorld').onclick=()=>{const n=parseInt(document.getElementById('seedIn').value,10);if(n>0)goWorld(n);};
-function startRun(){if(window.SIGLA)SIGLA.stop();endBtn.style.display='block';document.getElementById('sideBtns').style.display='flex';document.getElementById('pauseBtn').style.display='block';document.getElementById('carBtn').style.display='block';document.getElementById('radioBtn').style.display='block';savePrefs();document.getElementById('pauseOv').style.display='none';
+function startRun(){if(window.SIGLA)SIGLA.stop();endBtn.style.display='block';document.getElementById('sideBtns').style.display='flex';document.getElementById('pauseBtn').style.display='block';document.getElementById('carBtn').style.display='block';document.getElementById('radioBtn').style.display='block';{const nb=document.getElementById('navMuteBtn');nb.style.display='block';nb.textContent=CFG.navMute?'🔇 Voce':'🔊 Voce';};savePrefs();document.getElementById('pauseOv').style.display='none';
   MODE=document.getElementById('selMode').value;TIME=document.getElementById('selTime').value;WX=document.getElementById('selWx').value;
   document.getElementById('jobBtn').style.display=MODE==='career'?'block':'none';CAR.on=false;JOB.drop(true);if(POL.c)POL.end(false);POL.trail=[];EVT.list.forEach(e=>EVT.remove(e));EVT.list=[];if(MODE==='career'){CAR.load();CAR.on=true;if(!CAR.s.own[selKey])selKey='utilitaria';}
   peds.forEach(p=>{if(p.down){p.down=false;p.m.rotation.z=0;}});
@@ -230,7 +236,7 @@ function startDrive(){runStart=simT;CINE.startIntro();
   startGhost();if(ghost)setTimeout(()=>{pl.navMsg='Auto fantasma: il tuo record';pl.navMsgT=3;},2500);
 }
 document.getElementById('go').onclick=()=>{if(MOB&&CFG.touchCtl==='tilt'){tiltAsk();TL.z=null;}startRun();
-  if(isTouch){[['pauseBtn',12],['carBtn',104],['radioBtn',242]].forEach(([id,x])=>{const b=document.getElementById(id);b.style.left=x+'px';b.style.top='58px';});document.getElementById('tbtn').style.display='flex';const h=document.getElementById('hint');h.style.display='block';setTimeout(()=>h.style.display='none',5000);}};
+  if(isTouch){[['pauseBtn',12],['carBtn',104],['radioBtn',242],['navMuteBtn',392]].forEach(([id,x])=>{const b=document.getElementById(id);b.style.left=x+'px';b.style.top='58px';});document.getElementById('tbtn').style.display='flex';const h=document.getElementById('hint');h.style.display='block';setTimeout(()=>h.style.display='none',5000);}};
 
 let last=performance.now(),clusterT=0,physAcc=0,frameN=0,screenT=0;const PH=1/240;
 // polvere su sterrato ed erba

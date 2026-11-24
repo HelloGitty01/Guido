@@ -13,7 +13,7 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#eee}
   canvas{display:block;touch-action:none}
   #tbtn{position:fixed;top:10px;right:10px;display:none;gap:8px;z-index:3}
-  @media (pointer:coarse){#pauseBtn{left:12px!important;top:58px!important}#carBtn{left:104px!important;top:58px!important}#radioBtn{left:242px!important;top:58px!important}}
+  @media (pointer:coarse){#pauseBtn{left:12px!important;top:58px!important}#carBtn{left:104px!important;top:58px!important}#radioBtn{left:242px!important;top:58px!important}#navMuteBtn{left:392px!important;top:58px!important}}
   #tbtn button{background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:8px 13px;font-size:14px}
   #stick{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border:2px solid rgba(255,255,255,.35);border-radius:50%;display:none;pointer-events:none;z-index:2}
   #knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.45)}
@@ -47,8 +47,14 @@
   #mapTitle{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.55);color:#fff;padding:6px 12px;border-radius:10px;font-weight:700}
   #photoUI{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:none;gap:8px;z-index:20;align-items:center;background:rgba(0,0,0,.55);padding:8px 12px;border-radius:14px;color:#fff;font-size:12px}#photoUI button{background:#fff;color:#222;border:0;border-radius:10px;padding:8px 14px;font-weight:700;font-size:15px}
   #photoFlash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s;z-index:19}
-  body.photo #hud,body.photo #ext,body.photo #mini,body.photo #navBox,body.photo #chBox,body.photo #sideBtns,body.photo #endBtn,body.photo #pauseBtn,body.photo #carBtn,body.photo #radioBtn,body.photo #tbtn,body.photo #clockHud,body.photo #pauseOv,body.photo #homeUI{display:none!important}
+  body.photo #hud,body.photo #ext,body.photo #mini,body.photo #navBox,body.photo #chBox,body.photo #sideBtns,body.photo #endBtn,body.photo #pauseBtn,body.photo #carBtn,body.photo #radioBtn,body.photo #navMuteBtn,body.photo #tbtn,body.photo #clockHud,body.photo #pauseOv,body.photo #homeUI{display:none!important}
   #lbView ol{margin:4px 0 0 18px;padding:0;font-size:13px}#lbView{font-size:13px;display:block}
+  #dashW{position:fixed;right:14px;bottom:58px;display:none;align-items:center;gap:10px;pointer-events:none;z-index:2}
+  #limSign{width:46px;height:46px;border-radius:50%;background:#fff;border:6px solid #c8161d;box-sizing:border-box;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.5)}#limSign b{font:800 17px Nunito,system-ui,sans-serif;color:#111;letter-spacing:-.5px}
+  #fuelW{display:flex;align-items:center;gap:5px;background:rgba(12,14,18,.62);padding:6px 9px;border-radius:8px;font:600 11px system-ui;color:#c9ccd1}#fuelW em{font-style:normal;opacity:.7}#fuelW em:first-of-type{order:1}#fuelW em:last-of-type{order:3}#fuelBar{order:2;width:70px;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}#fuelBar i{display:block;height:100%;width:60%;background:linear-gradient(90deg,#d8a32a,#e8d06a)}#fuelW span{order:0;font-size:14px}
+  #fuelW.low #fuelBar i{background:#e0402e}#fuelW.low{animation:fuelBlink 1s steps(2) infinite}@keyframes fuelBlink{50%{color:#ff6a50}}
+  body.mob #dashW{bottom:auto;top:96px;right:8px;transform:scale(.85);transform-origin:top right}
+  body.photo #dashW,body.cine #dashW{display:none!important}
   #ext{position:fixed;right:12px;bottom:12px;background:rgba(0,0,0,.5);padding:8px 12px;border-radius:10px;font-variant-numeric:tabular-nums;display:none;pointer-events:none}
   #ext b{font-size:26px}
 </style>
@@ -138,7 +144,7 @@
   #mGear button{width:44px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.35);color:#fff;font:800 17px Nunito,sans-serif;padding:0}
   #mGear button.on{background:#c8202a;border-color:#fff}
   #mHorn{position:absolute;right:6vw;bottom:calc(7vh + 72px);width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.35);font-size:22px;padding:0}
-  body.mob #endBtn,body.mob #pauseBtn,body.mob #carBtn,body.mob #radioBtn,body.mob #jobBtn,body.mob #sideBtns,body.mob #tbtn,body.mob #hint{display:none!important}
+  body.mob #endBtn,body.mob #pauseBtn,body.mob #carBtn,body.mob #radioBtn,body.mob #navMuteBtn,body.mob #jobBtn,body.mob #sideBtns,body.mob #tbtn,body.mob #hint{display:none!important}
   body.mob #ext{right:auto;left:50%;transform:translateX(-50%);bottom:8px;padding:4px 14px;font-size:15px}
   body.mob #steerInd{bottom:44px}body.mob #steerInd svg{width:34px;height:34px}
   body.mob #hud{left:50%;bottom:auto;top:54px;transform:translateX(-50%);font-size:12px;max-width:60vw;text-align:center}
@@ -148,7 +154,7 @@
   body.mob #navBox{top:54px!important;font-size:14px!important;padding:5px 12px!important}
   body.mob #cashHud{top:auto;bottom:8px;left:12px;transform:none;pointer-events:none;font-size:13px}body.mob #cashTag{top:96px}
   body.mob.photo #mobTop,body.mob.photo #mobL,body.mob.photo #mobR,body.mob.photo #mobW,body.mob.photo #mobP,body.mob.photo #mobT{display:none!important}
-  #ckOv{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;overflow:hidden}#ckWheel{position:absolute;user-select:none;will-change:transform}#ckOv canvas.ckNav{position:absolute;border:2px solid #0b0c0d;border-radius:5px;box-shadow:0 2px 8px rgba(0,0,0,.55);transform:translate(-50%,-50%)}#ckImg{position:absolute;left:0;top:0;user-select:none}
+  #ckOv{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;overflow:hidden}#ckWheel{position:absolute;user-select:none;will-change:transform}#ckNdl{position:absolute;left:0;top:0}#ckOv canvas.ckNav{position:absolute;border:2px solid #0b0c0d;border-radius:5px;box-shadow:0 2px 8px rgba(0,0,0,.55);transform:translate(-50%,-50%)}#ckImg{position:absolute;left:0;top:0;user-select:none}
   #ckOv b,#ckOv i{position:absolute;transform:translate(-50%,-50%);font-style:normal;line-height:1}
   #ckSpd{color:#ffb24a;font-family:'DS-Digital','Share Tech Mono',ui-monospace,monospace;font-weight:700;text-shadow:0 0 4px rgba(255,150,40,.7);opacity:.92;letter-spacing:.02em}
   #ckGear{color:#ffb24a;font-family:'DS-Digital','Share Tech Mono',ui-monospace,monospace;font-weight:700;text-shadow:0 0 4px rgba(255,150,40,.7);opacity:.85}
@@ -217,7 +223,8 @@
   #sum button,#credClose,#ctrlClose{background:var(--acc)!important;border-radius:6px!important;font-weight:600!important;letter-spacing:.08em}
   #jobOv .job{border-color:var(--hair)!important}#jobOv .job span{color:var(--mut)}
   /* in guida: comandi in vetro scuro, niente bordeaux */
-  #endBtn,#pauseBtn,#carBtn,#radioBtn,#jobBtn,#sideBtns button{background:rgba(12,14,18,.55)!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:6px!important;font-weight:500!important;font-size:12px!important;letter-spacing:.04em;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  #radioBtn .rb{padding:0 5px;opacity:.85}#radioBtn .rb:hover{opacity:1}
+  #endBtn,#pauseBtn,#carBtn,#radioBtn,#navMuteBtn,#jobBtn,#sideBtns button{background:rgba(12,14,18,.55)!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:6px!important;font-weight:500!important;font-size:12px!important;letter-spacing:.04em;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
   #navBox{background:rgba(12,14,18,.72)!important;font-weight:600!important;border-radius:8px!important;letter-spacing:.02em}
   #hud{background:rgba(12,14,18,.5)!important;border-radius:6px!important;font-size:12px}#ext{background:rgba(12,14,18,.6)!important;border-radius:8px!important}
   #ext b{font-weight:300!important;font-size:30px!important;letter-spacing:-.01em}
@@ -235,7 +242,7 @@
   #cineTitle .c1{font-weight:300;font-size:clamp(26px,4.4vw,54px);letter-spacing:.06em}
   #cineTitle .c2{font-weight:600;font-size:clamp(11px,1.2vw,14px);letter-spacing:.32em;text-transform:uppercase;margin-top:10px;color:rgba(255,255,255,.85)}
   #cineTitle .c3{font-weight:400;font-size:clamp(11px,1.1vw,13px);letter-spacing:.14em;text-transform:uppercase;margin-top:6px;color:rgba(255,255,255,.6)}
-  body.cine #hud,body.cine #ext,body.cine #mini,body.cine #navBox,body.cine #sideBtns,body.cine #endBtn,body.cine #pauseBtn,body.cine #carBtn,body.cine #radioBtn,body.cine #jobBtn,body.cine #steerInd,body.cine #mobTop,body.cine #mobW,body.cine #mobP,body.cine #mobL,body.cine #mobR,body.cine #mobT,body.cine #clockHud,body.cine #radioTag{opacity:0!important;pointer-events:none!important;transition:opacity .4s}
+  body.cine #hud,body.cine #ext,body.cine #mini,body.cine #navBox,body.cine #sideBtns,body.cine #endBtn,body.cine #pauseBtn,body.cine #carBtn,body.cine #radioBtn,body.cine #navMuteBtn,body.cine #jobBtn,body.cine #steerInd,body.cine #mobTop,body.cine #mobW,body.cine #mobP,body.cine #mobL,body.cine #mobR,body.cine #mobT,body.cine #clockHud,body.cine #radioTag{opacity:0!important;pointer-events:none!important;transition:opacity .4s}
 </style>
 </head>
 <body>
@@ -316,9 +323,9 @@
 
 <button id="pauseBtn" style="position:fixed;left:110px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⏸ Pausa</button>
 <button id="carBtn" title="Cambia auto (tasto V)" style="position:fixed;left:208px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">⇄ Cambia auto</button>
-<div id="spdBlur"></div><div id="vign"></div><div id="cineFade"></div><div id="lbT"></div><div id="lbB"></div><div id="cineTitle"></div><div id="holdInd"></div><div id="gripInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="19" fill="none" stroke="#ffb020" stroke-width="2.2"/></svg></div><div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><b id="ckSpd">0</b><b id="ckGear">N</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i><img id="ckWheel" alt=""></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
+<div id="spdBlur"></div><div id="vign"></div><div id="cineFade"></div><div id="lbT"></div><div id="lbB"></div><div id="cineTitle"></div><div id="holdInd"></div><div id="gripInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="19" fill="none" stroke="#ffb020" stroke-width="2.2"/></svg></div><div id="steerInd"><svg viewBox="-20 -20 40 40" width="44" height="44"><circle r="16" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-15 2 L-5 2 L0 6 L5 2 L15 2 M0 6 L0 15" stroke="#fff" stroke-width="3" fill="none"/><circle cy="-16" r="2.6" fill="#ff5a3c"/></svg><b>0°</b></div><div id="ckOv"><img id="ckImg" alt=""><canvas id="ckNdl"></canvas><b id="ckSpd">0</b><b id="ckGear">N</b><i id="ckTL">◀</i><i id="ckTR">▶</i><i id="ckBeam">●</i><img id="ckWheel" alt=""></div><div id="cashHud"></div><div id="cashTag"></div><button id="jobBtn" title="Lavori (tasto K)" style="position:fixed;left:420px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">💼 Lavori</button>
 <div id="jobOv"><div></div></div>
-<button id="radioBtn" title="Autoradio (tasto M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">♪ Radio</button><div id="radioTag"></div>
+<button id="radioBtn" title="Autoradio: ◀ stazione precedente (N) · ▶ successiva (M)" style="position:fixed;left:330px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none"><span data-d="-1" class="rb">◀</span> ♪ Radio <span data-d="1" class="rb">▶</span></button><button id="navMuteBtn" title="Voce del navigatore (tasto U)" style="position:fixed;left:482px;top:12px;z-index:3;color:#fff;border-radius:16px;padding:6px 12px;display:none">🔊 Voce</button><div id="radioTag"></div>
 <div id="navBox" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(10,30,60,.82);color:#fff;padding:8px 16px;border-radius:12px;font-size:17px;display:none;pointer-events:none;z-index:3"></div>
 <button id="endBtn" style="position:fixed;left:12px;top:12px;z-index:3;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 12px;display:none">Fine corsa</button>
 <div id="sum"><div class="box"><h2 id="sumT">Riepilogo</h2><table id="sumTab"></table><button id="sumAgain">Rifai</button><button id="sumMenu">Menu</button></div></div>
@@ -327,11 +334,11 @@
 <div id="mobTop"><button data-p="endBtn" title="Fine corsa"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button><button data-p="pauseBtn" title="Pausa"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></button><button data-p="tView" title="Vista"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg></button><button data-p="carBtn" title="Cambia auto"><svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg></button><button data-p="radioBtn" title="Radio"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button><button data-p="jobBtn" title="Lavori" id="mJob"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12h18"/></svg></button><button data-p="mapBtn" title="Mappa"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg></button><button data-p="photoBtn" title="Foto"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button></div>
 <div id="mobW"><svg viewBox="-100 -100 200 200"><g id="mwG"><circle r="86" fill="none" stroke="#2a2a2e" stroke-width="20"/><circle r="86" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/><path d="M-80 8 L-26 8 L0 30 L26 8 L80 8 M0 30 L0 80" stroke="#2a2a2e" stroke-width="16" fill="none" stroke-linecap="round"/><rect x="-6" y="-100" width="12" height="20" rx="3" fill="#ff5a3c"/></g><circle id="mwHorn" r="27" fill="#3a3a40" stroke="rgba(255,255,255,.4)" stroke-width="2"/><text y="9" text-anchor="middle" font-size="24">📯</text></svg></div>
 <div id="mobT"><button id="mtHorn">📯</button><button id="mtZero">⟲ centra</button></div>
-<div id="mobP"><div id="mpGear"><button data-g="D">D</button><button data-g="N">N</button><button data-g="R">R</button></div><div id="mpBrk" class="ped"><span>FRENO</span><b></b></div><div id="mpGas" class="ped"><span>GAS</span><b></b></div></div>
-<div id="mobL"><div class="trk"><div class="kn"></div><i>▲</i><i>▼</i></div><div id="mGear"><button data-g="D">D</button><button data-g="N">N</button><button data-g="R">R</button></div></div>
+<div id="mobP"><div id="mpGear"><button data-g="D">D</button><button data-g="R">R</button></div><div id="mpBrk" class="ped"><span>FRENO</span><b></b></div><div id="mpGas" class="ped"><span>GAS</span><b></b></div></div>
+<div id="mobL"><div class="trk"><div class="kn"></div><i>▲</i><i>▼</i></div><div id="mGear"><button data-g="D">D</button><button data-g="R">R</button></div></div>
 <div id="mobR"><button id="mHorn">📯</button><div class="trk"><div class="kn"></div><i>◀</i><i>▶</i></div></div>
 <div id="hint">Tieni il dito sullo schermo e trascina:<br>↑ su = acceleratore · ↓ giù = freno<br>← → = sterzo<br>Meglio con il telefono in orizzontale</div>
-<div id="ext"><b id="extSpd">0</b> km/h · <span id="extGear">D1</span></div>
+<div id="ext"><b id="extSpd">0</b> km/h · <span id="extGear">D1</span></div><div id="dashW"><div id="limSign"><b>50</b></div><div id="fuelW"><span>⛽</span><div id="fuelBar"><i></i></div><em>E</em><em>F</em></div></div>
 <div id="sideBtns"><button id="mapBtn" title="Mappa (Tab)"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Mappa</button><button id="photoBtn" title="Modalità foto (O)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Foto</button><button id="recBtn" title="Registra clip (J)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg>Clip</button></div>
 <div id="fadeOv"></div><div id="homeUI"><div id="homeCard"></div><button id="homeSkip">Salta: parti con l'auto del menu</button></div><div id="chBox"></div><div id="clockHud"></div><div id="recInd">● REC</div><div id="photoFlash"></div>
 <div id="mapOv"><canvas id="mapCv"></canvas><div id="mapTitle">Repubblica di Ornavia</div><div id="mapBar"><button id="mapMe">⌖ Io</button><button id="mapIn">＋</button><button id="mapOut">－</button><button id="mapClose">✕ Chiudi</button></div></div>
