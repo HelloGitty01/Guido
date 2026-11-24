@@ -179,7 +179,7 @@ const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null
     if(car){const L=C.userData.L||4.5,hf=Math.atan(Math.tan(15*Math.PI/180)*C.aspect),d=L*0.44/Math.tan(hf)+L*0.15;C.position.set(Math.cos(ang)*d,(C.userData.h||0.7)+d*0.22,Math.sin(ang)*d);C.lookAt(0,C.userData.h||0.7,0);}R.render(S,C);raf=requestAnimationFrame(loop);}
   return{show};})();
 document.getElementById('vehList').addEventListener('click',()=>setTimeout(()=>VP.show(selKey),0));
-function showMenu(){setTimeout(()=>{menuTab(MTAB.cur);RESUME.btn();},0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
+function showMenu(){setTimeout(()=>{menuTab(MTAB.cur);RESUME.btn();},0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':"Let's go !";if(AC)AC.suspend();setHorn(false);}
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;RADIO.pause(paused);document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
 document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};

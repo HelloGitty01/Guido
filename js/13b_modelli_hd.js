@@ -43,13 +43,21 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
       const mx=new THREE.AnimationMixer(inner),a=c0?mx.clipAction(c0):null;if(a)a.play();w.userData={hd:true,mx,a,ph:0};return w;};}catch(e){console.warn('gatto HD',e);}
 
   // ---------- Guido (modello con scheletro): cammina, saluta, si siede al volante ----------
-  if(MODELS.guido)try{const G=MODELS.guido,M=measure(G.scene,{fix:0.54}),c0=G.animations[0],Q=new THREE.Quaternion(),Qa=new THREE.Quaternion(),Qp=new THREE.Quaternion(),Qr=new THREE.Quaternion(),AX=new THREE.Vector3(1,0,0),AZ=new THREE.Vector3(0,0,1),AY=new THREE.Vector3(0,1,0);
-    X.guido=()=>{const{g,inner}=place(G.scene,M,true),B={};inner.traverse(o=>{if(o.isBone)B[o.name.replace(/_\d+$/,'')]=o;});const mx=new THREE.AnimationMixer(inner);if(c0){const a=mx.clipAction(c0);a.play();}
-      g.userData={hd:true,mx,B,ph:0,root:inner};return g;};
+  if(MODELS.guido)try{const G=MODELS.guido,M=measure(G.scene,{hgt:1.76}),c0=G.animations[0],WK=!!(c0&&/mixamo|walk/i.test(c0.name)),Q=new THREE.Quaternion(),Qa=new THREE.Quaternion(),Qp=new THREE.Quaternion(),Qr=new THREE.Quaternion(),AX=new THREE.Vector3(1,0,0),AZ=new THREE.Vector3(0,0,1),AY=new THREE.Vector3(0,1,0);
+    X.guido=()=>{const{g,inner}=place(G.scene,M,true),B={};inner.traverse(o=>{if(o.isBone)B[o.name.replace(/_\d+$/,'').replace(/^mixamorig:?/,'')]=o;});const mx=new THREE.AnimationMixer(inner);let act=null;if(c0){act=mx.clipAction(c0);act.play();}
+      // il modello nuovo ha una camminata vera (mixamo): si usa quella, e da fermo si blocca sul fotogramma con i piedi più vicini
+      let n0=0;if(WK&&act&&B.LeftFoot&&B.RightFoot){let best=1e9;const a=new THREE.Vector3(),b=new THREE.Vector3();for(let t=0;t<c0.duration;t+=c0.duration/40){act.time=t;mx.update(0);inner.updateMatrixWorld(true);B.LeftFoot.getWorldPosition(a);B.RightFoot.getWorldPosition(b);const d=Math.hypot(a.x-b.x,a.z-b.z);if(d<best){best=d;n0=t;}}act.time=n0;mx.update(0);}
+      g.userData={hd:true,mx,B,ph:0,root:inner,act,wk:WK&&!!act,n0};return g;};
     // rotazione "nel riferimento del personaggio" applicata a un osso: q_locale = P^-1 · D · P · q_locale
     const rotC=(u,b,D)=>{if(!b)return;b.parent.getWorldQuaternion(Qp);Qp.premultiply(Qr);Qa.copy(Qp).invert().multiply(D).multiply(Qp);b.quaternion.premultiply(Qa);b.updateMatrixWorld(true);};
     const R=(ax,an)=>new THREE.Quaternion().setFromAxisAngle(ax,an);
-    X.poseGuido=(g,dt,sp,mode,t)=>{const u=g.userData,B=u.B;if(!u.rest){u.rest=new Map();['LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftFoot','RightFoot','LeftArm','RightArm','LeftForeArm','RightForeArm','Spine'].forEach(n=>B[n]&&u.rest.set(B[n],B[n].quaternion.clone()));}u.rest.forEach((q,b)=>b.quaternion.copy(q));u.mx.update(sp>0.05&&mode!=='sit'?0:dt);u.root.updateMatrixWorld(true);u.root.getWorldQuaternion(Qr);Qr.invert();
+    X.poseGuido=(g,dt,sp,mode,t)=>{const u=g.userData,B=u.B;
+      if(u.wk){const A=u.act;if(mode==='walk'&&sp>0.05){A.timeScale=Math.min(1.8,Math.max(0.35,sp/1.3));u.mx.update(dt);}else{A.time=u.n0;u.mx.update(0);}
+        u.root.updateMatrixWorld(true);u.root.getWorldQuaternion(Qr);Qr.invert();
+        if(mode==='sit'){rotC(u,B.LeftUpLeg,R(AX,-1.42));rotC(u,B.RightUpLeg,R(AX,-1.42));rotC(u,B.LeftLeg,R(AX,0.62));rotC(u,B.RightLeg,R(AX,0.62));rotC(u,B.LeftFoot,R(AX,-0.5));rotC(u,B.RightFoot,R(AX,-0.5));rotC(u,B.LeftArm,R(AX,-0.6));rotC(u,B.RightArm,R(AX,-0.6));rotC(u,B.LeftForeArm,R(AX,-0.5));rotC(u,B.RightForeArm,R(AX,-0.5));}
+        else if(mode==='reach'){rotC(u,B.RightArm,R(AX,-1.15));rotC(u,B.RightForeArm,R(AX,-0.35));}
+        else if(mode==='wave'){rotC(u,B.RightArm,R(AZ,-2.3));rotC(u,B.RightForeArm,R(AZ,-0.3-0.35*Math.sin(t*7)));}
+        return;}if(!u.rest){u.rest=new Map();['LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftFoot','RightFoot','LeftArm','RightArm','LeftForeArm','RightForeArm','Spine'].forEach(n=>B[n]&&u.rest.set(B[n],B[n].quaternion.clone()));}u.rest.forEach((q,b)=>b.quaternion.copy(q));u.mx.update(sp>0.05&&mode!=='sit'?0:dt);u.root.updateMatrixWorld(true);u.root.getWorldQuaternion(Qr);Qr.invert();
       if(mode==='sit'){rotC(u,B.LeftUpLeg,R(AX,-1.42));rotC(u,B.RightUpLeg,R(AX,-1.42));rotC(u,B.LeftLeg,R(AX,0.62));rotC(u,B.RightLeg,R(AX,0.62));rotC(u,B.LeftFoot,R(AX,-0.5));rotC(u,B.RightFoot,R(AX,-0.5));
         rotC(u,B.Spine,R(AX,-0.12));
         rotC(u,B.LeftArm,R(AX,-0.5));rotC(u,B.RightArm,R(AX,-0.5));return;}
