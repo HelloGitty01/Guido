@@ -184,7 +184,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       V[key]={parts,far,items:new Set(),im:null};};
     const key2file={lin:'linden',fir:'fir',palm:'palm',cyp:'cypress',pop:'poplar'};
     prep('lin',MODELS.hd_linden,/001/);prep('fir',MODELS.hd_fir,/branch/i,0.28,1.45);prep('palm',MODELS.hd_palm,/leaves/i);prep('cyp',MODELS.hd_cypress,/2_sided/i,0,1.1);prep('pop',MODELS.hd_poplar,/branch/i,0,1.1);
-    const CAP=MOBILE||QG.mid?50:110,TOT=MOBILE||QG.mid?60:130,RAD=MOBILE?140:210,Z=new THREE.Matrix4().makeScale(0,0,0),M4=new THREE.Matrix4(),shown=new Set();let tm=0;
+    const CAP=MOBILE||QG.mid?50:110,TOT=MOBILE||QG.mid?60:130,RAD0=MOBILE?140:210,Z=new THREE.Matrix4().makeScale(0,0,0),M4=new THREE.Matrix4(),shown=new Set();let tm=0,HRAD=RAD0;window.HDTQ=l=>{HRAD=RAD0*[1,0.65,0.4][l];};
     Object.values(V).forEach(v=>{v.im=v.parts.map(p=>{const im=new THREE.InstancedMesh(p.geo,p.mat,CAP);im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(CAP*3).fill(1),3);im.instanceColor.setUsage(THREE.DynamicDrawUsage);im.count=0;im.castShadow=true;im.receiveShadow=true;im.frustumCulled=false;im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);return im;});});
     // it: {v,x,z,m(Matrix4),c(Color),im,q,T}
     const add=(T,it)=>{if(!V[it.v])return false;(T.hdt||(T.hdt=[])).push(it);it.T=T;return true;};
@@ -194,7 +194,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       Object.entries(by).forEach(([k,L])=>{const ims=V[k].far.map(p=>{const im=new THREE.InstancedMesh(p.geo,p.mat,L.length);im.frustumCulled=false;im.receiveShadow=true;
           L.forEach((it,q)=>{im.setMatrixAt(q,it.m);im.setColorAt(q,it.c);});scene.add(im);T.dobj.push(im);return im;});
         L.forEach((it,q)=>{it.far=ims;it.fq=q;if(it.im){it.im.visible=false;}});});};
-    const update=(dt,force)=>{tm-=dt;if(tm>0&&!force)return;tm=0.4;const cx=camera.position.x,cz=camera.position.z,R2=RAD*RAD,cand={};Object.keys(V).forEach(k=>cand[k]=[]);
+    const update=(dt,force)=>{tm-=dt;if(tm>0&&!force)return;tm=0.4;const RAD=HRAD,cx=camera.position.x,cz=camera.position.z,R2=RAD*RAD,cand={};Object.keys(V).forEach(k=>cand[k]=[]);
       tiles.forEach(T=>{if(!T.det||!T.hdt)return;const x0=T.i*TS,z0=T.j*TS;if(cx<x0-RAD||cx>x0+TS+RAD||cz<z0-RAD||cz>z0+TS+RAD)return;
         for(const it of T.hdt){const d=(it.x-cx)**2+(it.z-cz)**2;if(d<R2)cand[it.v].push([d,it]);}});
       const now=new Set(),dirty=new Set();

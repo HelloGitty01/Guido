@@ -184,6 +184,29 @@ function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HO
   if(pl.mesh&&C)pl.mesh.children.forEach(c=>{if(c===rearCam)return;if(c.visible){c.visible=false;c.userData._ckH=1;}});
   ckLayout();}
 addEventListener('resize',()=>setTimeout(ckLayout,0));
+// qualità automatica: se i fotogrammi scendono sotto i ~45 al secondo si abbassa la risoluzione di disegno (fino al 60%),
+// e se non basta si accorcia la distanza degli alberi 3D; quando torna fluido si risale piano piano
+const AUTOQ={n:0,acc:0,sc:1,lvl:0,base:QG.pr,cool:0,
+  tick(dt){if(CFG.autoQ===false||paused||!started)return;this.acc+=dt;this.n++;if(this.acc<2)return;const fps=this.n/this.acc;this.acc=0;this.n=0;if(this.cool>0){this.cool--;return;}
+    let sc=this.sc;if(fps<44&&sc>0.6)sc=Math.max(0.6,sc-0.1);else if(fps>57&&sc<1)sc=Math.min(1,sc+0.05);
+    if(sc!==this.sc){this.sc=sc;renderer.setPixelRatio(this.base*sc);renderer.setSize(innerWidth,innerHeight);this.cool=1;}
+    if(fps<38&&this.sc<=0.6&&this.lvl<2&&window.HDTQ){this.lvl++;HDTQ(this.lvl);this.cool=2;}else if(fps>58&&this.sc>=1&&this.lvl>0&&window.HDTQ){this.lvl--;HDTQ(this.lvl);this.cool=3;}}};
+// pioggia sul parabrezza (abitacoli fotografici): gocce che si posano, scorrono col vento della corsa e il tergicristallo che le spazza.
+// Il disegno sta sotto la foto dell'abitacolo, quindi si vede solo attraverso i vetri
+const RAINW={cv:null,g:null,spr:null,d:[],a:-1.3,dir:1,
+  tick(dt){const on=CKO.on&&WX==='rain'&&started&&!pl.ended&&!PHOTO.on;
+    if(!this.cv){if(!on)return;const c=document.createElement('canvas');c.id='ckRain';c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';const ov=document.getElementById('ckOv');ov.insertBefore(c,ov.firstChild);this.cv=c;this.g=c.getContext('2d');
+      const sp=document.createElement('canvas');sp.width=sp.height=32;const q=sp.getContext('2d'),gr=q.createRadialGradient(13,12,1,16,16,15);gr.addColorStop(0,'rgba(255,255,255,.72)');gr.addColorStop(0.45,'rgba(210,220,230,.26)');gr.addColorStop(0.85,'rgba(20,25,30,.4)');gr.addColorStop(1,'rgba(20,25,30,0)');q.fillStyle=gr;q.beginPath();q.arc(16,16,15,0,7);q.fill();this.spr=sp;}
+    const c=this.cv;if(!on){if(c.style.display!=='none'){c.style.display='none';this.d.length=0;}return;}if(c.style.display==='none')c.style.display='block';
+    const W=Math.round(innerWidth/2),H=Math.round(innerHeight/2);if(c.width!==W||c.height!==H){c.width=W;c.height=H;}
+    const v=Math.abs(pl.vx),D=this.d;for(let i=0,n=Math.min(40,dt*(70+v*2));i<n;i++)if(D.length<380)D.push({x:Math.random()*W,y:Math.random()*H*0.8,r:1.2+Math.random()*3.2,s:0});
+    const cx=W/2;for(const p of D){if(v>7){p.x+=(p.x-cx)/W*v*1.6*dt*10;p.y-=v*dt*(2.2+p.r*0.6);}else{p.s+=dt;if(p.r>3)p.y+=dt*(6+p.r*4);}}
+    // tergicristallo: va avanti e indietro (più veloce con la pioggia forte), pulisce lo spicchio che attraversa
+    const a0=this.a;this.a+=this.dir*dt*3.1;if(this.a>1.3){this.a=1.3;this.dir=-1;}if(this.a<-1.3){this.a=-1.3;this.dir=1;}
+    const px=W*0.5,py=H*1.08,lo=Math.min(a0,this.a),hi=Math.max(a0,this.a),L=H*1.0;
+    for(let i=D.length-1;i>=0;i--){const p=D[i],ang=Math.atan2(p.x-px,py-p.y),dd=Math.hypot(p.x-px,py-p.y);if((ang>=lo-0.03&&ang<=hi+0.03&&dd<L)||p.y<-10||p.x<-10||p.x>W+10||p.y>H+10)D.splice(i,1);}
+    const g=this.g;g.clearRect(0,0,W,H);for(const p of D){const r=p.r*(v>7?1:1);g.drawImage(this.spr,p.x-r,p.y-r*(v>7?1.25:1),r*2,r*2*(v>7?1.25:1));}
+    g.strokeStyle='rgba(12,12,14,.92)';g.lineWidth=Math.max(3,H*0.012);g.lineCap='round';g.beginPath();g.moveTo(px+Math.sin(this.a)*H*0.15,py-Math.cos(this.a)*H*0.15);g.lineTo(px+Math.sin(this.a)*L,py-Math.cos(this.a)*L);g.stroke();}};
 // sensazione di velocità: tremolio della visuale e sfocatura ai bordi, entrambi crescono oltre i 90 km/h
 const SFX={b:-1,el:null,ox:0,oy:0};
 function speedFx(dt){const v=Math.abs(pl.vx),on=started&&!PHOTO.on&&!pl.ended&&!CINE.intro&&!document.body.classList.contains('cine')&&!HOME.mode;

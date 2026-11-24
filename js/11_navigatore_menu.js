@@ -157,7 +157,7 @@ let started=false,paused=true,simT=0;
 const menu=document.getElementById('menu');
 // ---- menu a schede ----
 const MTAB={cur:'gioco'};
-function menuTab(t){MTAB.cur=t;document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);try{localStorage.setItem('sim_tab',t);}catch(e){}}
+function menuTab(t){MTAB.cur=t;document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);if(t==='cart')PCARD.album();try{localStorage.setItem('sim_tab',t);}catch(e){}}
 document.querySelectorAll('#mTabs button').forEach(b=>b.onclick=()=>menuTab(b.dataset.t));
 // ---- anteprima 3D dell'auto scelta: un piccolo studio fotografico che gira lentamente ----
 const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null,key=null,raf=0,last=0,ang=0.6;
@@ -179,7 +179,7 @@ const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null
     if(car){const L=C.userData.L||4.5,hf=Math.atan(Math.tan(15*Math.PI/180)*C.aspect),d=L*0.44/Math.tan(hf)+L*0.15;C.position.set(Math.cos(ang)*d,(C.userData.h||0.7)+d*0.22,Math.sin(ang)*d);C.lookAt(0,C.userData.h||0.7,0);}R.render(S,C);raf=requestAnimationFrame(loop);}
   return{show};})();
 document.getElementById('vehList').addEventListener('click',()=>setTimeout(()=>VP.show(selKey),0));
-function showMenu(){setTimeout(()=>menuTab(MTAB.cur),0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
+function showMenu(){setTimeout(()=>{menuTab(MTAB.cur);RESUME.btn();},0);paused=true;RADIO.pause(true);if(window.SIGLA)SIGLA.play();menu.style.display='flex';document.getElementById('go').textContent=started?'Riparti con questo mezzo':'Si parte!';if(AC)AC.suspend();setHorn(false);}
 function togglePause(){if(!started||pl.ended||menu.style.display==='flex')return;paused=!paused;RADIO.pause(paused);document.getElementById('pauseOv').style.display=paused?'flex':'none';if(AC){paused?AC.suspend():AC.resume();}setHorn(false);}
 document.getElementById('pauseBtn').onclick=()=>togglePause();
 document.getElementById('carBtn').onclick=e=>{cycleCar(1);e.currentTarget.blur();};
@@ -214,6 +214,7 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
 {const v=document.getElementById('cfgVol');v.value=CFG.vol??0.6;v.oninput=()=>{CFG.vol=+v.value;RADIO.setVol(CFG.vol);const h=document.getElementById('radioVolHud');if(h)h.value=CFG.vol;};v.onchange=()=>savePrefs();
   document.getElementById('radioNote').textContent=RADIO.web?'Tasto M: Radio Guido, Rai Radio 1-2-3, Radio 105, Virgin Radio, R101':'Tasto M: Radio Guido. Le radio vere funzionano nella versione su GitHub.';}
 {const a=document.getElementById('cfgBlur'),b=document.getElementById('cfgShake');if(a){a.checked=CFG.blur??!document.body.classList.contains('mob');a.onchange=()=>{CFG.blur=a.checked;savePrefs();};}if(b){b.checked=CFG.shake!==false;b.onchange=()=>{CFG.shake=b.checked;savePrefs();};}}
+{const a=document.getElementById('cfgAutoQ');if(a){a.checked=CFG.autoQ!==false;a.onchange=()=>{CFG.autoQ=a.checked;savePrefs();if(!a.checked){AUTOQ.sc=1;renderer.setPixelRatio(AUTOQ.base);renderer.setSize(innerWidth,innerHeight);if(window.HDTQ)HDTQ(0);AUTOQ.lvl=0;}};}const b=document.getElementById('cfgAmb');if(b){b.checked=CFG.amb!==false;b.onchange=()=>{CFG.amb=b.checked;savePrefs();};}}
 {const w=document.getElementById('cfgWg');if(w){w.checked=CFG.wg!==false;w.onchange=()=>{CFG.wg=w.checked?null:false;window.__wgOff=false;savePrefs();try{if(AC)initAudio();}catch(e){}};}}
 {const e=document.getElementById('cfgVoce');if(e){e.value=CFG.voce||'nat';e.onchange=()=>{CFG.voce=e.value;savePrefs();VOCE.load();};}const b=document.getElementById('voceTest');if(b)b.onclick=()=>{if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(x){}}VOCE.load().then(()=>VOCE.speak('Tra 300 metri, alla rotatoria prendi la seconda uscita',{cancel:true}));};}
 {const el=document.getElementById('cfgMir');el.checked=CFG.mir!==false;el.onchange=()=>{CFG.mir=el.checked;savePrefs();};}
@@ -248,9 +249,18 @@ function startRun(){if(window.SIGLA)SIGLA.stop();endBtn.style.display='block';do
   if(opp){scene.remove(opp.mesh);cars.splice(cars.indexOf(opp),1);opp=null;}
   HOME.reset();RADIO.pause(false);resetPlayer();if(NWT){const cn=document.getElementById('selStart').value;NWT.spawn(cn,document.getElementById('selVia').value);}lastNight=null;if(TIME==='cycle')CLOCK=+(CFG.cycStart??7);applyEnv();applyView();started=true;paused=false;menu.style.display='none';AC&&AC.resume();
   pl.ended=false;pl.vmax=0;pl.overN=0;pl.lic=20;pl.fines=0;pl.cleanKm=0;pl.spT=0;pl.spArm=true;runStart=simT;route=null;destMark.visible=false;
+  if(RESUME.now){const R=RESUME.now;pl.x=R.x;pl.z=R.z;pl.h=R.h;if(NW){NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;pl.yb=null;}if(NWT)NWT.update(0,true);if(R.time==='cycle'&&R.clk!=null){CLOCK=R.clk;applyEnv();}startDrive();if(R.fuel!=null)pl.fuel=R.fuel;RESUME.now=null;return;}
   if(HOME.wants()){HOME.begin();return;}
   startDrive();}
-function startDrive(){runStart=simT;CINE.startIntro();
+// ---- continua da dove eri: ogni pochi secondi si salva auto, posizione, ora e meteo della guida libera ----
+const RESUME={now:null,t:0,get(){try{return JSON.parse(localStorage.getItem('sim_resume')||'null');}catch(e){return null;}},
+  tick(dt){if(!started||pl.ended||paused||HOME.mode||MODE!=='free'||!NW||pl.flip||pl.wat)return;this.t-=dt;if(this.t>0)return;this.t=5;
+    try{localStorage.setItem('sim_resume',JSON.stringify({k:selKey,x:+pl.x.toFixed(1),z:+pl.z.toFixed(1),h:+pl.h.toFixed(3),time:TIME,clk:TIME==='cycle'?+CLOCK.toFixed(2):null,wx:WX,fuel:pl.fuel,when:Date.now()}));}catch(e){}},
+  btn(){const b=document.getElementById('contBtn');if(!b)return;const r=this.get();b.style.display=r&&PHYS[r.k]?'block':'none';if(r&&PHYS[r.k])b.textContent='↻ Continua da dove eri · '+PHYS[r.k].label;}};
+document.getElementById('contBtn').onclick=()=>{const r=RESUME.get();if(!r||!PHYS[r.k])return;selKey=r.k;[...document.getElementById('vehList').children].forEach((x,i)=>x.classList.toggle('sel',Object.keys(PHYS)[i]===r.k));
+  document.getElementById('selMode').value='free';document.getElementById('selTime').value=r.time||'day';if(r.wx)document.getElementById('selWx').value=r.wx;RESUME.now=r;document.getElementById('go').click();};
+setTimeout(()=>RESUME.btn(),0);
+function startDrive(){runStart=simT;if(!RESUME.now)CINE.startIntro();
   if(!FUEL.st.length)fuelInit();pl.fuel=tankOf(pl.P)*(MODE==='free'||MODE==='nav'?0.6:1);pl.fuelFor=selKey;pl.dry=false;FUEL.low=false;ORB.yaw=ORB.pitch=0;ORB.w=0;
   if(MODE==='nav'||MODE==='race'){route=buildRoute(document.getElementById('selDest').value);if(route){destMark.position.set(route.dest.x,TH(route.dest.x,route.dest.z)+30,route.dest.z);destMark.visible=true;
     say(MODE==='race'?'Gara verso '+document.getElementById('selDest').selectedOptions[0].textContent+'. Pronti...':'Percorso calcolato verso '+document.getElementById('selDest').selectedOptions[0].textContent);}}

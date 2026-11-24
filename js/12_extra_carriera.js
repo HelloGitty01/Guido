@@ -368,3 +368,29 @@ function lbMenu(m){const fm=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).pad
 let hissArm=false;
 function airHiss(){if(!AC)return;const t=AC.currentTime,n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*0.8,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5);n.buffer=b;
   const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=2500;const g=AC.createGain();g.gain.value=0.22;n.connect(f).connect(g).connect(ACOUT());n.start(t);}
+
+// ================= CARTOLINE DI ORNAVIA: 20 punti panoramici da scoprire guidando =================
+// valichi e belvedere più alti, lungolaghi e coste, le piazze delle città più grandi. Passandoci accanto si scatta la cartolina
+const PCARD={list:null,got:{},want:null,t:0,
+  load(){try{this.got=JSON.parse(localStorage.getItem('sim_pc')||'{}')||{};}catch(e){this.got={};}},
+  build(){if(this.list||!NW)return this.list;const P=NW.places||[],near=(x,z)=>{let b=null,bd=1e18;for(const p of P){const d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;b=p;}}return b?b.n:'Ornavia';};
+    const pts=[];for(const R of NW.roads){if(R.t||R.b||R.priv||R.c>8)continue;for(let i=0;i<R.N;i+=4)pts.push([R.X[i],R.Z[i],R.Hh[i],R]);}
+    const far=(L,x,z,d)=>L.every(q=>Math.hypot(q.x-x,q.z-z)>d),out=[];
+    // i più alti, distanti fra loro
+    pts.slice().sort((a,b)=>b[2]-a[2]).forEach(([x,z,h,R])=>{if(out.length<8&&!NW.cityAt(x,z)&&far(out,x,z,1800))out.push({k:'alto',x,z,n:(R.n&&/passo|panoramica/i.test(R.n)?R.n:'Belvedere di '+near(x,z))});});
+    // acqua: lungolaghi e coste
+    const wat=[];for(let q=0;q<pts.length;q+=2){const[x,z]=pts[q];if(NW.cityAt(x,z))continue;let w=null;for(const r of[30,60,95]){for(let k=0;k<8&&!w;k++){const a=k*0.785;w=waterLv(x+Math.cos(a)*r,z+Math.sin(a)*r);}if(w)break;}if(w)wat.push([x,z,w]);}
+    for(const[x,z,L]of wat){if(out.length>=14)break;if(far(out,x,z,2200)){const sea=(NW.waveAmp?NW.waveAmp(L):0)>0.5;out.push({k:'acqua',x,z,n:(sea?'Costa di ':'Lungolago di ')+near(x,z)});}}
+    // piazze delle città (le più grandi)
+    (NW.cities||[]).slice().sort((a,b)=>(b.r1||0)-(a.r1||0)).forEach(C=>{if(out.length>=20||C.wx==null)return;let b=null,bd=1e18;for(const[x,z]of pts){const d=(x-C.wx)**2+(z-C.wz)**2;if(d<bd){bd=d;b=[x,z];}}if(b)out.push({k:'città',x:b[0],z:b[1],n:'Piazza di '+C.n});});
+    const used=new Set();out.forEach((o,i)=>{o.id='pc'+i;o.hint='vicino a '+near(o.x,o.z);if(used.has(o.n)){const b=o.n.replace(/^(Belvedere|Costa|Lungolago|Piazza) di /,'');for(const v of['Panorama su '+b,'Vista su '+b,'Balcone di '+b,o.n+' (alto)'])if(!used.has(v)){o.n=v;break;}}used.add(o.n);});this.list=out;this.load();return out;},
+  tick(dt){if(!started||pl.ended||paused||!NW||HOME.mode)return;this.t-=dt;if(this.t>0)return;this.t=0.4;const L=this.build();if(!L)return;
+    for(const o of L){if(this.got[o.id])continue;if(Math.abs(o.x-pl.x)<45&&Math.abs(o.z-pl.z)<45&&Math.hypot(o.x-pl.x,o.z-pl.z)<38){this.want=o;break;}}},
+  snap(){const o=this.want;this.want=null;if(!o)return;try{const src=renderer.domElement,c=document.createElement('canvas');c.width=360;c.height=240;const g=c.getContext('2d');
+      g.fillStyle='#f3efe6';g.fillRect(0,0,360,240);const sw=src.width,sh=src.height,ar=344/196;let w=sw,h=sw/ar;if(h>sh){h=sh;w=sh*ar;}g.drawImage(src,(sw-w)/2,(sh-h)/2,w,h,8,8,344,196);
+      g.fillStyle='#2b2422';g.font='italic 600 15px Georgia,serif';g.fillText('Saluti da '+o.n.replace(/^(Belvedere|Costa|Lungolago|Piazza) di /,''),12,226);g.font='11px system-ui';g.fillStyle='#8a1f22';g.textAlign='right';g.fillText('ORNAVIA',348,226);
+      this.got[o.id]={t:Date.now(),img:c.toDataURL('image/jpeg',0.72)};localStorage.setItem('sim_pc',JSON.stringify(this.got));}catch(e){this.got[o.id]={t:Date.now()};}
+    const n=Object.keys(this.got).length;pl.navMsg='📮 Cartolina: '+o.n+' ('+n+'/'+this.list.length+')';pl.navMsgT=4;if(typeof ding==='function')ding(2);this.album();},
+  album(){const box=document.getElementById('pcAlbum');if(!box)return;const L=this.build();if(!L){box.innerHTML='<p class="note">Le cartoline compaiono quando il mondo è caricato.</p>';return;}this.load();
+    const n=L.filter(o=>this.got[o.id]).length;document.getElementById('pcCount').textContent=n+' / '+L.length;
+    box.innerHTML=L.map(o=>{const g=this.got[o.id];return g&&g.img?`<figure class="pc got"><img src="${g.img}" alt=""><figcaption>${o.n}</figcaption></figure>`:`<figure class="pc"><div class="q">${o.k==='alto'?'⛰':o.k==='acqua'?'🌊':'🏛'}</div><figcaption>${g?o.n:'??? · '+o.hint}</figcaption></figure>`;}).join('');}};

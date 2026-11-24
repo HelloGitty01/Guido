@@ -262,7 +262,7 @@ function loop(now){
     const st={dmg:dmgTot,rpm:pl.rpm,kmh,limit,over,gearTxt,km:pl.km,load:pl.load,slip:pl.slip};
     clusterT-=dt;if(clusterT<=0&&view==='cockpit'){drawCluster(pl.ck,pl.P,st);clusterT=MOBILE?1/12:1/30;}
     screenT-=dt;if(screenT<=0&&view==='cockpit'){screenT=route?0.15:0.5;if(route)drawNavScreen(pl.ck);else drawScreen(pl.ck,st);}
-    fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);if(DRV)DRV.tick(dt);drawMini(dt);
+    RESUME.tick(dt);AUTOQ.tick(dt);AMB.tick(dt);RAINW.tick(dt);PCARD.tick(dt);fuelTick(dt);updateBlinker(dt);updateAudio(st);tunnelUpdate(dt);updateCamera(dt);if(DRV)DRV.tick(dt);drawMini(dt);
     lodT-=dt;if(lodT<=0){lodT=0.5;parked.forEach(c=>c.visible=Math.abs(c.position.x-camera.position.x)+Math.abs(c.position.z-camera.position.z)<420);}
     dashW(limit);document.getElementById('tGear').textContent=pl.sel==='R'?'D':'R';document.getElementById('extSpd').textContent=Math.round(kmh);document.getElementById('extGear').textContent=gearTxt+(over?' · ⚠ limite '+limit:'')+fuelTxt();
     {pl.flipT=pl.flip?(pl.flipT||0)+dt:0;const fx=document.getElementById('tFix'),need=!!((pl.flip&&((pl.flip.done&&Math.hypot(pl.vx,pl.vy)<0.5)||pl.flipT>3))||(pl.wat&&pl.wat.sunk));fx.style.display=need?'inline-block':'none';if(need){fx.style.position='fixed';fx.style.left='50%';fx.style.top='45%';fx.style.transform='translate(-50%,-50%)';fx.style.fontSize='18px';fx.style.padding='12px 20px';fx.style.zIndex=4;fx.textContent=isTouch?'Rimetti in strada':'Rimetti in strada (Invio)';}}
@@ -280,7 +280,7 @@ function loop(now){
   if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir===1?2:QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
     scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
   frameN++;updateMaples();updateCarLOD();if(NWT)NWT.update(dt);
-  renderer.render(scene,camera);
+  renderer.render(scene,camera);if(PCARD.want)PCARD.snap();
   if(CKO.on){renderer.autoClear=false;renderer.clearDepth();renderer.render(CKO.hud,CKO.cam);renderer.autoClear=true;}
   requestAnimationFrame(loop);
 }
