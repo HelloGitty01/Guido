@@ -167,7 +167,7 @@ function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,key=M
 function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();return;}
   const W=innerWidth,H=innerHeight,[iw,ih]=C.size,s0=Math.max(W/iw,H/ih),w0=iw*s0,h0=ih*s0,l0=(W-w0)/2,t0=H-h0;
   // zoom: l'immagine dell'abitacolo si ingrandisce ancorata in alto, il cofano scende e si vede più strada (la scena resta dov'è)
-  const s=s0*(C.zoom||1),w=iw*s,h=ih*s,l=(W-w)/2,t=t0;Object.assign(CKO,{s,l,t});
+  const zw=Math.max(0,Math.min(1,1-(W/H-1.8)/0.45)),s=s0*(1+((C.zoom||1)-1)*zw),w=iw*s,h=ih*s,l=(W-w)/2,t=t0;Object.assign(CKO,{s,l,t});
   const img=document.getElementById('ckImg');img.style.width=w+'px';img.style.height=h+'px';img.style.left=l+'px';img.style.top=t+'px';{const c=document.getElementById('ckNdl');c.style.display=C.g?'block':'none';if(C.g){const k=Math.min(2.5,(window.devicePixelRatio||1)*s);c.width=Math.round(iw*k);c.height=Math.round(ih*k);c.style.width=w+'px';c.style.height=h+'px';c.style.left=l+'px';c.style.top=t+'px';CKO.nk=k;CKO.nv=null;}}
   const at=(id,p,fs)=>{const e=document.getElementById(id);e.style.left=(l+p[0]*s)+'px';e.style.top=(t+p[1]*s)+'px';if(fs)e.style.fontSize=(fs*s)+'px';};
   if(C.wheel){const B=C.wheel.box,wi=document.getElementById('ckWheel');wi.style.left=(l+B[0]*s)+'px';wi.style.top=(t+B[1]*s)+'px';wi.style.width=((B[2]-B[0])*s)+'px';wi.style.height=((B[3]-B[1])*s)+'px';wi.style.transformOrigin=((C.wheel.c[0]-B[0])*s)+'px '+((C.wheel.c[1]-B[1])*s)+'px';}
