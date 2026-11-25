@@ -212,6 +212,7 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
     const up=()=>{const L=RADIO.user();L[k]={n:n.value.trim(),u:u.value.trim()};save(L);};n.onchange=up;u.onchange=up;x.onclick=()=>{const L=RADIO.user();L.splice(k,1);save(L);draw();};r.append(n,u,x);box.appendChild(r);});};
   draw();document.getElementById('radioAdd').onclick=()=>{const L=RADIO.user();L.push({n:'Nuova stazione',u:''});save(L);draw();};document.getElementById('radioDef').onclick=()=>{save(RADIO.DEF.slice());draw();};}
 {const e=document.getElementById('cfgTouch');e.value=CFG.touchCtl||'arco';e.onchange=()=>{CFG.touchCtl=e.value;savePrefs();mobCtl();if(e.value==='tilt')tiltAsk();};}
+{const e=document.getElementById('cfgPhotoFac');if(e){e.checked=!!CFG.photoFac;e.onchange=()=>{CFG.photoFac=e.checked;savePrefs();if(confirm('Le facciate cambiano ricaricando la pagina. Ricaricare adesso?'))location.reload();};}}
 {const e=document.getElementById('cfgHd');if(e){e.checked=!!window.HDON;e.onchange=()=>{CFG.hd=e.checked;savePrefs();if(confirm('I modelli dettagliati si applicano ricaricando la pagina. Ricaricare adesso?'))location.reload();};}}
 {const e=document.getElementById('cfgQ');e.value=QG.q;e.onchange=()=>{CFG.q=e.value;savePrefs();if(confirm('La qualità grafica si applica ricaricando la pagina. Ricaricare adesso?'))location.reload();};}
 {const e=document.getElementById('cfgEng');e.value=CFG.engVol??1;e.oninput=()=>{CFG.engVol=+e.value;};e.onchange=()=>savePrefs();}

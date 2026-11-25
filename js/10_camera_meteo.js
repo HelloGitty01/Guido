@@ -341,7 +341,7 @@ function updateRain(dt){if(!rain.visible)return;const c=camera.position;rain.pos
 let rainSnd=null;
 const ENVK={night:{top:0x03060f,mid:0x0a1428,bot:0x141d30,sunI:0.16,sunC:0x8fa6d8,hemiI:0.1,fogC:0x0e1524,fogF:900,cl:0x2a3242,exp:1.0,day:0.12},
   dawn:{top:0x2f4a80,mid:0xc59aa6,bot:0xf2c6a0,sunI:1.0,sunC:0xffc79e,hemiI:0.3,fogC:0xdcbcab,fogF:1500,cl:0xffd8cc,exp:0.95,day:0.7},
-  day:{top:0x5b8acb,mid:0xa6c4e2,bot:HORIZON,sunI:1.75,sunC:0xfff0d8,hemiI:0.45,fogC:HORIZON,fogF:1500,cl:0xffffff,exp:0.88,day:1},
+  day:{top:0x5b8acb,mid:0xa6c4e2,bot:HORIZON,sunI:1.6,sunC:0xfff0d6,hemiI:0.62,fogC:HORIZON,fogF:1500,cl:0xffffff,exp:0.88,day:1},
   sunset:{top:0x2b4a86,mid:0xd9906a,bot:0xf3b47e,sunI:1.25,sunC:0xffa566,hemiI:0.35,fogC:0xe9b48a,fogF:1500,cl:0xffc9a0,exp:0.95,day:0.75}};
 const ENVSEQ=[[0,'night'],[5.1,'night'],[6.4,'dawn'],[8.3,'day'],[17.2,'day'],[19,'sunset'],[20.4,'night'],[24,'night']];
 let CLOCK=7,NIGHT=false,DUSK=false,envAcc=0,lastNight=null;const SUNOFF=new THREE.Vector3(-60,90,40);

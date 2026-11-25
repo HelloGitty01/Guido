@@ -17,7 +17,7 @@ const rr=(a,b)=>a+Math.random()*(b-a);
 // ================= RENDERER / SCENA =================
 const renderer = new THREE.WebGLRenderer({antialias:true,logarithmicDepthBuffer:true});
 // qualità grafica scelta nel menu (bassa/media/alta): risoluzione, ombre, distanza di visibilità, dettagli
-const QG=(()=>{const mob=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<900,q=CFG.q||'media';return{q,lo:q==='bassa',mid:q==='media',hi:q==='alta',pr:q==='bassa'?Math.min(devicePixelRatio,1)*0.8:q==='media'?Math.min(devicePixelRatio,mob?1.1:1.2):Math.min(devicePixelRatio,mob?1.25:1.5),fog:q==='bassa'?0.6:q==='media'?0.82:1,mir:q==='bassa'?4:q==='media'?2:1};})();
+const QG=(()=>{const mob=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<900,q=CFG.q||'media';return{q,lo:q==='bassa',mid:q==='media',hi:q==='alta',pr:q==='bassa'?Math.min(devicePixelRatio,1)*0.8:q==='media'?Math.min(devicePixelRatio,mob?1.1:2):Math.min(devicePixelRatio,mob?1.25:2),fog:q==='bassa'?0.6:q==='media'?0.82:1,mir:q==='bassa'?4:q==='media'?2:1};})();
 renderer.setPixelRatio(QG.pr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = !QG.lo;

@@ -13,15 +13,19 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   // ---------- materiali ----------
   const ROCK=(()=>{const I=window.HDON&&window.HDIMG;if(!I||!I.roccia)return null;const t=new THREE.Texture(I.roccia);t.wrapS=t.wrapT=THREE.MirroredRepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.needsUpdate=true;return t;})();
   const terrM=addRelief(new THREE.MeshStandardMaterial({map:grassTex,vertexColors:true,roughness:1,envMapIntensity:0.35}),3,0.6);terrM.color.setRGB(1.1,0.95,0.84);
+  // prato "pulito": colore medio dell'erba modulato dalla tavolozza di zona; il dettaglio della texture (solo luminosità) si vede da vicino e sparisce entro un centinaio di metri, niente mosaico in lontananza
+  {let avg=new THREE.Vector3(0.15,0.24,0.06);try{const c=grassTex.image,d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=16){r+=d[i];g+=d[i+1];b+=d[i+2];n++;}const L=v=>Math.pow(v/n/255,2.2);avg.set(L(r),L(g),L(b));}catch(e){}
+   if(terrM.normalScale)terrM.normalScale.set(0.3,0.3);var GAVG=avg;}
   const farM=terrM.clone();const nearBox={value:new THREE.Vector4(1,1,0,0)};
   farM.onBeforeCompile=sh=>{sh.uniforms.nearBox=nearBox;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform vec4 nearBox;').replace('void main() {','void main() {\nif(vWP.x>nearBox.x&&vWP.x<nearBox.z&&vWP.z>nearBox.y&&vWP.z<nearBox.w)discard;');};
-  farM.customProgramCacheKey=()=>'nwfar2';
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform vec4 nearBox;').replace('void main() {','void main() {\nif(vWP.x>nearBox.x&&vWP.x<nearBox.z&&vWP.z>nearBox.y&&vWP.z<nearBox.w)discard;').replace('#include <map_fragment>','diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333)),0.3);').replace('uniform vec4 nearBox;','uniform vec4 nearBox;uniform vec3 gAvg;');sh.uniforms.gAvg={value:GAVG};};
+  farM.customProgramCacheKey=()=>'nwfar4';
   // erba a più scale: niente ripetizione visibile, chiazze più chiare e più scure
-  const grassFrag=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
-    vec4 texelColor=texture2D(map,vUv);vec4 t2=texture2D(map,vUv*0.173+vec2(0.31,0.57));vec4 t3=texture2D(map,vUv*0.037+vec2(0.11,0.73));
-    texelColor.rgb=texelColor.rgb*0.55+t2.rgb*0.3+t3.rgb*0.15;texelColor.rgb*=0.7+0.75*dot(t3.rgb,vec3(0.333));
-    texelColor=mapTexelToLinear(texelColor);diffuseColor*=texelColor;
+  const grassFrag=sh=>{sh.uniforms.gAvg={value:GAVG};sh.fragmentShader='uniform vec3 gAvg;\n'+sh.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
+    vec4 texelColor=mapTexelToLinear(texture2D(map,vUv));vec4 t2=mapTexelToLinear(texture2D(map,vUv*0.173+vec2(0.31,0.57)));
+    float fdT=1.0-smoothstep(8.0,70.0,length(vViewPosition));float lmT=dot(texelColor.rgb/gAvg,vec3(0.3333))*0.6+dot(t2.rgb/gAvg,vec3(0.3333))*0.4;
+    float mcT=dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333));
+    diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,mcT,0.3)*mix(1.0,lmT,0.45*fdT);   // colore pulito; il dettaglio dell'erba si vede solo da vicino
     #endif`);
     // pacchetto HD: roccia vera sui pendii ripidi e in alta quota
     if(ROCK){sh.uniforms.rockMap={value:ROCK};sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float rk;varying float vRk;varying vec3 vRw;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvRk=rk;vRw=(modelMatrix*vec4(transformed,1.0)).xyz;');
@@ -33,7 +37,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         vec3 vc=vec3(0.62);
         #endif
         diffuseColor.rgb=mix(diffuseColor.rgb,rc*vc*1.55,smoothstep(0.2,0.9,vRk));}`);}};
-  terrM.onBeforeCompile=grassFrag;terrM.customProgramCacheKey=()=>ROCK?'grass2r':'grass2';
+  terrM.onBeforeCompile=grassFrag;terrM.customProgramCacheKey=()=>ROCK?'grass4r':'grass4';
   {const fb=farM.onBeforeCompile;farM.onBeforeCompile=sh=>{fb(sh);grassFrag(sh);};}
   const ASF=window.HDON&&window.HDIMG&&HDIMG.asfalto;
   const roadTex=(kind,lanes)=>{const t=canvasTex(ASF?512:256,(g,n)=>{const pav=kind==='pv';g.fillStyle=pav?'#9d978c':'#45474b';g.fillRect(0,0,n,n);
@@ -64,6 +68,25 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const riverM=new THREE.MeshStandardMaterial({color:0x3a6170,roughness:0.15,metalness:0.1,envMapIntensity:1,polygonOffset:true,polygonOffsetFactor:-0.5,polygonOffsetUnits:-1});
   const portM=mat(0xb5b0a4,{roughness:0.85}),concM=mat(0x9a968e,{roughness:0.9,side:THREE.DoubleSide}),deckM=mat(0x77756f,{roughness:0.92,side:THREE.DoubleSide}),tunM=new THREE.MeshStandardMaterial({color:0x4a4846,roughness:0.95,side:THREE.DoubleSide}),lampM=new THREE.MeshBasicMaterial({color:0xffe2a0});
   const railM=new THREE.MeshStandardMaterial({color:0xaeb3b8,metalness:0.6,roughness:0.4,side:THREE.DoubleSide});
+  // banchina (terra che sfuma nel prato) e ciuffo d'erba alta: due quadrati incrociati con fili disegnati, che spariscono dolcemente oltre i 200 m
+  const VERGE=(()=>{const m=new THREE.MeshStandardMaterial({vertexColors:true,transparent:true,depthWrite:false,roughness:1,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+    m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float va;varying float vA;').replace('#include <begin_vertex>','#include <begin_vertex>\nvA=va;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vA;').replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*=vA;');};m.customProgramCacheKey=()=>'verge1';
+    const tex=canvasTex(256,(g,n)=>{g.clearRect(0,0,n,n);for(let i=0;i<150;i++){const x=n*0.5+(Math.random()-0.5)*n*0.7*Math.random(),h=n*(0.3+Math.random()*0.66),bend=(x-n/2)*0.8+(Math.random()-0.5)*n*0.2,w=1.2+Math.random()*2.2;
+        const c=[[120,148,62],[146,166,74],[176,176,96],[104,134,56],[190,182,110]][i%5];g.strokeStyle=`rgb(${c[0]},${c[1]},${c[2]})`;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x,n);g.quadraticCurveTo(x+bend*0.3,n-h*0.6,x+bend,n-h);g.stroke();}});
+    tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
+    const tm=new THREE.MeshStandardMaterial({map:tex,alphaTest:0.4,side:THREE.DoubleSide,roughness:1});tm.alphaToCoverage=true;
+    tm.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>',`vec4 wpT=modelMatrix*instanceMatrix*vec4(transformed,1.0);float dT=distance(wpT.xz,cameraPosition.xz);transformed*=1.0-smoothstep(150.0,210.0,dT);
+      #include <project_vertex>`);};tm.customProgramCacheKey=()=>'tuft1';
+    const q=(r)=>{const g=new THREE.PlaneGeometry(1.1,0.9);g.translate(0,0.45,0);g.rotateY(r);return g;};
+    const A=q(0),B=q(Math.PI/2),g=new THREE.BufferGeometry();['position','normal','uv'].forEach(k=>{const a=A.attributes[k],b=B.attributes[k],arr=new Float32Array(a.array.length+b.array.length);arr.set(a.array);arr.set(b.array,a.array.length);g.setAttribute(k,new THREE.BufferAttribute(arr,a.itemSize));});
+    const ia=[...A.index.array],nA=A.attributes.position.count;g.setIndex(ia.concat([...B.index.array].map(v=>v+nA)));
+    // pietre del muretto: file irregolari di sassi grigio-bruni, muschio in basso
+    const wt=canvasTex(512,(g,n)=>{g.fillStyle='#5b574c';g.fillRect(0,0,n,n);let y=0;while(y<n){const rh=18+Math.random()*22;let x=-Math.random()*30;while(x<n){const w=24+Math.random()*46,c=90+Math.random()*60|0,t=Math.random()*14;
+        g.fillStyle=`rgb(${c+t|0},${c+t*0.6|0},${c-8|0})`;g.beginPath();g.ellipse(x+w/2,y+rh/2,w/2-1.5,rh/2-1.5,(Math.random()-0.5)*0.25,0,7);g.fill();g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.ellipse(x+w/2-2,y+rh/2-3,w/3,rh/5,0,0,7);g.fill();x+=w;}y+=rh;}
+      const gr=g.createLinearGradient(0,0,0,n);gr.addColorStop(0,'rgba(60,80,30,0)');gr.addColorStop(0.75,'rgba(60,80,30,0)');gr.addColorStop(1,'rgba(70,95,35,.55)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
+    const wm=new THREE.MeshStandardMaterial({map:wt,roughness:0.95});
+    return{m,tm,g,wm};})();
   // delineatore: paletto bianco con fascia nera e catadiottro (arancio a destra, bianco a sinistra); montante del guardrail
   const DELG=(()=>{const box=(w,h,d,y,c,x=0)=>{const g=new THREE.BoxGeometry(w,h,d).toNonIndexed();g.translate(x,y,0);const n=g.attributes.position.count,C=new Float32Array(n*3),col=new THREE.Color(c);for(let i=0;i<n;i++){C[i*3]=col.r;C[i*3+1]=col.g;C[i*3+2]=col.b;}g.setAttribute('color',new THREE.BufferAttribute(C,3));return g;};
     const merge=L=>{const P=[],N=[],C=[];L.forEach(g=>{P.push(...g.attributes.position.array);N.push(...g.attributes.normal.array);C.push(...g.attributes.color.array);});const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));return g;};
@@ -76,7 +99,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   // facciate per tipo di edificio: ogni tessera = 2 finestre (7 m) x 2 piani (6,4 m); il piano terra dei palazzi ha i negozi
   const FAC=(()=>{const N=256,C=128;const win=(g,x,y,w,h,frame)=>{if(frame){g.fillStyle=frame;g.fillRect(x-5,y-5,w+10,h+9);}const gr=g.createLinearGradient(x,y,x+w,y+h);gr.addColorStop(0,'#2c3640');gr.addColorStop(0.55,'#46525d');gr.addColorStop(1,'#26303a');g.fillStyle=gr;g.fillRect(x,y,w,h);
         g.fillStyle='rgba(220,230,240,.18)';g.fillRect(x+2,y+2,w*0.35,h-4);g.fillStyle='rgba(200,200,190,.9)';g.fillRect(x+w/2-1.5,y,3,h);};
-    const T=(draw,size)=>{const t=canvasTex(size||N,draw);t.anisotropy=8;return t;};
+    const T=(draw,size)=>{const sz=size||N,k=CFG.facX===false?1:2;const t=canvasTex(sz*k,(g,n)=>{g.scale(k,k);draw(g,sz);});t.anisotropy=8;return t;};   // disegnate al doppio della risoluzione: finestre e cornici nitide
     const dirt=(g,n,a)=>{for(let i=0;i<900;i++){g.fillStyle=`rgba(70,60,50,${Math.random()*a})`;g.fillRect(Math.random()*n,Math.random()*n,2,3);}};
     const hist=T((g,n)=>{g.fillStyle='#fff';g.fillRect(0,0,n,n);dirt(g,n,0.05);for(let r=0;r<2;r++)for(let c=0;c<2;c++){const x=c*C,y=r*C;
         g.fillStyle='rgba(0,0,0,.10)';g.fillRect(x,y+C-10,C,6);g.fillStyle='rgba(255,255,255,.35)';g.fillRect(x,y+C-14,C,4);
@@ -108,7 +131,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const base=[[mkB(fTex),12,12],[mkB(fTexB),12,12],[mk(off,{roughness:0.25,metalness:0.35,envMapIntensity:1.3}),7,6.4],[mk(ind,{roughness:0.7}),7,0],[mkB(fTexC),12,12],[mk(low),7,0],[mk(shop),7,6.4],
       [mk(chal),7,6.4],[mk(hist),7,6.4],[mk(mod),7,6.4],[mk(stn),7,6.4]];
     // pacchetto HD: facciate fotografiche (palazzoni, condomini, case di mattoni) e finestre dipinte su pietra, intonaco e mattoni veri
-    const I=window.HDON&&window.HDIMG||{};if(I.blocchi1&&I.pietra&&I.intonaco&&I.mattoni){
+    const I=window.HDON&&window.HDIMG||{};if(CFG.photoFac&&I.blocchi1&&I.pietra&&I.intonaco&&I.mattoni){
       const ph=(img)=>T((g,n)=>g.drawImage(img,0,0,n,n),512),mul=(img,over)=>T((g,n)=>{g.drawImage(img,0,0,n,n);g.globalCompositeOperation='multiply';g.drawImage(over.image,0,0,n,n);g.globalCompositeOperation='source-over';},512);
       base.push([mk(ph(I.blocchi1)),24,30],[mk(ph(I.condominio)),20,24],[mk(ph(I.facciate)),16,13],[mk(mul(I.pietra,hist)),7,6.4],[mk(mul(I.intonaco,hist)),7,6.4],[mk(mul(I.mattoni,mod)),7,6.4],
         [mk(ph(I.blocchi2)),24,30],[mk(ph(I.blocchi3)),24,30],[mk(mul(I.pietra,stn)),7,6.4],
@@ -178,7 +201,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const low=new THREE.Box3();all.forEach(x=>{for(let i=0;i<x.n;i++)if(x.pos[i*3+1]<bb.min.y+0.04*h)low.expandByPoint(_gv.set(x.pos[i*3],0,x.pos[i*3+2]));});const c=low.isEmpty()?bb.getCenter(new THREE.Vector3()):low.getCenter(new THREE.Vector3());
       gShift(all,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));
       const parts=[...by.entries()].map(([m,l])=>{const mm=gFixMat(m.clone());const leaf=leafRe.test(m.name)||m.transparent||m.alphaTest>0;
-        if(leaf){mm.transparent=false;mm.alphaTest=0.45;mm.side=THREE.DoubleSide;if(mm.map){mm.map=coverageMips(mm.map,0.45);}mm.roughness=0.9;mm.metalness=0;if(tint!==1)mm.color.multiplyScalar(tint);}else{mm.roughness=Math.max(0.8,mm.roughness);mm.metalness=0;}
+        if(leaf){mm.transparent=false;mm.alphaTest=0.45;mm.alphaToCoverage=true;mm.side=THREE.DoubleSide;if(mm.map){mm.map=coverageMips(mm.map,0.45);}mm.roughness=0.9;mm.metalness=0;if(tint!==1)mm.color.multiplyScalar(tint);}else{mm.roughness=Math.max(0.8,mm.roughness);mm.metalness=0;}
         return{geo:gMerge(l),mat:mm,name:m.name};});
       // versione leggera per la distanza (stesso modello, poche foglie e niente rami fini): stessi materiali
       let far=null;const FG=MODELS['hd_'+key2file[key]+'_far'];if(FG){const fs=FG.scene;fs.updateMatrixWorld(true);const fb=new Map();fs.traverse(m=>{if(!m.isMesh)return;const nm=m.material.name;if(!fb.has(nm))fb.set(nm,[]);fb.get(nm).push(gBake(m,m.matrixWorld));});
@@ -509,6 +532,36 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const put=(arr,geo,mat)=>{const n=arr.length/4;if(!n)return;const im=new THREE.InstancedMesh(geo,mat,n),M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),V=new THREE.Vector3(),S1=new THREE.Vector3(1,1,1);
         for(let k=0;k<n;k++){Q.setFromAxisAngle(Y,arr[k*4+3]);V.set(arr[k*4],arr[k*4+1],arr[k*4+2]);M.compose(V,Q,S1);im.setMatrixAt(k,M);}im.position.set(x0,0,z0);im.frustumCulled=false;im.matrixAutoUpdate=false;im.updateMatrix();scene.add(im);T.objs.push(im);};
       put(D,DELG.r,DELG.m);put(Dl,DELG.l,DELG.m);put(Pst,DELG.p,railM);}
+    // bordi strada di campagna: banchina di terra sfumata verso il prato e ciuffi d'erba alta che scorrono ai lati
+    if(!QG.lo){const VP=[],VC=[],VA=[],VI=[],TF=[],dens=MOBILE?0.3:1;
+      for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7||R.c===0)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
+        if(NW.cityAt(R.X[i],R.Z[i])||NW.cityAt(R.X[i+1],R.Z[i+1]))continue;
+        const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx,hw=R.w/2,VW=1.2;
+        [1,-1].forEach(sd=>{const base=VP.length/3;
+          for(let k=0;k<2;k++){const x=k?R.X[i+1]:R.X[i],z=k?R.Z[i+1]:R.Z[i],h=k?R.Hh[i+1]:R.Hh[i];
+            const ix=x+nx*sd*(hw-0.05),iz=z+nz*sd*(hw-0.05),ox=x+nx*sd*(hw+VW),oz=z+nz*sd*(hw+VW),ho=Math.max(h-0.6,Math.min(h+0.6,NW.Hg(ox,oz)))+0.04;
+            VP.push(ix-x0,h+0.03,iz-z0,ox-x0,ho,oz-z0);VC.push(0.17,0.14,0.08,0.2,0.2,0.09);VA.push(0.95,0);}
+          VI.push(...(sd>0?[base,base+1,base+2,base+1,base+3,base+2]:[base,base+2,base+1,base+1,base+2,base+3]));
+          if(NW.nearJ(R.X[i],R.Z[i],10))return;
+          for(let u=Math.ceil(a/0.4)*0.4;u<b;u+=0.4){const rr=hsh(Math.floor(u*7.3)+l[q]*131,sd>0?17:977);if(rr>dens)continue;const f=(u-a)/L,off=hw+0.7+Math.pow(hsh(Math.floor(u*3.1)+l[q],sd+5),1.6)*3.2,
+              x=R.X[i]+(R.X[i+1]-R.X[i])*f+nx*sd*off,z=R.Z[i]+(R.Z[i+1]-R.Z[i])*f+nz*sd*off,h=NW.Hg(x,z);if(waterLv(x,z)!=null)continue;TF.push(x-x0,h,z-z0,rr*40,0.45+hsh(Math.floor(u*5.7)+3,l[q])*0.55);}});}
+      // muretti a secco lungo alcuni tratti di strada di campagna (a tratti, non agli incroci)
+      {const WP=[],WU=[],WI=[];for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7||R.c<3)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
+          const mid=(a+b)/2;if(hsh(Math.floor(mid/180),l[q])>0.45)continue;if(NW.cityAt(R.X[i],R.Z[i])||NW.nearJ(R.X[i],R.Z[i],14)||NW.nearJ(R.X[i+1],R.Z[i+1],14))continue;
+          const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx;
+          [1,-1].forEach(sd=>{if(hsh(Math.floor(mid/240)+7,l[q]*3+sd)>0.6)return;const off=R.w/2+3.6,th=0.32,H=0.85;
+            const pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,NW.Hg(x,z)-0.1];});
+            if(waterLv(pts[0][0],pts[0][1])!=null)return;
+            const v0=a/3,v1=b/3,ox=nx*th,oz=nz*th,base=WP.length/3;
+            pts.forEach(([x,z,h],k)=>{const v=k?v1:v0;WP.push(x-ox-x0,h,z-oz-z0, x-ox*0.6-x0,h+H,z-oz*0.6-z0, x+ox*0.6-x0,h+H,z+oz*0.6-z0, x+ox-x0,h,z+oz-z0);WU.push(v,0,v,0.47,v,0.53,v,1);});
+            WI.push(base,base+4,base+1,base+1,base+4,base+5, base+1,base+5,base+2,base+2,base+5,base+6, base+2,base+6,base+3,base+3,base+6,base+7);});}
+        if(WP.length){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(WP,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(WU,2));g.setIndex(WI);g.computeVertexNormals();
+          const m=new THREE.Mesh(g,VERGE.wm);m.position.set(x0,0,z0);m.castShadow=m.receiveShadow=true;scene.add(m);T.objs.push(m);T.segs&&0;}}
+      if(VP.length){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(VP,3));g.setAttribute('color',new THREE.Float32BufferAttribute(VC,3));g.setAttribute('va',new THREE.Float32BufferAttribute(VA,1));g.setIndex(VI);g.computeVertexNormals();
+        const m=new THREE.Mesh(g,VERGE.m);m.position.set(x0,0,z0);m.renderOrder=1;scene.add(m);T.objs.push(m);}
+      if(TF.length){const n=TF.length/5,im=new THREE.InstancedMesh(VERGE.g,VERGE.tm,n),M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),V=new THREE.Vector3(),S=new THREE.Vector3();
+        for(let k=0;k<n;k++){Q.setFromAxisAngle(Y,TF[k*5+3]);V.set(TF[k*5],TF[k*5+1],TF[k*5+2]);const sc=TF[k*5+4];S.set(sc,sc*(0.8+0.4*((k*37)%10)/10),sc);M.compose(V,Q,S);im.setMatrixAt(k,M);}
+        im.position.set(x0,0,z0);im.frustumCulled=false;im.matrixAutoUpdate=false;im.updateMatrix();scene.add(im);T.objs.push(im);}}
     // marciapiedi rialzati con cordolo (interrotti agli incroci)
     {const A=[],Uv=[],I=[];const q4=(p,uv)=>{const s0=A.length/3;p.forEach(v=>A.push(v[0]-x0,v[1],v[2]-z0));uv.forEach(u=>Uv.push(u[0],u[1]));I.push(s0,s0+1,s0+2,s0+1,s0+3,s0+2);};
       runs.forEach((list,ri)=>{const R=NW.roads[ri];if(!NW.swRoad(R)||!NW.cityAt(R.X[list[0]],R.Z[list[0]]))return;const hw=R.w/2,W=NW.SWW,Hs=NW.SWH;
