@@ -4,7 +4,7 @@
 const DW={l:null,f:null,on:false};function dashW(limit){const show=started&&!pl.ended&&!HOME.mode;if(show!==DW.on){DW.on=show;document.getElementById('dashW').style.display=show?'flex':'none';}if(!show)return;
   const L=limit?Math.round(limit):null;if(L!==DW.l){DW.l=L;const e=document.getElementById('limSign');e.style.visibility=L?'visible':'hidden';e.firstChild.textContent=L||'';}
   const fo=(CFG.fuel??1)!==0&&pl.fuel!=null,f=fo?Math.round(pl.fuel/tankOf(pl.P)*100):null;if(f!==DW.f){DW.f=f;const w=document.getElementById('fuelW');w.style.display=fo?'flex':'none';if(fo){w.querySelector('#fuelBar i').style.width=f+'%';w.classList.toggle('low',f<12);}}}
-function makeGuido(){try{if(HDX&&HDX.guido)return HDX.guido();}catch(e){}
+function makeGuido(){return new THREE.Group();/* Guido a piedi tolto */try{if(HDX&&HDX.guido)return HDX.guido();}catch(e){}
   const M=(c,r=0.75)=>new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(),roughness:r,flatShading:true});
   const skin=M(0xe8b48c,0.7),hair=M(0x3a2618,0.85),jacket=M(0x24365a,0.7),tee=M(0xf6f4ef,0.8),jeans=M(0x3f5f8f,0.85),shoe=M(0x4a3020,0.6),eye=M(0x1a1410,0.3),white=M(0xffffff,0.4),lip=M(0xb5705a,0.7),belt=M(0x2a1c12,0.6);
   const G=new THREE.Group(),add=(geo,mat,x,y,z,p)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(p||G).add(m);return m;};
@@ -178,12 +178,19 @@ HOME.enter=function(k,instant,board){if(HOME.mode!=='walk'||HOME.busy)return;if(
     HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;if(DRV){if(board){const[dx,dz]=hW(5.0,-1);DRV.from={x:dx,z:dz};}else DRV.skipBoard=true;}startDrive();};
   if(instant)go();else fade(go);};
 HOME.finish=function(){if(HOME.done)return;HOME.done=true;document.getElementById('homeUI').style.display='none';fade(()=>{HOME.guido.visible=false;HOME.doorA=0;setTimeout(()=>{HOME.cat.visible=true;HOME.mode=null;endRun('casa');},700);});};
-HOME.arrive=function(){if(CAR.on){CAR.repair();CAR.save();}HOME.mode='return';HOME.t=0;muteCar(true);pl.vx=pl.vy=0;pl.hb=true;if(pl.lights)toggleLights();
-  const ch=Math.cos(pl.h),sh=-Math.sin(pl.h),lx=sh,lz=-ch,d=pl.T.W/2+0.55,g=HOME.gd;g.x=pl.x+lx*d;g.z=pl.z+lz*d;g.h=Math.atan2(lx,lz);g.sp=0;
-  fade(()=>{HOME.guido.visible=true;if(view==='cockpit'){view='chase';applyView();HOME.wasCk=true;}});
-  {const ui=document.getElementById('homeUI');ui.style.display='flex';document.getElementById('homeCard').style.display='none';document.getElementById('homeSkip').textContent='Entra subito in casa';}
-  const[u,vv]=hL(g.x,g.z);HOME.path=vv>3?[[-57.8,vv],[-57.8,2.5],[-29,0],[-3,-1],[4.6,-1],[7.2,-1]]:[[u,-22.5],[-3,-1],[4.6,-1],[7.2,-1]];HOME.c.st='greet';HOME.c.stT=0;
-  pl.navMsg='Bentornato a casa, Guido!';pl.navMsgT=4;say('Bentornato a casa');};
+HOME.arrive=function(){if(CAR.on){CAR.repair();CAR.save();}pl.vx=pl.vy=0;pl.hb=true;muteCar(true);pl.navMsg='Bentornato a casa!';pl.navMsgT=4;say('Bentornato a casa');HOME.finish();};
+// cambio auto a casa: fermandosi vicino a un'altra auto del garage si può passare a quella (quella di prima torna al suo posto)
+HOME.swap=function(k){if(HOME.busy||HOME.mode)return;if(CAR.on&&!CAR.s.own[k]){CAR.buy(k);HOME.swapK=null;return;}HOME.busy=true;fade(()=>{HOME.busy=false;try{const O=HOME.cars[selKey];if(O){O.m.visible=HOME.vis!==false;if(!O.dyn)O.dyn=NWT.addDyn(O.segs);}
+  const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
+  resetPlayer();pl.x=C.x;pl.z=C.z;pl.h=C.pad?C.h:HOME.carH;pl.vx=pl.vy=pl.r=0;NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;C.m.visible=false;if(C.dyn){NWT.remDyn(C.dyn);C.dyn=null;}
+  applyView();pl.camInit=false;try{savePrefs();}catch(e){}HOME.swapK=null;document.getElementById('homeUI').style.display='none';pl.navMsg='Ora guidi: '+PHYS[k].label;pl.navMsgT=3;}catch(e){console.error('cambio auto',e);}});};
+HOME.swapTick=function(){if(HOME.mode||!HOME.ok||!started||!pl.mesh||HOME.vis===false||CINE.intro){if(CINE.intro&&HOME.swapK){HOME.swapK=null;document.getElementById('homeUI').style.display='none';}return;}const sp=Math.abs(pl.vx||0);let best=null,bd=1e9;
+  if(sp<2)for(const[k,C]of Object.entries(HOME.cars)){if(k===selKey||!C.m.visible)continue;const d=Math.hypot(pl.x-C.x,pl.z-C.z);if(d<bd){bd=d;best=k;}}
+  const ui=document.getElementById('homeUI'),card=document.getElementById('homeCard');
+  if(best&&bd<5.5){if(HOME.swapK!==best){HOME.swapK=best;const P=PHYS[best],lk=CAR.on&&!CAR.s.own[best];card.innerHTML=`<b>${P.label}</b><span>${P.desc}</span>`+(lk?`<span>In vendita: <b>${CAR.fmt(P.price)}</b> · hai ${CAR.fmt(CAR.s.money)}</span><button id="homeSw">💶 Compra${isTouch?'':' (Invio)'}</button>`:`<button id="homeSw">🔑 Passa a quest'auto${isTouch?'':' (Invio)'}</button>`);document.getElementById('homeSw').onclick=()=>HOME.swap(best);}
+    ui.style.display='flex';card.style.display='flex';document.getElementById('homeSkip').style.display='none';}
+  else if(HOME.swapK){HOME.swapK=null;card.style.display='none';ui.style.display='none';}};
+
 // ---------- aggiornamento a ogni fotogramma ----------
 function walkInput(){let f=(kd(KEYMAP.thr)||keys.ArrowUp||keys.KeyW?1:0)-(kd(KEYMAP.brk)||keys.ArrowDown||keys.KeyS?1:0),t=(kd(KEYMAP.right)||keys.ArrowRight?1:0)-(kd(KEYMAP.left)||keys.ArrowLeft?1:0);
   if(touch.on){f=Math.max(f,touch.thr>0.1?touch.thr:0)-(touch.brk>0.1?touch.brk:0);t=touch.steer;}
@@ -193,7 +200,7 @@ function pushOut(o,r){if(!NWT)return;for(let it=0;it<2;it++)for(const s of NWT.s
 function walkTo(g,tx,tz,sp,dt){const dx=tx-g.x,dz=tz-g.z,d=Math.hypot(dx,dz);if(d<0.08){g.sp+=(0-g.sp)*Math.min(1,dt*8);return d;}const th=Math.atan2(dx,dz);let dh=th-g.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));g.h+=Math.sign(dh)*Math.min(Math.abs(dh),dt*5);
   const want=Math.min(sp,d*2.2)*Math.max(0,Math.cos(dh));g.sp+=(want-g.sp)*Math.min(1,dt*6);g.x+=Math.sin(g.h)*g.sp*dt;g.z+=Math.cos(g.h)*g.sp*dt;return d;}
 HOME.setVis=function(v){if(HOME.vis===v)return;HOME.vis=v;HOME.G.visible=v;Object.values(HOME.cars).forEach(c=>{if(!v){c.m.userData._v=c.m.visible;c.m.visible=false;if(c.tr){c.tr.userData._v=c.tr.visible;c.tr.visible=false;}}else{c.m.visible=c.m.userData._v!==false;if(c.tr)c.tr.visible=c.tr.userData._v!==false;}});};
-HOME.tick=function(dt){if(!HOME.ok)return;const far=Math.abs(camera.position.x-HOME.x)+Math.abs(camera.position.z-HOME.z)>900&&!HOME.mode;HOME.setVis(!far);if(far)return;HOME.t+=dt;const t=simT;
+HOME.tick=function(dt){if(!HOME.ok)return;const far=Math.abs(camera.position.x-HOME.x)+Math.abs(camera.position.z-HOME.z)>900&&!HOME.mode;HOME.setVis(!far);if(far){if(HOME.swapK){HOME.swapK=null;document.getElementById('homeUI').style.display='none';}return;}HOME.swapTick();HOME.t+=dt;const t=simT;
   // luci di casa al buio, porta
   const n=NIGHT||DUSK;if(HOME.lit!==n){HOME.lit=n;HOME.nm.forEach(([m,i])=>m.emissiveIntensity=n?i:0);}
   HOME.door.rotation.y+=(-HOME.doorA-HOME.door.rotation.y)*Math.min(1,dt*4);

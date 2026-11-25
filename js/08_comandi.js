@@ -55,6 +55,7 @@ addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPU
   const A=actOf(e.code);
   if(PHOTO.on){if(e.code==='Escape'||A==='photo')photoToggle();else if(e.code==='Space'||e.code==='Enter')photoShot();e.preventDefault();return;}
   if(MAP.on){if(e.code==='Escape'||A==='map')mapToggle();e.preventDefault();return;}
+  if(started&&!HOME.mode&&HOME.swapK&&(e.code==='Enter'||e.code==='NumpadEnter')&&menu.style.display!=='flex'){HOME.swap(HOME.swapK);e.preventDefault();return;}
   if(started&&HOME.mode&&menu.style.display!=='flex'){if(e.code==='Escape'){showMenu();return;}if(A==='map'){mapToggle();e.preventDefault();return;}if(A==='photo'){SHOT.take();e.preventDefault();return;}if(A==='rec'){recToggle();return;}
     if(HOME.mode==='walk'&&(e.code==='Enter'||e.code==='NumpadEnter'||e.code==='KeyE')&&HOME.near)HOME.enter(HOME.near);if(HOME.mode==='return'&&(e.code==='Enter'||e.code==='NumpadEnter'))HOME.finish();if(e.code.startsWith('Arrow')||e.code==='Space'||e.code==='Tab')e.preventDefault();return;}
   if(e.code==='Escape')showMenu();

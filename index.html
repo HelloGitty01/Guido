@@ -473,7 +473,7 @@ const MODELS={};
 // pacchetto "modelli dettagliati": si può spegnere dalle impostazioni e si torna esattamente alla grafica di prima
 window.HDON=(()=>{try{const c=JSON.parse(localStorage.getItem('sim_cfg')||'{}');if(c.dv!==48)return true;return c.hd!=null?!!c.hd:c.q!=='bassa';}catch(e){return true;}})();
 window.HDIMG={};
-(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','guido','hd_linden_far','hd_fir_far','hd_palm_far','hd_cypress_far','hd_poplar_far','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
+(function(){const files=['cars','fleet','trees','props','buildings','house','cow','ped','people'].concat(HDON?['hd_linden','hd_fir','hd_palm','hd_cypress','hd_poplar','hd_linden_far','hd_fir_far','hd_palm_far','hd_cypress_far','hd_poplar_far','hd_bus','hd_cow','hd_cow2','hd_cat','hd_people','hd_road','hd_food']:[]),box=document.getElementById('loadBox'),prog={};
   const upd=()=>{let a=0;files.forEach(f=>a+=prog[f]||0);const p=Math.round(a/files.length*100);const b=document.getElementById('ldBar'),t=document.getElementById('ldTxt');if(b)b.style.width=p+'%';if(t)t.innerHTML=(p<40?'Accendo il motore…':p<80?'Scaldo le gomme…':'Controllo gli specchietti…')+' <b>'+p+'%</b>';};
   const go=()=>{const t=document.getElementById('ldTxt');if(t)t.innerHTML='Preparo le strade…';setTimeout(()=>MAIN().then(()=>{if(box)box.remove();
       const sp=document.getElementById('splash'),bt=document.getElementById('splGo'),mn=document.getElementById('menu');if(t)t.textContent='';bt.style.display='block';bt.focus();
