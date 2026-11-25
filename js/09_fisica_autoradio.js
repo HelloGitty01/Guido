@@ -201,7 +201,8 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   const v=Math.hypot(pl.vx,pl.vy),maxD=0.6/(1+v*v/115)*(P.truck?0.85:1),avx=Math.max(Math.abs(pl.vx),0.5);   // sterzo progressivo: in velocità serve più volante per lo stesso angolo
   const si=pl.steerIn;// risposta progressiva: un tocco di tasto o un filo di levetta = poco sterzo; il pieno arriva solo tenendo premuto (o a fondo corsa)
   let tgtD;
-  if(pl.steerAnalog)tgtD=Math.sign(si)*Math.pow(Math.abs(si),touch.on?1.2+0.5*CFG.prec:1.6+0.5*CFG.prec)*maxD;
+  if(pl.steerAnalog&&pl.wheelIn&&!touch.on)tgtD=si*0.6*(P.truck?0.85:1);   // volante calibrato: il volante vero comanda direttamente le ruote (fondo corsa = tutto sterzo), la curva è già nella calibrazione
+  else if(pl.steerAnalog)tgtD=Math.sign(si)*Math.pow(Math.abs(si),touch.on?1.2+0.5*CFG.prec:1.6+0.5*CFG.prec)*maxD;
   else{// tastiera: il tasto chiede una curva "normale" per la velocità (accelerazione laterale di circa mezza g, con Maiusc più stretta);
     // da fermo o in manovra è tutto sterzo, in città una decina di gradi, in autostrada pochi gradi
     const lock=0.6*(P.truck?0.85:1),aL=G*0.9*(P.mu||0.8),vv=Math.max(0.8,avx);
@@ -334,7 +335,7 @@ function scrTex(kind,lvl){const key=kind+lvl;let a=SCR.tex[key];if(!a)a=SCR.tex[
     const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.anisotropy=4;a.push(new THREE.MeshStandardMaterial({map:t,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,roughness:0.45,metalness:0.35}));}
   return a[(Math.random()*a.length)|0];}
 const _sr=new THREE.Raycaster(),_sv=new THREE.Vector3(),_sn=new THREE.Vector3(),_su=new THREE.Vector3(),_st=new THREE.Vector3(),_sm=new THREE.Matrix4(),_sq=new THREE.Vector3();
-function scratch(cx,cz,vn,zone){const car=pl.mesh,body=car&&car.userData.body;if(!body||vn<1.6)return;car.updateMatrixWorld(true);
+function scratch(cx,cz,vn,zone){try{if(CTRL.pad.cal&&CTRL.pad.cal.ok&&vn>=1.6){const g=CAL.gp(),va=g&&g.vibrationActuator;if(va)va.playEffect('dual-rumble',{duration:Math.min(400,90+vn*25),strongMagnitude:Math.min(1,vn/12),weakMagnitude:Math.min(1,vn/8)});}}catch(e){}const car=pl.mesh,body=car&&car.userData.body;if(!body||vn<1.6)return;car.updateMatrixWorld(true);
   const L=[];body.traverse(o=>{if(o.isMesh&&o.visible!==false&&o.userData.role!=='wheel'&&o.userData.role!=='glass'&&!o.userData.scr&&o.geometry&&o.geometry.attributes.position&&!Array.isArray(o.material))L.push(o);});if(!L.length)return;
   const y=(pl.yb??pl.terrH)+Math.min(0.9,(pl.T.H||1.4)*0.42);let ox=cx-pl.x,oz=cz-pl.z;const ol=Math.hypot(ox,oz)||1;ox/=ol;oz/=ol;
   _sr.set(new THREE.Vector3(cx+ox*1.5,y,cz+oz*1.5),new THREE.Vector3(-ox,0,-oz));_sr.far=4;const hit=_sr.intersectObjects(L,false)[0];if(!hit||!hit.face)return;

@@ -18,7 +18,10 @@ function ctrlUI(){const ov=document.getElementById('ctrlOv'),bx=document.getElem
   const P=CTRL.pad,ax=a=>a==='auto'?'auto':(a<0?'—':'asse '+a);
   let h='<h3>Tastiera</h3><table>';
   Object.keys(CTRL.keys).forEach(k=>{h+=`<tr><td>${CTRL_LBL[k]}</td>`+[0,1].map(i=>`<td><button class="sm cb" data-k="${k}" data-i="${i}">${ctrlWait&&ctrlWait.act===k&&ctrlWait.slot===i?'premi…':keyName(CTRL.keys[k][i])}</button></td>`).join('')+'</tr>';});
-  h+='</table><h3>Gamepad / volante</h3><table>';
+  h+='</table><h3>Gamepad / volante</h3>';
+  {const C=CTRL.pad.cal;h+=`<div class="row" style="gap:8px;flex-wrap:wrap;margin:6px 0 10px"><button class="sm" id="calGo">🎮 Calibra volante e pedali</button>`+(C&&C.ok?`<span style="color:#9fdc9f">✓ calibrato</span><button class="sm" id="calDel">Togli calibrazione</button>`:'')+`</div>`;
+   if(C&&C.ok)h+=`<div class="row" style="gap:10px;flex-wrap:wrap;font-size:13px"><label>Curva sterzo <input type="range" id="calGs" min="1" max="2" step="0.05" value="${C.gs}"> <b id="calGsV">${C.gs.toFixed(2)}</b></label><label>Curva freno <input type="range" id="calGb" min="1" max="2.5" step="0.05" value="${C.gb}"> <b id="calGbV">${C.gb.toFixed(2)}</b></label><label>Zona morta <input type="range" id="calDz" min="0" max="0.1" step="0.005" value="${C.dz}"> <b id="calDzV">${Math.round(C.dz*100)}%</b></label></div>`;}
+  h+='<table>';
   h+=`<tr><td>Sterzo</td><td colspan=2><button class="sm ca" data-w="steer">${ctrlWait&&ctrlWait.what==='steer'?'gira a destra…':ax(P.steer.a)+(P.steer.s<0?' (invertito)':'')}</button></td></tr>`;
   h+=`<tr><td>Pedali</td><td colspan=2><select id="pedMode"><option value="one"${P.pedal.mode==='one'?' selected':''}>un asse (su gas, giù freno)</option><option value="two"${P.pedal.mode==='two'?' selected':''}>due assi separati</option></select></td></tr>`;
   if(P.pedal.mode==='one')h+=`<tr><td>Asse gas/freno</td><td colspan=2><button class="sm ca" data-w="pedal">${ctrlWait&&ctrlWait.what==='pedal'?'spingi verso il gas…':ax(P.pedal.a)}</button></td></tr>`;
@@ -30,7 +33,9 @@ function ctrlUI(){const ov=document.getElementById('ctrlOv'),bx=document.getElem
   bx.querySelectorAll('.cb').forEach(b=>b.onclick=()=>{ctrlWait={kind:'key',act:b.dataset.k,slot:+b.dataset.i};ctrlUI();});
   bx.querySelectorAll('.cp').forEach(b=>b.onclick=()=>{ctrlWait={kind:'btn',act:b.dataset.k,base:padSnap()};ctrlUI();});
   bx.querySelectorAll('.ca').forEach(b=>b.onclick=()=>{ctrlWait={kind:'axis',what:b.dataset.w,base:padSnap()};ctrlUI();});
-  const pm=document.getElementById('pedMode');if(pm)pm.onchange=()=>{P.pedal.mode=pm.value;saveCtrl();ctrlUI();};}
+  const pm=document.getElementById('pedMode');if(pm)pm.onchange=()=>{P.pedal.mode=pm.value;saveCtrl();ctrlUI();};
+  const cg=document.getElementById('calGo');if(cg)cg.onclick=()=>CAL.start();const cd=document.getElementById('calDel');if(cd)cd.onclick=()=>{CTRL.pad.cal=null;saveCtrl();ctrlUI();};
+  [['calGs','gs',v=>v.toFixed(2)],['calGb','gb',v=>v.toFixed(2)],['calDz','dz',v=>Math.round(v*100)+'%']].forEach(([id,k,f])=>{const e=document.getElementById(id);if(e)e.oninput=()=>{CTRL.pad.cal[k]=+e.value;document.getElementById(id+'V').textContent=f(+e.value);saveCtrl();};});}
 function padSnap(){const gp=(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g);return gp?{ax:[...gp.axes],bt:gp.buttons.map(b=>b.pressed||b.value>0.5)}:{ax:[],bt:[]};}
 // cattura dei tasti prima del gioco
 addEventListener('keydown',e=>{if(!ctrlWait||ctrlWait.kind!=='key')return;e.preventDefault();e.stopImmediatePropagation();
@@ -167,7 +172,7 @@ function readInput(dt){
   const gps=navigator.getGamepads?navigator.getGamepads():[];
   // gamepad: stick sinistro = sterzo, stick destro su/giù = gas/freno, grilletto destro = marcia (D→N→R→N→D), grilletto sinistro = clacson
   for(const gp of gps){if(!gp||ctrlWait)continue;const CP=CTRL.pad,BT=CP.btn,ax=(gp.axes[CP.steer.a]||0)*CP.steer.s;
-    const B=i=>i>=0&&gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>0.5),prev=pl.gpPrev||{};if(B(BT.hb))pl.hb=true;if(B(BT.flash))pl.flash=true;const now={};Object.keys(BT).forEach(k=>now[k]=B(BT[k]));
+    const PB=CP.cal&&CP.cal.ok?[CP.cal.thr,CP.cal.brk].filter(q=>q&&q.t==='b').map(q=>q.i):[],B=i=>i>=0&&!PB.includes(i)&&gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>0.5),prev=pl.gpPrev||{};if(B(BT.hb))pl.hb=true;if(B(BT.flash))pl.flash=true;const now={};Object.keys(BT).forEach(k=>now[k]=B(BT[k]));
     const ed=k=>now[k]&&!prev[k];
     if(ed('gear')){selectGear(pl.sel==='R'?'D':'R');}
     if(now.horn!==!!prev.horn)setHorn(now.horn);
@@ -175,12 +180,14 @@ function readInput(dt){
     if(ed('blL'))manualBlink(-1);if(ed('blR'))manualBlink(1);if(ed('unflip')&&(pl.wat||pl.flip))unflip();if(ed('car'))cycleCar(1);if(ed('radio'))RADIO.next();if(ed('radioP'))RADIO.prev();if(ed('navMute'))navMute();if(ed('volUp'))radioVol((CFG.vol??0.6)+0.1);if(ed('volDn'))radioVol((CFG.vol??0.6)-0.1);
     pl.gpPrev=now;
     let gT=0,gB=0;
+    if(CP.cal&&CP.cal.ok){const R=CAL.read(gp);analog=true;pl.wheelIn=true;pl.steerTgt=R.s;thr=Math.max(thr,R.t);brk=Math.max(brk,R.b);break;}
+    pl.wheelIn=false;
     if(CP.pedal.mode==='two'){const nv=(A)=>{if(A.a<0)return 0;const r=gp.axes[A.a]||0,d=(A.full-A.rest)||1;return Math.max(0,Math.min(1,(r-A.rest)/d));};gT=nv(CP.thrA);gB=nv(CP.brkA);}
     else{const yAx=CP.pedal.a==='auto'?((gp.axes.length>3&&Math.abs(gp.axes[3])>0.02)?gp.axes[3]:(gp.axes[1]||0)):(gp.axes[CP.pedal.a]||0);const yv=yAx*(CP.pedal.a==='auto'?-1:CP.pedal.s);gT=Math.max(0,yv);gB=Math.max(0,-yv);}
     const jdz=CFG.jdz??0.08,jg=CFG.jgain??1;if(Math.abs(ax)>jdz||gT>0.06||gB>0.06){analog=true;pl.steerTgt=Math.sign(ax)*Math.min(1,Math.max(0,Math.abs(ax)-jdz)/(1-jdz)*jg);
       if(gT>0.06)thr=Math.max(thr,(gT-0.06)/0.94);if(gB>0.06)brk=Math.max(brk,(gB-0.06)/0.94);}break;}
   if(touch.on){analog=true;thr=Math.max(thr,touch.thr);brk=Math.max(brk,touch.brk);pl.steerTgt=touch.steer;}
-  if(analog){const d=pl.steerTgt-pl.steerIn;pl.steerIn+=Math.sign(d)*Math.min(Math.abs(d),1.8*CFG.rap*dt);pl.steerAnalog=true;}
+  if(analog){const d=pl.steerTgt-pl.steerIn;pl.steerIn+=Math.sign(d)*Math.min(Math.abs(d),(pl.wheelIn&&!touch.on?12:1.8*CFG.rap)*dt);pl.steerAnalog=true;}
   else{
     pl.steerAnalog=false;
     if(steerT!==0){
@@ -232,3 +239,36 @@ document.querySelectorAll('#maGear button').forEach(b=>b.addEventListener('touch
       if(MA.arcId==null&&MA.steer!==0){const k=Math.min(Math.abs(MA.steer),dt*(3.2+Math.abs(pl.vx||0)*0.05));MA.steer-=Math.sign(MA.steer)*k;put(MA.steer*MAXA);}
       document.querySelectorAll('#maGear button').forEach(b=>b.classList.toggle('on',b.dataset.g===(pl.sel||'D')));
       requestAnimationFrame(loop);};requestAnimationFrame(loop);}}
+
+// ---- calibrazione guidata di volante e pedaliera: riposo, sterzo a fondo corsa, pedali a fondo; ogni pedale può essere un asse o un pulsante analogico (i grilletti in X-Input) ----
+const CAL={st:-1,base:null,cand:null,
+  gp(){return(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g);},
+  snap(g){return{a:[...g.axes],b:g.buttons.map(b=>b.value||0)};},
+  val(g,q){return q.t==='a'?(g.axes[q.i]||0):((g.buttons[q.i]&&g.buttons[q.i].value)||0);},
+  read(g){const C=CTRL.pad.cal,dz=C.dz||0;let s=0;{const v=g.axes[C.steer.i]||0,c=C.steer.c;let n=v<c?(v-c)/Math.abs(c-C.steer.l||1)*Math.sign(c-C.steer.l||1)*-1:(v-c)/Math.abs(C.steer.r-c||1)*Math.sign(C.steer.r-c||1);
+      n=Math.max(-1,Math.min(1,n));const m=Math.max(0,Math.abs(n)-dz)/(1-dz);s=Math.sign(n)*Math.pow(m,C.gs||1);}
+    const ped=(q,gm)=>{if(!q)return 0;const v=this.val(g,q),n=Math.max(0,Math.min(1,(v-q.rest)/((q.full-q.rest)||1)));return Math.pow(Math.max(0,n-dz)/(1-dz),gm||1);};
+    return{s,t:ped(C.thr,1),b:ped(C.brk,C.gb||1.5)};},
+  msg:['Lascia volante e pedali a riposo, poi premi Avanti.','Gira il volante <b>tutto a sinistra</b> e tienilo lì, poi Avanti.','Ora <b>tutto a destra</b> e tienilo lì, poi Avanti.','Premi <b>a fondo l\'acceleratore</b> e tienilo, poi Avanti.','Premi <b>a fondo il freno</b> e tienilo, poi Avanti.','Prova: gira e premi i pedali, le barre devono seguirti. Se va bene, Salva.'],
+  start(){if(!this.gp()){alert('Collega il volante e muovilo un attimo, poi riprova.');return;}this.st=0;this.tmp={gs:1.5,gb:1.5,dz:0.02,ok:true};
+    let o=document.getElementById('calOv');if(!o){o=document.createElement('div');o.id='calOv';o.style.cssText='position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;font:15px Inter,system-ui;color:#eee';
+      o.innerHTML='<div style="background:#1b1d22;border:1px solid #444;border-radius:14px;padding:22px;width:min(520px,92vw)"><h3 style="margin:0 0 6px">Calibrazione volante e pedali</h3><div id="calStep" style="color:#aaa;font-size:13px"></div><p id="calMsg" style="min-height:44px"></p><div id="calBars"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="sm" id="calNo">Annulla</button><button class="sm" id="calOk" style="background:#b3242b;color:#fff">Avanti</button></div></div>';document.body.appendChild(o);
+      document.getElementById('calNo').onclick=()=>this.stop();document.getElementById('calOk').onclick=()=>this.next();}
+    o.style.display='flex';this.show();this.loop();},
+  stop(){this.st=-1;const o=document.getElementById('calOv');if(o)o.style.display='none';},
+  show(){document.getElementById('calStep').textContent='Passo '+(this.st+1)+' di 6';document.getElementById('calMsg').innerHTML=this.msg[this.st];document.getElementById('calOk').textContent=this.st===5?'Salva':'Avanti';},
+  best(g,skip){const S=this.snap(g),B=this.base;let bi=null,bd=0.25;S.a.forEach((v,i)=>{if(skip.some(q=>q.t==='a'&&q.i===i))return;const d=Math.abs(v-B.a[i]);if(d>bd){bd=d;bi={t:'a',i,rest:B.a[i],full:v};}});
+    S.b.forEach((v,i)=>{if(skip.some(q=>q.t==='b'&&q.i===i))return;const d=Math.abs(v-B.b[i]);if(d>bd){bd=d;bi={t:'b',i,rest:B.b[i],full:v};}});return bi;},
+  next(){const g=this.gp();if(!g)return;const T=this.tmp;
+    if(this.st===0){this.base=this.snap(g);}
+    else if(this.st===1){let bi=-1,bd=0.3;g.axes.forEach((v,i)=>{const d=Math.abs(v-this.base.a[i]);if(d>bd){bd=d;bi=i;}});if(bi<0){document.getElementById('calMsg').innerHTML='Non ho visto muoversi il volante: giralo tutto a sinistra e riprova.';return;}T.steer={i:bi,c:this.base.a[bi],l:g.axes[bi]};}
+    else if(this.st===2){T.steer.r=g.axes[T.steer.i];if(Math.sign(T.steer.r-T.steer.c)===Math.sign(T.steer.l-T.steer.c)){document.getElementById('calMsg').innerHTML='Sembra lo stesso lato: gira tutto a <b>destra</b> e riprova.';return;}}
+    else if(this.st===3){const q=this.best(g,[{t:'a',i:T.steer.i}]);if(!q){document.getElementById('calMsg').innerHTML='Non ho visto muoversi l\'acceleratore: premilo a fondo e riprova.';return;}T.thr=q;}
+    else if(this.st===4){const q=this.best(g,[{t:'a',i:T.steer.i},T.thr]);if(!q){document.getElementById('calMsg').innerHTML='Non ho visto muoversi il freno: premilo a fondo e riprova.';return;}T.brk=q;}
+    else if(this.st===5){CTRL.pad.cal=T;saveCtrl();this.stop();ctrlUI();return;}
+    this.st++;this.show();},
+  loop(){if(this.st<0)return;requestAnimationFrame(()=>this.loop());const g=this.gp(),el=document.getElementById('calBars');if(!g||!el)return;
+    const bar=(lbl,v,c)=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><span style="width:90px">${lbl}</span><div style="flex:1;height:12px;background:#333;border-radius:6px;position:relative;overflow:hidden">${c?`<div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#888"></div><div style="position:absolute;top:0;bottom:0;background:#e0565d;left:${50+Math.min(0,v)*50}%;width:${Math.abs(v)*50}%"></div>`:`<div style="height:100%;width:${v*100}%;background:#e0565d"></div>`}</div><span style="width:44px;text-align:right">${Math.round(v*100)}</span></div>`;
+    if(this.st===5){const sv=CTRL.pad.cal;CTRL.pad.cal=this.tmp;const R=this.read(g);CTRL.pad.cal=sv;el.innerHTML=bar('Sterzo',R.s,true)+bar('Gas',R.t)+bar('Freno',R.b);}
+    else el.innerHTML='<div style="font:12px monospace;color:#9aa;word-break:break-all">assi: '+g.axes.map(v=>v.toFixed(2)).join(' ')+'<br>pulsanti analogici: '+g.buttons.map((b,i)=>b.value>0.02?i+':'+b.value.toFixed(2):'').filter(Boolean).join(' ')+'</div>';}};
+addEventListener('keydown',e=>{if(CAL.st>=0&&(e.code==='Enter'||e.code==='NumpadEnter')){e.preventDefault();e.stopImmediatePropagation();CAL.next();}},true);
