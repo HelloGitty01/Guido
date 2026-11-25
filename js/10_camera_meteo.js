@@ -177,7 +177,11 @@ function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspec
   camera.aspect=w0/h0;camera.setViewOffset(w0,h0,-l0,-t0,W,H);camera.updateProjectionMatrix();
   CKO.cam.left=0;CKO.cam.right=W;CKO.cam.top=H;CKO.cam.bottom=0;CKO.cam.updateProjectionMatrix();
   ['C','L','R'].forEach(k=>{const q=CKO.q[k],g=C.glass[k];q.visible=!!g;if(!g)return;const x0=l+g[0]*s,x1=l+g[2]*s,y0=t+g[1]*s,y1=t+g[3]*s;q.position.set((x0+x1)/2,H-(y0+y1)/2,0);q.scale.set(x1-x0,y1-y0,1);});}
-function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HOME.mode)?CKIMG[selKey]:null;CKO.on=!!C;CKO.cfg=C||null;const ov=document.getElementById('ckOv');ov.style.display=C?'block':'none';
+// con l'abitacolo fotografico la carrozzeria 3D (cofano compreso) non si disegna: dal parabrezza si vede solo la strada
+function ckBody(show){const m=pl.mesh;if(!m)return;if(CKO.hid&&CKO.hid!==m){CKO.hid=null;}
+  if(!show){if(CKO.hid===m)return;m.traverse(o=>{if(o.isMesh||o.isLine||o.isPoints){o.userData._ckh=true;o.layers.set(5);}});CKO.hid=m;}
+  else if(CKO.hid===m){m.traverse(o=>{if(o.userData._ckh){o.layers.set(0);delete o.userData._ckh;}});CKO.hid=null;}}
+function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HOME.mode)?CKIMG[selKey]:null;CKO.on=!!C;CKO.cfg=C||null;ckBody(!C);const ov=document.getElementById('ckOv');ov.style.display=C?'block':'none';
   if(C){const img=document.getElementById('ckImg');if(img.dataset.src!==C.src){img.src=C.src;img.dataset.src=C.src;}
     ov.querySelectorAll('canvas.ckNav').forEach(c=>{if(!pl.ck||c!==pl.ck.scv)c.remove();});if(pl.ck&&CKNAV[selKey]&&pl.ck.scv.parentNode!==ov){pl.ck.scv.className='ckNav';ov.insertBefore(pl.ck.scv,document.getElementById('ckWheel'));}
     const wi=document.getElementById('ckWheel');wi.style.display=C.wheel?'block':'none';if(C.wheel&&wi.dataset.src!==C.wheel.src){wi.src=C.wheel.src;wi.dataset.src=C.wheel.src;}}
@@ -221,6 +225,8 @@ function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
   const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
   pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;
+  // con l'abitacolo fotografico si vede solo la foto: niente cofano 3D dal parabrezza (le luci restano accese)
+  if(pl.mesh&&pl.mesh.userData.ckHid!==CKO.on){pl.mesh.userData.ckHid=CKO.on;pl.mesh.traverse(o=>{if(o.isMesh||o.isSprite||o.isPoints||o.isLine){if(CKO.on){o.userData.vis0=o.visible;o.visible=false;}else if(o.userData.vis0!==undefined){o.visible=o.userData.vis0;delete o.userData.vis0;}}});}
   if(CKO.on&&CKO.cfg.g)ckNeedles();
   if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,th=pl.delta*pl.P.ratio,c=Math.cos(th),sn=Math.sin(th),k=Wh.a/Wh.b;if(Math.abs(th-(CKO.th??99))>0.002){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
   if(pl.ck.wipers.length){const on=WX==='rain';pl.wipT=(pl.wipT||0)+(on?dt:0);const th=on?(1-Math.cos(pl.wipT*Math.PI*1.25))/2*1.35:0;
