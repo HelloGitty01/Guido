@@ -245,7 +245,7 @@ const CAL={st:-1,base:null,cand:null,
   gp(){return(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g);},
   snap(g){return{a:[...g.axes],b:g.buttons.map(b=>b.value||0)};},
   val(g,q){return q.t==='a'?(g.axes[q.i]||0):((g.buttons[q.i]&&g.buttons[q.i].value)||0);},
-  read(g){const C=CTRL.pad.cal,dz=C.dz||0;let s=0;{const v=g.axes[C.steer.i]||0,c=C.steer.c;let n=v<c?(v-c)/Math.abs(c-C.steer.l||1)*Math.sign(c-C.steer.l||1)*-1:(v-c)/Math.abs(C.steer.r-c||1)*Math.sign(C.steer.r-c||1);
+  read(g){const C=CTRL.pad.cal,dz=C.dz||0;let s=0;{const v=g.axes[C.steer.i]||0,c=C.steer.c;const dl=(C.steer.l-c)||-1,dr=(C.steer.r-c)||1;let n=Math.sign(v-c)===Math.sign(dl)?-(v-c)/dl:(v-c)/dr;   // lato sinistro = dalla parte del valore registrato a sinistra, qualunque sia il verso dell'asse
       n=Math.max(-1,Math.min(1,n));const m=Math.max(0,Math.abs(n)-dz)/(1-dz);s=Math.sign(n)*Math.pow(m,C.gs||1);}
     const ped=(q,gm)=>{if(!q)return 0;const v=this.val(g,q),n=Math.max(0,Math.min(1,(v-q.rest)/((q.full-q.rest)||1)));return Math.pow(Math.max(0,n-dz)/(1-dz),gm||1);};
     return{s,t:ped(C.thr,1),b:ped(C.brk,C.gb||1.5)};},
