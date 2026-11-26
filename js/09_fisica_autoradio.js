@@ -68,10 +68,18 @@ function switchCar(k){if(!PHYS[k]||k===selKey)return;if(!CAR.owns(k)){pl.navMsg=
   pl.navMsg='Ora guidi: '+PHYS[k].label;pl.navMsgT=3;try{savePrefs();}catch(e){}}
 function cycleCar(d){if(!started||pl.flip)return;const K=Object.keys(PHYS).filter(k=>!PHYS[k].mission&&CAR.owns(k)||k===selKey);if(K.length<2)return;const i=K.indexOf(selKey);switchCar(K[(i+d+K.length)%K.length]);}
 const G=9.81;
-function startFlip(dir,strong){if(pl.flip)return;setTimeout(()=>crashSound(8,'side',dir),300);pl.flip={phi:pl.susp.r+pl.slopeR,w:dir*(strong?3.2:2.2),dir,target:dir*(strong?Math.PI:Math.PI/2),done:false,t:0};pl.flips=(pl.flips||0)+1;crashSound(10);
+function startFlip(dir,strong){if(pl.flip)return;setTimeout(()=>crashSound(8,'side',dir),300);{const v=Math.hypot(pl.vx,pl.vy);pl.flip={phi:pl.susp.r+pl.slopeR,w:dir*Math.min(9,(strong?3.4:2.4)+Math.abs(pl.vy)*0.35+v*0.06),dir,done:false,t:0,feed:Math.min(1.6,v/14),lastK:0};}pl.flips=(pl.flips||0)+1;crashSound(10);
   pl.infrMsg='Ribaltamento!';pl.infrT=4;}
 function stepFlip(dt){const F=pl.flip;F.t+=dt;
-  if(!F.done){F.w+=F.dir*7*dt;F.phi+=F.w*dt;if(Math.abs(F.phi)>=Math.abs(F.target)){F.phi=F.target;F.done=true;F.w=0;crashSound(6);}}
+  // ribaltamento fisico: l'auto ruota sullo spigolo; posizioni stabili su ruote, fianco e tetto (ogni 90°), punti di ribaltamento a metà.
+  // L'energia della corsa alimenta la rotazione finché l'auto striscia: a forte velocità si capotta più volte, poi si ferma dove capita (anche di nuovo sulle ruote).
+  if(!F.done){const[vx0,vz0]=getWorldVel(),v=Math.hypot(vx0,vz0);
+    for(let s=0;s<4;s++){const h=dt/4;let acc=-5.2*Math.sin(4*F.phi);if(v>4)acc+=F.dir*F.feed*v*0.55*Math.max(0,1-F.t/6);F.w+=acc*h;
+      const nearRest=Math.abs(Math.sin(2*F.phi))<0.25;F.w*=Math.exp(-h*(nearRest?2.6:0.6));F.phi+=F.w*h;
+      const k=Math.round(F.phi/(Math.PI/2));if(k!==F.lastK&&Math.abs(F.phi-k*Math.PI/2)<0.12){F.lastK=k;if(Math.abs(F.w)>1.2){crashSound(Math.min(10,3+Math.abs(F.w)),'side',F.dir);F.w*=0.55;}}}
+    F.feed*=Math.exp(-dt*0.35);
+    if(F.t>1.2&&Math.abs(F.w)<0.35&&Math.abs(Math.sin(2*F.phi))<0.06){F.done=true;F.w=0;const k=Math.round(F.phi/(Math.PI/2));F.phi=k*Math.PI/2;
+      if(((k%4)+4)%4===0){/* di nuovo sulle ruote: si riparte */const keep=pl.h;pl.flip=null;pl.vx=pl.vy=pl.r=0;Object.assign(pl.susp,{h:0.3,hv:0,p:0,pv:0,r:0,rv:0});pl.h=keep;pl.infrMsg='Di nuovo sulle ruote!';pl.infrT=3;return;}}}
   // l'auto striscia sul fianco/tetto fino a fermarsi
   const[wx,wz]=getWorldVel(),v=Math.hypot(wx,wz);if(v>0.01){const k=Math.max(0,v-5.5*dt)/v;setWorldVel(wx*k,wz*k);}
   const[ux,uz]=getWorldVel();pl.x+=ux*dt;pl.z+=uz*dt;pl.r*=Math.max(0,1-dt*2);pl.h-=pl.r*dt;pl.km+=Math.hypot(ux,uz)*dt/1000;
@@ -428,7 +436,20 @@ function knock(c,dt){const K=c.kn;if(!K)return;const sp=Math.hypot(K.vx,K.vz);
     if(ds<0.02&&Math.abs(K.yaw)<0.01){c.kn=null;return;}if(ds>0.3)c.v=Math.min(c.v,1.5);}
   else c.v=Math.min(c.v,0.5);
   c.mesh.position.x+=K.x;c.mesh.position.z+=K.z;c.mesh.rotation.y+=K.yaw;}
-function collide(dt){if(window.__nocol)return;
+// auto parcheggiate: ostacoli veri che, urtati, si spostano e ruotano secondo la forza dell'urto (con il freno a mano tirato)
+const PARKMOV=new Set();
+function parkedHit(c,rad){const L=CARLOD.list;for(let i=0;i<L.length;i++){const e=L[i],g=e.g;if(!e.stat||!g.parent||!g.visible)continue;const p=g.position;if(Math.abs(p.x-c.x)>6||Math.abs(p.z-c.z)>6)continue;
+    const T=TYPES[e.k]||{L:4.3,W:1.8},ry=g.rotation.y,dx0=Math.cos(ry),dz0=-Math.sin(ry),hl=T.L/2-T.W/2,cr=T.W/2;
+    for(const t of[-1,0,1]){const ox=p.x+dx0*t*hl,oz=p.z+dz0*t*hl,dx=c.x-ox,dz=c.z-oz,dd=Math.hypot(dx,dz);if(dd>=rad+cr||dd<1e-4)continue;
+      const nx=dx/dd,nz=dz/dd,pen=rad+cr-dd,m1=pl.P.m,m2=1250*(T.L/4.3)*(T.W/1.8),K=e.kv||(e.kv={vx:0,vz:0,r:0});
+      pl.x+=nx*pen*m2/(m1+m2);pl.z+=nz*pen*m2/(m1+m2);p.x-=nx*pen*m1/(m1+m2);p.z-=nz*pen*m1/(m1+m2);
+      let[wx,wz]=getWorldVel();const vr=(wx-K.vx)*nx+(wz-K.vz)*nz;if(vr<0){const j=-(1.25)*vr/(1/m1+1/m2);wx+=nx*j/m1;wz+=nz*j/m1;setWorldVel(wx,wz);K.vx-=nx*j/m2;K.vz-=nz*j/m2;
+        const rx=ox-p.x,rz=oz-p.z,I=m2*(T.L*T.L+T.W*T.W)/12;K.r+=(rz*(nx*j)-rx*(nz*j))/I;impact(-vr*Math.min(1.4,2*m2/(m1+m2)),c.x-nx*rad,c.z-nz*rad,nx,nz);}
+      e.core.visible=true;g.updateMatrix();g.updateMatrixWorld(true);PARKMOV.add(e);}}}
+function parkedStep(dt){PARKMOV.forEach(e=>{const K=e.kv,g=e.g;if(!K||!g.parent){PARKMOV.delete(e);return;}const v=Math.hypot(K.vx,K.vz);if(v>0.01){const k=Math.max(0,v-7.5*dt)/v;K.vx*=k;K.vz*=k;}else{K.vx=K.vz=0;}
+    K.r*=Math.max(0,1-dt*3.5);g.position.x+=K.vx*dt;g.position.z+=K.vz*dt;g.rotation.y+=K.r*dt;if(NW){const h=NW.H(g.position.x,g.position.z);if(isFinite(h))g.position.y+=(h+0.04-g.position.y)*Math.min(1,dt*8);}
+    g.updateMatrix();g.updateMatrixWorld(true);if(v<0.01&&Math.abs(K.r)<0.01)PARKMOV.delete(e);});}
+function collide(dt){if(window.__nocol)return;parkedStep(dt);
   pl.hitCd-=dt;const T=pl.T,ch=Math.cos(pl.h),sh=Math.sin(pl.h),rad=T.W/2+0.03;
   const circ=[-1,-0.33,0.33,1].map(t=>({x:pl.x+ch*t*(T.L/2-rad),z:pl.z-sh*t*(T.L/2-rad)}));
   // urto con un'auto del traffico: si scambiano quantità di moto in base alle masse (il furgone ti sposta, tu sposti la Panda)
@@ -466,6 +487,7 @@ function collide(dt){if(window.__nocol)return;
         pl.x+=dx/dd*(rad+ar-dd)*0.6;pl.z+=dz/dd*(rad+ar-dd)*0.6;if(vn>0.5){setWorldVel(wx*0.6,wz*0.6);if(vn>2&&pl.hitCd<=0){pl.hitCd=1;pl.hits++;crashSound(Math.min(6,vn),'front',0);}}}}
     for(const pd of peds){if(pd.down)continue;const q=pd.m.position;const dx=c.x-q.x,dz=c.z-q.z;if(Math.abs(dx)>3||Math.abs(dz)>3)continue;const dd=Math.hypot(dx,dz);
       if(dd<rad+0.3){const sp=Math.hypot(pl.vx,pl.vy);if(sp>1.6)pedHit(pd,sp);else{pd.t=Math.max(0,pd.t-0.02);if(dd>1e-3){pl.x+=dx/dd*(rad+0.3-dd);pl.z+=dz/dd*(rad+0.3-dd);}pl.vx*=0.5;}}}
+    parkedHit(c,rad);
     for(const car of cars){const p=car.mesh.position;if(Math.abs(p.x-c.x)>6||Math.abs(p.z-c.z)>6)continue;
       const ry=car.mesh.rotation.y,d={x:Math.cos(ry),z:-Math.sin(ry)},hl=car.T.L/2-car.T.W/2;
       for(const t of[-1,0,1]){const ox=p.x+d.x*t*hl,oz=p.z+d.z*t*hl,dx=c.x-ox,dz=c.z-oz,dd=Math.hypot(dx,dz),rr=rad+car.T.W/2;

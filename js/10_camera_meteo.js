@@ -256,7 +256,7 @@ function speedFx(dt){const v=Math.abs(pl.vx),on=started&&!PHOTO.on&&!pl.ended&&!
   if(bl!==SFX.b){SFX.b=bl;const e=SFX.el||(SFX.el=document.getElementById('spdBlur'));if(e){e.style.display=bl?'block':'none';e.style.backdropFilter=e.style.webkitBackdropFilter=bl?'blur('+bl+'px)':'';}}}
 function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
-  const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
+  const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+Math.max(0,-Math.cos(F.phi))*pl.T.H*0.85,pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
   pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;if(m.userData.steerW)m.userData.steerW.rotation.x=pl.delta*pl.P.ratio;
   // con l'abitacolo fotografico si vede solo la foto: niente cofano 3D dal parabrezza (le luci restano accese)
   if(pl.mesh&&pl.mesh.userData.ckHid!==CKO.on){pl.mesh.userData.ckHid=CKO.on;pl.mesh.traverse(o=>{if(o.isMesh||o.isSprite||o.isPoints||o.isLine)o.layers.set(CKO.on?1:0);});}
@@ -281,12 +281,13 @@ function updateCamera(dt){
   if(m.userData.glb){const rel=Math.max(-0.06,Math.min(pl.P.truck?0.17:0.13,(pl.yb??pl.terrH)-pl.terrH));for(const q of w){if(q.userData.y0==null)q.userData.y0=q.position.y;q.position.y=q.userData.y0-rel;}}
   if(m.userData.glb){const a=(pl.lockF?0:pl.vx+(pl.spinW||0)*Math.sign(pl.vx||1)*3)*dt/(pl.T.wr||0.31);for(let i=0;i<w.length;i++){const sp=w[i].children[0];if(sp&&sp.name==='WSPIN')sp.rotation.z-=a;}}
   // auto ribaltata: l'abitacolo-foto non può capovolgersi, quindi si passa alla vista esterna e si rientra quando l'auto è di nuovo sulle ruote
-  {const up=m.matrixWorld.elements[5]-(pl.wat&&pl.wat.y<pl.wat.lv-0.8?1:0);if(view==='cockpit'&&up<0.82&&!PHOTO.on){pl.autoOut=true;pl.autoOutT=0;view='chase';applyView();}
-   else if(pl.autoOut&&view==='chase'){if(up>0.96){pl.autoOutT=(pl.autoOutT||0)+dt;if(pl.autoOutT>1.2){pl.autoOut=false;view='cockpit';applyView();}}else pl.autoOutT=0;}}
+  {const up=m.matrixWorld.elements[5]-(pl.wat&&pl.wat.y<pl.wat.lv-0.8?1:0);if(view==='cockpit'&&pl.flip&&up<0.3&&!PHOTO.on){pl.autoOut=true;pl.autoOutT=0;view='chase';applyView();}
+   else if(pl.autoOut&&view==='chase'){if(up>0.96&&!pl.flip){pl.autoOutT=(pl.autoOutT||0)+dt;if(pl.autoOutT>1.2){pl.autoOut=false;view='cockpit';applyView();}}else pl.autoOutT=0;}}
   if(view==='cockpit'){
     tmpV.copy(pl.ck.eye);m.localToWorld(tmpV);camera.position.copy(tmpV);
     const look=new THREE.Vector3(pl.ck.eye.x+10,pl.ck.eye.y-1.5,pl.ck.eye.z);m.localToWorld(look);
     const q0=camera.quaternion.clone();camera.lookAt(look);
+    camera.rotateZ(-((pl.susp?pl.susp.r:0)+(pl.slopeR||0)));
     if(pl.camInit)camera.quaternion.copy(q0.slerp(camera.quaternion,1-Math.exp(-dt*18)));pl.camInit=true;
     {const v=Math.abs(pl.vx);if(v>5&&!pl.air){const amp=Math.min(0.0032,v*v*0.0000032)*(pl.surfR==='asphalt'||!pl.surfR?1:2.6),t=simT;camera.rotateZ(amp*(Math.sin(t*37)+Math.sin(t*61+1.3))*0.5);camera.rotateX(amp*0.6*(Math.sin(t*43+0.7)+Math.sin(t*71))*0.5);}}
   } else {
@@ -305,7 +306,8 @@ function updateCamera(dt){
   }
   speedFx(dt);
   const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?3.2:0;headSpot.distance=pl.flash?170:70;headSpot.angle=pl.flash?0.36:0.62;headSpot.penumbra=0.55;}
-  if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);{const y0=pl.yb??pl.terrH,fl=pl.flash?40:16;headSpot.position.set(pl.x+ch*(pl.T.L/2+0.1),y0+0.72,pl.z-sh*(pl.T.L/2+0.1));headSpot.target.position.set(pl.x+ch*fl,TH(pl.x+ch*fl,pl.z-sh*fl),pl.z-sh*fl);}}
+  if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);{// faro agganciato all'auto: segue sempre muso, beccheggio e rollio
+    const m=pl.mesh;if(m&&headSpot.parent!==m){m.add(headSpot);m.add(headSpot.target);}const fl=pl.flash?40:16;headSpot.position.set(pl.T.L/2+0.1,0.72,0);headSpot.target.position.set(fl,-0.6,0);}}
   if(CINE.intro)CINE.introCam(dt);else if(POL.sc){POL.cam(dt);CINE.used=true;}else if(CINE.used){CINE.used=false;if(view!=='cockpit')camera.position.copy(tmpV);}
   if(window.__camFix){const f=window.__camFix;camera.position.set(pl.x+f[0],pl.terrH+f[1],pl.z+f[2]);camera.lookAt(pl.x,pl.terrH+0.7,pl.z);}
   sun.position.set(pl.x+SUNOFF.x,pl.terrH+SUNOFF.y,pl.z+SUNOFF.z);sun.target.position.set(pl.x,pl.terrH,pl.z);

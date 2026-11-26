@@ -278,7 +278,16 @@ function carTier(k,which,need){const key=k+'|'+which;let t=CARLOD.tiers[key];if(
     t.ims=t.parts.map(P=>{const im=new THREE.InstancedMesh(P.geo,P.mat,cap);im.frustumCulled=false;im.receiveShadow=P.r!=='blob';im.castShadow=false;im.userData.role=P.r;
       if(P.r==='paint'){im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(cap*3).fill(1),3);im.instanceColor.setUsage(THREE.DynamicDrawUsage);}im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.count=0;if(P.r==='blob')im.renderOrder=-1;scene.add(im);return im;});t.cap=cap;}
   return t;}
-function buildCarLOD(){CARLOD.inst=true;}CARLOD.tier=(k,w,n)=>carTier(k,w,n);
+function buildCarLOD(){CARLOD.inst=true;}
+// fari del traffico di notte: una macchia di luce sull'asfalto davanti a ogni auto in marcia, tutte in un'unica mesh
+const CARBEAM=(()=>{const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');g.save();g.scale(1,0.55);const gr=g.createRadialGradient(0,116,4,0,116,250);
+  gr.addColorStop(0,'rgba(255,240,210,0.0)');gr.addColorStop(0.08,'rgba(255,240,210,0.85)');gr.addColorStop(0.45,'rgba(255,232,190,0.35)');gr.addColorStop(1,'rgba(255,225,180,0)');g.fillStyle=gr;g.fillRect(0,0,256,240);g.restore();
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;const m=new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-6,polygonOffsetUnits:-12,toneMapped:false});
+  const geo=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2).translate(0.5,0,0),CAP=160,im=new THREE.InstancedMesh(geo,m,CAP);im.count=0;im.frustumCulled=false;im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.renderOrder=3;scene.add(im);
+  const L=new THREE.Matrix4(),M=new THREE.Matrix4();
+  return{m,im,update(list,night,cx,cz){m.opacity=night;im.visible=night>0.01;if(!im.visible){im.count=0;return;}let n=0;for(let i=0;i<list.length&&n<CAP;i++){const e=list[i],g=e.g;if(e.stat||!g.parent||!g.visible)continue;if((g.position.x-cx)**2+(g.position.z-cz)**2>160*160)continue;
+      const T=TYPES[e.k]||{L:4.2};g.updateMatrix();L.makeScale(9,1,4.2).setPosition(T.L/2-0.2,0.07,0);M.multiplyMatrices(g.matrix,L);im.setMatrixAt(n++,M);}
+    im.count=n;im.instanceMatrix.needsUpdate=true;}};})();CARLOD.tier=(k,w,n)=>carTier(k,w,n);
 function updateCarLOD(){const cx=camera.position.x,cz=camera.position.z,R2=(MOBILE?40:QG.hi?130:90)**2,RS2=(MOBILE?10:14)**2,RT2=(MOBILE?25:45)**2,night=NIGHT||WX!=='clear',L=CARLOD.list;
   // via le auto non più in scena (zone smontate)
   if((CARLOD.prT=(CARLOD.prT||0)+1)>120){CARLOD.prT=0;CARLOD.list=L.filter(e=>e.g.parent);}
@@ -291,7 +300,8 @@ function updateCarLOD(){const cx=camera.position.x,cz=camera.position.z,R2=(MOBI
     for(let j=0;j<E.length;j++){const e=E[j],g=e.g;e.core.visible=false;g.updateMatrix();for(let q=0;q<t.ims.length;q++){const im=t.ims[q];im.instanceMatrix.array.set(g.matrix.elements,j*16);if(im.instanceColor)im.instanceColor.setXYZ(j,e.col.r,e.col.g,e.col.b);}}
     t.ims.forEach(im=>{im.count=E.length;im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
       if(im.userData.role==='tail')im.material.emissiveIntensity=night?0.9:0.1;else if(im.userData.role==='head')im.material.emissiveIntensity=night?2.4:0.1;});}
-  for(const key in CARLOD.tiers){const t=CARLOD.tiers[key];if(t&&t.ims&&!used.has(t))t.ims.forEach(im=>{if(im.count){im.count=0;}});}}
+  for(const key in CARLOD.tiers){const t=CARLOD.tiers[key];if(t&&t.ims&&!used.has(t))t.ims.forEach(im=>{if(im.count){im.count=0;}});}
+  CARBEAM.update(L,NIGHT?0.55:(WX!=='clear'?0.12:0),cx,cz);}
 
 function makeCar(k,color,shadow=true,fine=false,opt={}){
   if(CARX[k])return makeCarGLB(k,color,shadow,fine,opt);

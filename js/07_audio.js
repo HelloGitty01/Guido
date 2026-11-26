@@ -99,8 +99,8 @@ function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
    else{eng.sqg.gain.setTargetAtTime(0,t,0.05);eng.tg.gain.setTargetAtTime(Math.min(0.25,(lat+spin+brake)*1.4)*(sf0==='asphalt'?0:1),t,0.05);}}
   const v=st.kmh/3.6,sf=pl.surfR||'asphalt';
   {const sc=(sf==='asphalt'&&!pl.air)?Math.max(0,Math.min(0.12,((pl.slip||0)/(pl.alPk||0.2)-0.65)*0.5))*Math.min(1,v/9):0;eng.scg.gain.setTargetAtTime(sc,t,0.06);eng.scf.frequency.setTargetAtTime(240+v*5,t,0.1);}
-  eng.wg.gain.setTargetAtTime(Math.min(0.26,(v/36)**2*0.19)*(view==='cockpit'?0.85:1),t,0.15);eng.wf.frequency.setTargetAtTime(380+v*18,t,0.15);
-  eng.whg.gain.setTargetAtTime(Math.max(0,Math.min(0.05,(v-22)*0.0025))*(view==='cockpit'?1:0.5),t,0.3);eng.whf.frequency.setTargetAtTime(1600+v*22,t,0.3);
+  eng.wg.gain.setTargetAtTime(0,t,0.15);/* fruscio d'aria crescente con la velocità: tolto */eng.wf.frequency.setTargetAtTime(380+v*18,t,0.15);
+  eng.whg.gain.setTargetAtTime(0,t,0.3);eng.whf.frequency.setTargetAtTime(1600+v*22,t,0.3);
   passBy(t,v);
   eng.rg.gain.setTargetAtTime(sf==='asphalt'?Math.min(0.055,v*0.0017):Math.min(0.3,v*0.014),t,0.08);eng.rf.frequency.setTargetAtTime(sf==='asphalt'?170+v*4:900,t,0.1);
   updateTrafficVoices(t);}
