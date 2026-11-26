@@ -159,6 +159,16 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     if(st==='alpino'){if(k===10||k===8)return r<0.6?19:14;return r<0.5?14:21;}
     if(st==='lido'||st==='lago'||st==='lago2'||st==='paese'){if(k===8)return 15;if(k===10)return 19;return r<0.65?21:r<0.85?15:16;}
     if(k===8)return 15;if(k===10)return 19;return h>24?(r<0.5?12:17):(r<0.7?21:16);};
+  // loghi di grandi aziende inventate per i grattacieli (atlante 2×4)
+  const LOGO=(()=>{const B=[['VALCOM','#0a4fa8','#fff',0],['NORDIA','#0d5c3f','#fff',1,'BANCA'],['ORBIS','#111','#ffb400',2],['AltaEnergia','#e8f3ff','#e2421b',3],['KRONO','#5b1d8c','#fff',4],['VELIA','#b0122b','#fff',5,'ASSICURAZIONI'],['lumina','#0b0f1a','#4de0ff',6],['FERRO & CO','#2a2a2a','#e8e2d4',7]];
+    const t=canvasTex(1024,(g,n)=>{const W=512,H=256;B.forEach(([nm,bg,fg,ic,sub],i)=>{const x0=(i%2)*W,y0=((i/2)|0)*H;g.fillStyle=bg;g.fillRect(x0+6,y0+6,W-12,H-12);g.fillStyle=fg;g.strokeStyle=fg;g.lineWidth=10;const cx=x0+110,cy=y0+H/2;
+      if(ic===0){g.beginPath();g.moveTo(cx-50,cy-45);g.lineTo(cx,cy+50);g.lineTo(cx+50,cy-45);g.stroke();}else if(ic===1){g.beginPath();g.moveTo(cx-55,cy+45);g.lineTo(cx,cy-50);g.lineTo(cx+55,cy+45);g.closePath();g.fill();}
+      else if(ic===2){g.beginPath();g.arc(cx,cy,48,0,7);g.stroke();g.beginPath();g.ellipse(cx,cy,70,18,-0.4,0,7);g.stroke();}else if(ic===3){for(let k=0;k<3;k++){g.beginPath();g.arc(cx,cy+30,20+k*22,Math.PI,2*Math.PI);g.stroke();}}
+      else if(ic===4){g.beginPath();g.arc(cx,cy,50,0,7);g.stroke();g.beginPath();g.moveTo(cx,cy);g.lineTo(cx,cy-36);g.moveTo(cx,cy);g.lineTo(cx+26,cy+10);g.stroke();}else if(ic===5){g.beginPath();g.moveTo(cx,cy-55);g.bezierCurveTo(cx+60,cy-40,cx+50,cy+30,cx,cy+55);g.bezierCurveTo(cx-50,cy+30,cx-60,cy-40,cx,cy-55);g.fill();}
+      else if(ic===6){g.beginPath();for(let k=0;k<5;k++){const a=k/5*Math.PI*2-Math.PI/2;g.moveTo(cx,cy);g.lineTo(cx+Math.cos(a)*55,cy+Math.sin(a)*55);}g.stroke();}else{g.fillRect(cx-45,cy-45,35,90);g.fillRect(cx+10,cy-45,35,90);}
+      g.textAlign='left';g.textBaseline='middle';let s=92;const f=i%3===0?"bold {s}px 'Bebas Neue',Impact,Arial":i%3===1?"bold {s}px 'Oswald',Arial":"{s}px 'Playfair Display',Georgia,serif";g.font=f.replace('{s}',s);while(g.measureText(nm).width>300&&s>30){s-=2;g.font=f.replace('{s}',s);}
+      g.fillText(nm,x0+190,cy-(sub?14:0));if(sub){g.font="bold 26px 'Oswald',Arial";g.fillText(sub,x0+194,cy+46);}});});
+    const m=new THREE.MeshStandardMaterial({map:t,emissiveMap:t,emissive:0xffffff,emissiveIntensity:0,roughness:0.5,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});return m;})();
   // località turistiche: negozietti, souvenir, gelaterie, dehors
   const TOURIST=new Set(['Lido Serena','Porto Calvino','Castellago','Montecastro','San Rocco Terme','Pievalta']);
   // insegne al neon: stesso atlante, solo la fascia alta, che lampeggia (di sera molto evidente)
@@ -300,7 +310,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
      const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:stoneTex,color:0xf3e9dd,roughness:0.7,side:THREE.DoubleSide}));m.position.set(x,g0+Hw,z);m.rotation.y=-Math.atan2(az,ax);grp.add(m);}
   }catch(e){console.warn('Duomo',e);}});
   // ---------- Valdonia: chiese, torri, monumenti, ciminiere, porto, spiaggia, barche, mucche ----------
-  const nightMats=[],lampPoleMX=new THREE.MeshStandardMaterial({color:0x6a6f75,metalness:0.6,roughness:0.45});
+  const nightMats=[[LOGO,1.1]],lampPoleMX=new THREE.MeshStandardMaterial({color:0x6a6f75,metalness:0.6,roughness:0.45});
   function signTex(kind,lines){return canvasTex(512,(g,n)=>{const hw=kind!=='st',bg=hw?'#1f6e3d':'#1d4f9c';const H2=kind==='hwd'?272:kind.startsWith('hw')?240:280;g.canvas.height=H2;
     g.fillStyle=bg;g.fillRect(0,0,512,H2);g.strokeStyle='#fff';g.lineWidth=8;g.strokeRect(10,10,492,H2-20);g.fillStyle='#fff';g.textAlign='left';
     if(kind==='hw1'||kind==='hw2'){g.font='bold 38px Arial';g.fillText(lines[0],40,70);g.font='bold 60px Arial';g.fillText(lines[1],40,145);g.font='bold 40px Arial';if(lines[2])g.fillText(lines[2],40,205);
@@ -885,7 +895,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function detail(T){if(T.det)return;T.det=true;T.dobj=[];T.segs=[];furniture(T);VX.tile(T);const x0=T.i*TS,z0=T.j*TS,rnd=a=>hsh(T.i*131+a,T.j*977+a*7);
     if(HIDE){(bldT.get(T.key)||[]).forEach(bi=>{const b=NW.J.blds[bi],rg=b[3],n=rg.length/2;if(b[6]>2)return;for(let q=0;q<n;q++)addSeg(T,rg[q*2],rg[q*2+1],rg[(q+1)%n*2],rg[(q+1)%n*2+1]);});return;}
     // edifici: facciate per tipo, negozi al piano terra sul lato della strada, tetti a falde o piani
-    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],col=new THREE.Color();
+    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],col=new THREE.Color();
       const quad=(G,ax,az,bx,bz,ya,yb,u0,u1,va,vb)=>{const s=G.P.length/3;G.P.push(ax-x0,ya,az-z0,bx-x0,ya,bz-z0,ax-x0,yb,az-z0,bx-x0,yb,bz-z0);G.U.push(u0,va,u1,va,u0,vb,u1,vb);for(let t=0;t<4;t++)G.C.push(col.r,col.g,col.b);G.I.push(s,s+1,s+2,s+1,s+3,s+2);};
       const tri=(A,Uv,I,pts,uvs)=>{const s=A.length/3;pts.forEach(p=>A.push(p[0]-x0,p[1],p[2]-z0));uvs.forEach(u=>Uv.push(u[0],u[1]));I.push(s,s+1,s+2);};
       bl.forEach(bi=>{const b=NW.J.blds[bi],h=b[0],cc=b[1],gnd=b[2],ring=b[3],church=b[4],holes=b[5],mh=b[6]||0,kd=b[7]==null?0:b[7],roof=b[8]||0;const n=ring.length/2;if(n<3)return;
@@ -907,6 +917,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             if(['bar','food','gel','pub'].includes(SHOPS[cell][3])&&(zone==='t'||zone==='c')&&hsh(bi,q+31)<0.7){const mc=(c0+c1)/2;for(let j=0;j<2;j++){const off=(j-0.5)*2.2;DH.push(ox+rx*(mc+off)+nx*2.3,gy,oz+rz*(mc+off)+nz*2.3,hsh(bi,q+j+40));}}
             if(['bar','food','sweet','moda','shop','pub'].includes(SHOPS[cell][3])&&hsh(bi,q+50)<0.55){const ac=new THREE.Color([0xb8312f,0x2e6e3e,0xc9a227,0x1f4f8a,0x7a3b6b,0xd8d2c4][(hsh(bi,q+9)*6)|0]).convertSRGBToLinear(),s1=AP.length/3,ex=nx*1.4,ez=nz*1.4,y=gnd+3.25;
               AP.push(Lx-x0,y+0.6,Lz-z0,Rx-x0,y+0.6,Rz-z0,Lx+ex-x0,y,Lz+ez-z0,Rx+ex-x0,y,Rz+ez-z0);for(let t=0;t<4;t++)AC.push(ac.r,ac.g,ac.b);AI.push(s1,s1+2,s1+1,s1+1,s1+2,s1+3);}}}
+        // grattacieli brandizzati: logo di una grande azienda (inventata) in cima a due facce opposte, illuminato di sera
+        if(n===4&&y1-gnd>50&&hsh(bi,91)<0.65){const li=(hsh(bi,92)*8)|0,[lu0,lv0,lu1,lv1]=[(li%2)/2,1-(((li/2)|0)+1)/4,(li%2)/2+0.5,1-((li/2)|0)/4];
+          for(const f of [0,2]){const ax=ring[f*2],az=ring[f*2+1],bx=ring[(f*2+2)%8],bz=ring[(f*2+3)%8],L=Math.hypot(bx-ax,bz-az);if(L<14)continue;let nx=-(bz-az)/L,nz=(bx-ax)/L;const mx=(ax+bx)/2,mz=(az+bz)/2;if((mx-cx)*nx+(mz-cz)*nz<0){nx=-nx;nz=-nz;}
+            const w=Math.min(L*0.92,36),h=w*0.5,tx=(bx-ax)/L,tz=(bz-az)/L,sgn=((tx*nz-tz*nx)>0?1:-1),yb=y1-h-1.5,ox=mx+nx*0.12,oz=mz+nz*0.12,Lx=ox-tx*w/2*sgn,Lz=oz-tz*w/2*sgn,Rx=ox+tx*w/2*sgn,Rz=oz+tz*w/2*sgn,b=LGP.length/3;
+            LGP.push(Lx-x0,yb,Lz-z0,Rx-x0,yb,Rz-z0,Lx-x0,yb+h,Lz-z0,Rx-x0,yb+h,Rz-z0);LGU.push(lu0,lv0,lu1,lv0,lu0,lv1,lu1,lv1);LGI.push(b,b+1,b+2,b+1,b+3,b+2,b,b+2,b+1,b+1,b+2,b+3);}}
         // tetto
         if((roof===1||roof===2)&&n===4&&!church){const c=[0,1,2,3].map(q=>[ring[q*2],ring[q*2+1]]),ov=roof===2?0.9:0.35;
           const e0=Math.hypot(c[1][0]-c[0][0],c[1][1]-c[0][1]),e1=Math.hypot(c[2][0]-c[1][0],c[2][1]-c[1][1]),o=e0>=e1?0:1;
@@ -926,7 +941,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             quad(G,ax+ox,az+oz,bx+ox,bz+oz,y1-0.5,y1+0.6,0.02,0.04,0.02,0.04);}}}});
       const put=(A,Uv,I,M,Cc)=>{if(!I.length)return;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(A,3));if(Uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(Uv,2));if(Cc)g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));g.setIndex(I);g.computeVertexNormals();
         const m=new THREE.Mesh(g,M);m.position.set(x0,0,z0);m.castShadow=true;m.receiveShadow=true;scene.add(m);T.dobj.push(m);};
-      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);DEHORS(T,DH,x0,z0);}
+      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);DEHORS(T,DH,x0,z0);}
     // alberi veri (censimento e filari)
     const tl=treeT.get(T.key);if(tl&&tl.length){const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),co=new THREE.Color(),UPV=new THREE.Vector3(0,1,0);
       const by=[[],[],[],[],[],[]];tl.forEach(ti=>{const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;
