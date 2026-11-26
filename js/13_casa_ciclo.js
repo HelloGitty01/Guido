@@ -228,7 +228,9 @@ HOME.camera=function(dt){const g=HOME.gd,ret=HOME.mode==='return',back=ret?5.2:3
   sun.position.set(g.x+SUNOFF.x,gy+SUNOFF.y,g.z+SUNOFF.z);sun.target.position.set(g.x,gy,g.z);}
 window.__x={setView:v=>{view=v;applyView();},switchCar,JOB,AMB,HZN,pedHit,penalty,HOME,PCARD,POL,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
 const hud=document.getElementById('hud'),navBox=document.getElementById('navBox'),endBtn=document.getElementById('endBtn');endBtn.onclick=()=>endRun('fine');
+let lastDraw=0;
 function loop(now){
+  if(paused&&started&&!PHOTO.on&&now-lastDraw<45){requestAnimationFrame(loop);return;}lastDraw=now;
   const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(!paused&&started&&HOME.mode){simT+=dt;updateLights(simT);HOME.tick(dt);HOME.camera(dt);if(NWT)NWT.TRF.step(dt);drawMini(dt);if(pl.navMsgT>0)pl.navMsgT-=dt;
     if(HOME.mode==='return'&&eng&&AC)eng.master.gain.setTargetAtTime(0,AC.currentTime,0.05);
@@ -266,9 +268,10 @@ function loop(now){
   if(PHOTO.on)photoUpdate(dt);envTick(dt);chTick(dt);recTick();SMOKE.update(dt);CAR.tick(dt);JOB.tick(dt);POL.tick(dt);POL.scTick(dt);EVT.tick(dt);
   sky.position.copy(camera.position);skyMat.uniforms.uT.value=simT;clouds.forEach(c=>{c.position.x+=dt*3;if(NWT){const cx=camera.position.x,cz=camera.position.z;if(c.position.x-cx>2800)c.position.x-=5600;if(c.position.x-cx<-2800)c.position.x+=5600;if(c.position.z-cz>2800)c.position.z-=5600;if(c.position.z-cz<-2800)c.position.z+=5600;}else if(c.position.x>3400)c.position.x-=5600;});
   if(pl.ck&&pl.ck.mirrors)pl.ck.mirrors.forEach(m=>m.visible=CFG.mir!==false);
-  if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
-    scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
+  if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir*2)===0)){pl.ck.g.visible=false;const shU=renderer.shadowMap.needsUpdate;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
+    scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.needsUpdate=shU;sky.position.copy(camera.position);}
   frameN++;updateMaples();updateCarLOD();if(NWT){NWT.update(dt);if(NWT.NEON)NWT.NEON.tick(dt,NWT.nightLv());if(NWT.BUSPAX)NWT.BUSPAX.tick(dt);}
+  renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=(frameN&1)===1||!started;
   renderer.render(scene,camera);PERF.frame(now);AUTOQ.frame(now);if(PCARD.want)PCARD.snap();if(SHOT.want)SHOT.snap();
   if(CKO.on){renderer.autoClear=false;renderer.clearDepth();renderer.render(CKO.hud,CKO.cam);renderer.autoClear=true;}
   requestAnimationFrame(loop);

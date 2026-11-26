@@ -1430,6 +1430,15 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function buildFar(i,j){const x0=i*FS,z0=j*FS,m=terrain(x0,z0,FS,25,(x,z)=>NW.Hg(x,z)-1.5,farM);m.receiveShadow=false;const F={i,j,m};far.set(tk(i,j),F);return F;}
   const okTile=(x,z,s)=>x+s>NW.GX0&&z+s>NW.GZ0&&x<NW.GX1&&z<NW.GZ1;
   detail=PROF('detail',detail);build=PROF('tile',build);undetail=PROF('undetail',undetail);
+  // zone fuori inquadratura (e fuori dagli specchietti): non si disegnano affatto. Si usano i "livelli" di three.js, così la visibilità
+  // decisa dal resto del gioco (luci, insegne, fuochi…) resta intatta. Margine di 40 m per le ombre di ciò che sta appena fuori.
+  const CF=new THREE.Frustum(),CF2=new THREE.Frustum(),CPM=new THREE.Matrix4(),CBX=new THREE.Box3();
+  function tileLeaves(T){const L=[];const add=o=>o.traverse(c=>{if(c.isMesh||c.isSprite||c.isPoints||c.isLine)L.push(c);});T.objs.forEach(add);if(T.dobj)T.dobj.forEach(add);return L;}
+  function cullTiles(){camera.updateMatrixWorld();CPM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);CF.setFromProjectionMatrix(CPM);
+    const rear=view==='cockpit'&&CFG.mir!==false&&started;if(rear){rearCam.updateMatrixWorld();CPM.multiplyMatrices(rearCam.projectionMatrix,rearCam.matrixWorldInverse);CF2.setFromProjectionMatrix(CPM);}
+    const M=40;tiles.forEach(T=>{const x0=T.i*TS,z0=T.j*TS;CBX.min.set(x0-M,-200,z0-M);CBX.max.set(x0+TS+M,500,z0+TS+M);const vis=CF.intersectsBox(CBX)||(rear&&CF2.intersectsBox(CBX));
+      const n=T.objs.length+(T.dobj?T.dobj.length:0);if(vis===T.cv&&n===T.cn)return;T.cn=n;T.cv=vis;if(!T.leaves||T.leavesN!==n){T.leaves=tileLeaves(T);T.leavesN=n;}
+      const m=vis?1:0;for(const c of T.leaves)if(c.layers.mask<=1)c.layers.mask=m;});}
   let lastBox=null;
   function update(dt,force){const cx=camera.position.x,cz=camera.position.z;if(!NW.inside(cx,cz)&&!force)return;const ci=Math.floor(cx/TS),cj=Math.floor(cz/TS);
     let n=force?1e9:1,allNear=true;const want=[];
@@ -1442,6 +1451,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     // lontano: terreno semplificato fino a 7 km
     if(!HIDE&&(n>0||force)){const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);for(let a=-FR;a<=FR;a++)for(let b=-FR;b<=FR;b++){const i=fi+a,j=fj+b;if(!okTile(i*FS,j*FS,FS))continue;if(!far.has(tk(i,j))){buildFar(i,j);if(!force)break;}}}
     far.forEach((F,k)=>{const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);if(Math.abs(F.i-fi)>FR+1||Math.abs(F.j-fj)>FR+1){scene.remove(F.m);F.m.geometry.dispose();far.delete(k);}});
+    cullTiles();
     if(HDT)HDT.update(dt,force);WAVT.value+=dt;
     anims.forEach(a=>{const p=a.m.position;if(Math.abs(p.x-cx)+Math.abs(p.z-cz)<160)a.m.userData.mixer.update(dt);});LMX.update(dt);if(!heavy||force)VX.update(dt);}
   function segQ(x,z){return bseg.get(tk(Math.floor(x/BC),Math.floor(z/BC)))||[];}
