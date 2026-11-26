@@ -275,7 +275,7 @@ function carTierParts(k,which){const X=CARX[k],T=TYPES[k],o=which==='mid'?X.full
     return{geo:gMerge(G.list),mat:mt,r:G.r};});}
 function carTier(k,which,need){const key=k+'|'+which;let t=CARLOD.tiers[key];if(t===undefined){const parts=carTierParts(k,which);t=CARLOD.tiers[key]=parts?{parts,ims:null,cap:0}:null;}if(!t)return null;
   if(need>t.cap){const cap=Math.max(8,Math.ceil(need*1.5));if(t.ims)t.ims.forEach(im=>{scene.remove(im);im.dispose();});
-    t.ims=t.parts.map(P=>{const im=new THREE.InstancedMesh(P.geo,P.mat,cap);im.frustumCulled=false;im.receiveShadow=P.r!=='blob';im.castShadow=which==='mid'&&P.r!=='blob'&&P.r!=='glass';im.userData.role=P.r;
+    t.ims=t.parts.map(P=>{const im=new THREE.InstancedMesh(P.geo,P.mat,cap);im.frustumCulled=false;im.receiveShadow=P.r!=='blob';im.castShadow=false;im.userData.role=P.r;
       if(P.r==='paint'){im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(cap*3).fill(1),3);im.instanceColor.setUsage(THREE.DynamicDrawUsage);}im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.count=0;if(P.r==='blob')im.renderOrder=-1;scene.add(im);return im;});t.cap=cap;}
   return t;}
 function buildCarLOD(){CARLOD.inst=true;}CARLOD.tier=(k,w,n)=>carTier(k,w,n);
