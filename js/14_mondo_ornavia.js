@@ -86,7 +86,17 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         g.fillStyle=`rgb(${c+t|0},${c+t*0.6|0},${c-8|0})`;g.beginPath();g.ellipse(x+w/2,y+rh/2,w/2-1.5,rh/2-1.5,(Math.random()-0.5)*0.25,0,7);g.fill();g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.ellipse(x+w/2-2,y+rh/2-3,w/3,rh/5,0,0,7);g.fill();x+=w;}y+=rh;}
       const gr=g.createLinearGradient(0,0,0,n);gr.addColorStop(0,'rgba(60,80,30,0)');gr.addColorStop(0.75,'rgba(60,80,30,0)');gr.addColorStop(1,'rgba(70,95,35,.55)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
     const wm=new THREE.MeshStandardMaterial({map:wt,roughness:0.95});
-    return{m,tm,g,wm};})();
+    // cartello di curva: pannello bianco con frecce nere (una versione per lato) su paletto grigio
+    const chev=dir=>{const t=canvasTex(256,(g,n)=>{g.fillStyle='#f4f4f0';g.fillRect(0,0,n,n);g.fillStyle='#111';for(let k=0;k<2;k++){const x0=n*(0.12+k*0.38);g.beginPath();
+        if(dir>0){g.moveTo(x0,n*0.12);g.lineTo(x0+n*0.22,n*0.5);g.lineTo(x0,n*0.88);g.lineTo(x0+n*0.13,n*0.88);g.lineTo(x0+n*0.35,n*0.5);g.lineTo(x0+n*0.13,n*0.12);}
+        else{const xr=n-x0;g.moveTo(xr,n*0.12);g.lineTo(xr-n*0.22,n*0.5);g.lineTo(xr,n*0.88);g.lineTo(xr-n*0.13,n*0.88);g.lineTo(xr-n*0.35,n*0.5);g.lineTo(xr-n*0.13,n*0.12);}g.fill();}
+        g.strokeStyle='#999';g.lineWidth=6;g.strokeRect(3,3,n-6,n-6);});return new THREE.MeshStandardMaterial({map:t,roughness:0.6,side:THREE.DoubleSide});};
+    const cg=(()=>{const P=new THREE.PlaneGeometry(0.62,0.5);P.translate(0,1.15,0);const S=new THREE.BoxGeometry(0.06,1.4,0.06);S.translate(0,0.7,-0.04);
+      const out=new THREE.BufferGeometry(),pa=[P,S].map(x=>x.toNonIndexed());['position','normal','uv'].forEach(k=>{const arr=new Float32Array(pa[0].attributes[k].array.length+pa[1].attributes[k].array.length);arr.set(pa[0].attributes[k].array);arr.set(pa[1].attributes[k].array,pa[0].attributes[k].array.length);out.setAttribute(k,new THREE.BufferAttribute(arr,pa[0].attributes[k].itemSize));});
+      out.addGroup(0,pa[0].attributes.position.count,0);out.addGroup(pa[0].attributes.position.count,pa[1].attributes.position.count,1);return out;})();
+    const postM=new THREE.MeshStandardMaterial({color:0x8a8d90,roughness:0.6});
+    const ch={g:cg,m:[[chev(1),postM],[chev(-1),postM]]};
+    return{m,tm,g,wm,ch};})();
   // delineatore: paletto bianco con fascia nera e catadiottro (arancio a destra, bianco a sinistra); montante del guardrail
   const DELG=(()=>{const box=(w,h,d,y,c,x=0)=>{const g=new THREE.BoxGeometry(w,h,d).toNonIndexed();g.translate(x,y,0);const n=g.attributes.position.count,C=new Float32Array(n*3),col=new THREE.Color(c);for(let i=0;i<n;i++){C[i*3]=col.r;C[i*3+1]=col.g;C[i*3+2]=col.b;}g.setAttribute('color',new THREE.BufferAttribute(C,3));return g;};
     const merge=L=>{const P=[],N=[],C=[];L.forEach(g=>{P.push(...g.attributes.position.array);N.push(...g.attributes.normal.array);C.push(...g.attributes.color.array);});const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));return g;};
@@ -300,9 +310,10 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         for(const q of [x>0?p-1:-1,x<w-1?p+1:-1,y>0?p-w:-1,y<h-1?p+w:-1])if(q>=0&&lab[q]<0&&L[q]<th){lab[q]=id;st.push(q);}}id++;}
     for(let i=0;i<w*h;i++)if(out.data[i*4+3]===0)out.data[i*4+3]=255;g.putImageData(out,0,0);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;}
   let nightOn=null;
-  function setNight(on){if(on===nightOn)return;nightOn=on;
-    if(on)FAC.forEach(([m])=>{if(!m.userData.nm&&m.map){m.userData.nm=1;const t=nightMask(m.map);if(t){m.emissiveMap=t;m.emissive=new THREE.Color(0xffffff);m.needsUpdate=true;}}});
-    FAC.forEach(([m])=>{m.emissiveIntensity=on?0.9:0;});shopM.emissiveIntensity=on?0.75:0;lampHeadM.emissiveIntensity=on?2.2:0;poolM.visible=on;nightMats.forEach(([m,k])=>m.emissiveIntensity=on?k:0);}
+  // luci della città che si accendono gradualmente col buio (lv 0..1), non tutte di colpo
+  let nightLv=-1;function setNight(on,lv){const t=lv==null?(on?1:0):lv;if(Math.abs(t-nightLv)<0.01)return;nightLv=t;nightOn=t>0.5;
+    if(t>0)FAC.forEach(([m])=>{if(!m.userData.nm&&m.map){m.userData.nm=1;const tx=nightMask(m.map);if(tx){m.emissiveMap=tx;m.emissive=new THREE.Color(0xffffff);m.needsUpdate=true;}}});
+    FAC.forEach(([m])=>{m.emissiveIntensity=0.9*t;});shopM.emissiveIntensity=0.75*t;lampHeadM.emissiveIntensity=2.2*t;poolM.visible=t>0.05;if(poolM.userData.op0==null)poolM.userData.op0=poolM.opacity;poolM.opacity=poolM.userData.op0*t;nightMats.forEach(([m,k])=>m.emissiveIntensity=k*t);}
   const LMX=(()=>{const L=NW.J.lms||[],M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),UP=new THREE.Vector3(0,1,0),co=new THREE.Color();
     const box4=(x,z,rot,w,l)=>{const c=Math.cos(rot),s=Math.sin(rot),P=[[-l/2,-w/2],[l/2,-w/2],[l/2,w/2],[-l/2,w/2]].map(([a,b])=>[x+a*c-b*s,z+a*s+b*c]);for(let q=0;q<4;q++)LMS.segs.push([P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]]);};
     const plasterM=new THREE.MeshStandardMaterial({map:stoneTex,color:0xeee4d2,roughness:0.85}),towerM=new THREE.MeshStandardMaterial({map:stoneTex,color:0xc9b79a,roughness:0.9});
@@ -539,24 +550,36 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx,hw=R.w/2,VW=1.2;
         [1,-1].forEach(sd=>{const base=VP.length/3;
           for(let k=0;k<2;k++){const x=k?R.X[i+1]:R.X[i],z=k?R.Z[i+1]:R.Z[i],h=k?R.Hh[i+1]:R.Hh[i];
-            const ix=x+nx*sd*(hw-0.05),iz=z+nz*sd*(hw-0.05),ox=x+nx*sd*(hw+VW),oz=z+nz*sd*(hw+VW),ho=Math.max(h-0.6,Math.min(h+0.6,NW.Hg(ox,oz)))+0.04;
+            const ix=x+nx*sd*(hw-0.05),iz=z+nz*sd*(hw-0.05),ox=x+nx*sd*(hw+VW),oz=z+nz*sd*(hw+VW),ho=Math.max(h-0.6,Math.min(h+0.6,NW.Hground(ox,oz)))+0.04;
             VP.push(ix-x0,h+0.03,iz-z0,ox-x0,ho,oz-z0);VC.push(0.17,0.14,0.08,0.2,0.2,0.09);VA.push(0.95,0);}
           VI.push(...(sd>0?[base,base+1,base+2,base+1,base+3,base+2]:[base,base+2,base+1,base+1,base+2,base+3]));
           if(NW.nearJ(R.X[i],R.Z[i],10))return;
           for(let u=Math.ceil(a/0.4)*0.4;u<b;u+=0.4){const rr=hsh(Math.floor(u*7.3)+l[q]*131,sd>0?17:977);if(rr>dens)continue;const f=(u-a)/L,off=hw+0.7+Math.pow(hsh(Math.floor(u*3.1)+l[q],sd+5),1.6)*3.2,
-              x=R.X[i]+(R.X[i+1]-R.X[i])*f+nx*sd*off,z=R.Z[i]+(R.Z[i+1]-R.Z[i])*f+nz*sd*off,h=NW.Hg(x,z);if(waterLv(x,z)!=null)continue;TF.push(x-x0,h,z-z0,rr*40,0.45+hsh(Math.floor(u*5.7)+3,l[q])*0.55);}});}
+              x=R.X[i]+(R.X[i+1]-R.X[i])*f+nx*sd*off,z=R.Z[i]+(R.Z[i+1]-R.Z[i])*f+nz*sd*off,h=NW.Hground(x,z);if(waterLv(x,z)!=null)continue;{const yh0=NW.yh;NW.yh=NaN;const rq=NW.roadAt(x,z,0.6);NW.yh=yh0;if(rq)continue;}TF.push(x-x0,h,z-z0,rr*40,0.45+hsh(Math.floor(u*5.7)+3,l[q])*0.55);}});}
       // muretti a secco lungo alcuni tratti di strada di campagna (a tratti, non agli incroci)
       {const WP=[],WU=[],WI=[];for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7||R.c<3)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
           const mid=(a+b)/2;if(hsh(Math.floor(mid/180),l[q])>0.45)continue;if(NW.cityAt(R.X[i],R.Z[i])||NW.nearJ(R.X[i],R.Z[i],14)||NW.nearJ(R.X[i+1],R.Z[i+1],14))continue;
           const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx;
           [1,-1].forEach(sd=>{if(hsh(Math.floor(mid/240)+7,l[q]*3+sd)>0.6)return;const off=R.w/2+3.6,th=0.32,H=0.85;
-            const pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,NW.Hg(x,z)-0.1];});
+            const pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,NW.Hground(x,z)-0.1];});
             if(waterLv(pts[0][0],pts[0][1])!=null)return;
+            {const yh0=NW.yh;NW.yh=NaN;let hit=false;for(let f=0;f<=1.001&&!hit;f+=Math.min(1,3.5/L)){const x=pts[0][0]+(pts[1][0]-pts[0][0])*f,z=pts[0][1]+(pts[1][1]-pts[0][1])*f;if(NW.roadAt(x,z,1.2)||(window.HOMEZ&&HOMEZ(x,z)))hit=true;}NW.yh=yh0;if(hit)return;}   // mai muretti su un'altra strada, svincolo o cavalcavia
             const v0=a/3,v1=b/3,ox=nx*th,oz=nz*th,base=WP.length/3;
             pts.forEach(([x,z,h],k)=>{const v=k?v1:v0;WP.push(x-ox-x0,h,z-oz-z0, x-ox*0.6-x0,h+H,z-oz*0.6-z0, x+ox*0.6-x0,h+H,z+oz*0.6-z0, x+ox-x0,h,z+oz-z0);WU.push(v,0,v,0.47,v,0.53,v,1);});
             WI.push(base,base+4,base+1,base+1,base+4,base+5, base+1,base+5,base+2,base+2,base+5,base+6, base+2,base+6,base+3,base+3,base+6,base+7);});}
         if(WP.length){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(WP,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(WU,2));g.setIndex(WI);g.computeVertexNormals();
           const m=new THREE.Mesh(g,VERGE.wm);m.position.set(x0,0,z0);m.castShadow=m.receiveShadow=true;scene.add(m);T.objs.push(m);T.segs&&0;}}
+      // curve strette fuori città: cartelli a frecce (bianche e nere) sul lato esterno, lungo tutta la curva
+      {const CH=[[],[]];const kOf=R=>{if(R._k)return R._k;const k=new Float32Array(R.N);for(let j=1;j<R.N-1;j++){const ax=R.X[j]-R.X[j-1],az=R.Z[j]-R.Z[j-1],bx=R.X[j+1]-R.X[j],bz=R.Z[j+1]-R.Z[j],la=Math.hypot(ax,az),lb=Math.hypot(bx,bz);if(la<0.1||lb<0.1)continue;
+          const ang=Math.atan2(ax*bz-az*bx,ax*bx+az*bz);k[j]=ang/((la+lb)/2);}const sm=new Float32Array(R.N);for(let j=0;j<R.N;j++){let a=0,n=0;for(let q=j-2;q<=j+2;q++)if(q>=0&&q<R.N){a+=k[q];n++;}sm[j]=a/n;}return R._k=sm;};
+        for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7||R.c===0)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
+          const K=kOf(R),kk=(K[i]+K[i+1])/2;if(Math.abs(kk)<1/95)continue;if(NW.cityAt(R.X[i],R.Z[i]))continue;
+          const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx,out=kk>0?-1:1;   // lato esterno della curva
+          for(let u=Math.ceil(a/11)*11;u<b;u+=11){const f=(u-a)/L,x=R.X[i]+tx*(u-a)+nx*out*(R.w/2+1.3),z=R.Z[i]+tz*(u-a)+nz*out*(R.w/2+1.3);
+            {const yh0=NW.yh;NW.yh=NaN;const rq=NW.roadAt(x,z,0.4);NW.yh=yh0;if(rq&&rq.R!==R)continue;}
+            CH[kk>0?0:1].push(x-x0,NW.Hground(x,z),z-z0,Math.atan2(nx*out,nz*out)+Math.PI);}}
+        CH.forEach((A,j)=>{if(!A.length)return;const n=A.length/4,im=new THREE.InstancedMesh(VERGE.ch.g,VERGE.ch.m[j],n),M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),V=new THREE.Vector3(),S1=new THREE.Vector3(1,1,1);
+          for(let k=0;k<n;k++){Q.setFromAxisAngle(Y,A[k*4+3]);V.set(A[k*4],A[k*4+1],A[k*4+2]);M.compose(V,Q,S1);im.setMatrixAt(k,M);}im.position.set(x0,0,z0);im.castShadow=true;im.updateMatrix();im.matrixAutoUpdate=false;scene.add(im);T.objs.push(im);});}
       if(VP.length){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(VP,3));g.setAttribute('color',new THREE.Float32BufferAttribute(VC,3));g.setAttribute('va',new THREE.Float32BufferAttribute(VA,1));g.setIndex(VI);g.computeVertexNormals();
         const m=new THREE.Mesh(g,VERGE.m);m.position.set(x0,0,z0);m.renderOrder=1;scene.add(m);T.objs.push(m);}
       if(TF.length){const n=TF.length/5,im=new THREE.InstancedMesh(VERGE.g,VERGE.tm,n),M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),V=new THREE.Vector3(),S=new THREE.Vector3();

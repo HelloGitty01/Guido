@@ -17,6 +17,13 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   const roads=J.roads.map(([c,o,w,ms,n,ref,b,t,p])=>{const N=p.length/3,X=new Float64Array(N),Z=new Float64Array(N),Hh=new Float32Array(N),cum=new Float32Array(N);
     for(let i=0;i<N;i++){X[i]=p[i*3];Z[i]=p[i*3+1];Hh[i]=p[i*3+2];if(i)cum[i]=cum[i-1]+Math.hypot(X[i]-X[i-1],Z[i]-Z[i-1]);}
     return {c,o,w,ms,n,ref,b,t,X,Z,Hh,cum,N};});
+  // profili altimetrici morbidi: niente scalini o cunette secche; i punti condivisi con altre strade (incroci) e ponti/gallerie restano dove sono
+  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),cnt=new Map();roads.forEach(R=>{for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);cnt.set(k,(cnt.get(k)||0)+1);}});
+   roads.forEach(R=>{if(R.b||R.t||R.N<3)return;const N=R.N,H=R.Hh,cum=R.cum,fix=new Uint8Array(N);fix[0]=fix[N-1]=1;for(let i=1;i<N-1;i++)if(cnt.get(key(R.X[i],R.Z[i]))>1)fix[i]=1;
+     const W=R.c<=2?45:R.c<=5?30:22;let A=Float32Array.from(H);
+     for(let it=0;it<2;it++){const B=Float32Array.from(A);let lo=0,hi=0;for(let i=0;i<N;i++){if(fix[i])continue;while(cum[i]-cum[lo]>W*2)lo++;while(hi<N-1&&cum[hi+1]-cum[i]<=W*2)hi++;
+         let sw=0,sv=0;for(let j=lo;j<=hi;j++){const d=(cum[j]-cum[i])/W,w=Math.exp(-d*d);sw+=w;sv+=w*A[j];}B[i]=sv/sw;}A=B;}
+     for(let i=0;i<N;i++)if(!fix[i])H[i]=Math.max(H[i]-6,Math.min(H[i]+6,A[i]));});}
   // indice spaziale (celle da 64 m) dei segmenti percorribili, con margine per lo spianamento del terreno
   const HC=64,hash=new Map(),hk=(i,j)=>i*1000003+j;
   roads.forEach((R,ri)=>{if(R.c>=10)return;const m=Math.min(60,R.w/2+40);for(let i=0;i<R.N-1;i++){

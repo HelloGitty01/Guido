@@ -158,8 +158,9 @@ const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.Ort
 function ckQuad(k,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}const m=new THREE.Mesh(g,mirrorM);CKO.hud.add(m);CKO.q[k]=m;return m;}
 ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
 // lancette vere sui quadranti dell'abitacolo (tachimetro e contagiri), sopra la foto e sotto il volante
-function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,key=Math.round(kmh*2)+'|'+Math.round(rpm/25);if(key===CKO.nv)return;CKO.nv=key;
+function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,dk=CKO.dark||0,key=Math.round(kmh*2)+'|'+Math.round(rpm/25)+'|'+Math.round(dk*20);if(key===CKO.nv)return;CKO.nv=key;
   const c=document.getElementById('ckNdl'),g=c.getContext('2d'),k=CKO.nk||1;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.setTransform(k,0,0,k,0,0);g.lineCap='round';
+  if(dk>0.05)for(const[x,y,r]of C.g){const gr=g.createRadialGradient(x,y,0,x,y,r*1.15);gr.addColorStop(0,`rgba(255,236,200,${0.5*dk})`);gr.addColorStop(0.8,`rgba(255,220,170,${0.32*dk})`);gr.addColorStop(1,'rgba(255,220,170,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r*1.15,0,7);g.fill();}   // quadranti retroilluminati al buio
   for(const[x,y,r,t,max,col]of C.g){const f=t==='s'?Math.min(1.04,kmh/max):Math.min(1.04,rpm/(pl.P.red*1.2)),a=(135+270*f)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
     g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=1.9;g.beginPath();g.moveTo(x-ca*r*0.22+0.5,y-sa*r*0.22+0.6);g.lineTo(x+ca*r*0.92+0.5,y+sa*r*0.92+0.6);g.stroke();
     g.strokeStyle=col;g.lineWidth=1.3;g.beginPath();g.moveTo(x-ca*r*0.22,y-sa*r*0.22);g.lineTo(x+ca*r*0.92,y+sa*r*0.92);g.stroke();
@@ -227,6 +228,12 @@ function updateCamera(dt){
   pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;
   // con l'abitacolo fotografico si vede solo la foto: niente cofano 3D dal parabrezza (le luci restano accese)
   if(pl.mesh&&pl.mesh.userData.ckHid!==CKO.on){pl.mesh.userData.ckHid=CKO.on;pl.mesh.traverse(o=>{if(o.isMesh||o.isSprite||o.isPoints||o.isLine)o.layers.set(CKO.on?1:0);});}
+  // di notte l'abitacolo si oscura seguendo la luce esterna; quadro strumenti e schermo restano accesi
+  if(CKO.on){const lum=Math.max(0.1,Math.min(1,sun.intensity/1.6*0.75+hemiL.intensity/0.62*0.35)),dk=1-Math.min(1,(lum-0.1)/0.75);if(Math.abs(dk-(CKO.dark||0))>0.01){CKO.dark=dk;const f='brightness('+(1-0.86*dk).toFixed(3)+') saturate('+(1-0.4*dk).toFixed(3)+')';document.getElementById('ckImg').style.filter=f;const w=document.getElementById('ckWheel');if(w)w.style.filter=f;
+    // bagliore del quadro strumenti (anche sulle auto senza lancette disegnate)
+    let gl=document.getElementById('ckGlow');if(!gl){gl=document.createElement('div');gl.id='ckGlow';gl.style.cssText='position:absolute;pointer-events:none;border-radius:50%;mix-blend-mode:screen;background:radial-gradient(closest-side,rgba(255,226,180,.55),rgba(255,210,150,.22) 60%,rgba(255,210,150,0));';const ov=document.getElementById('ckOv');ov.insertBefore(gl,document.getElementById('ckWheel'));}
+    const C=CKO.cfg,cc=C.g?[C.g.reduce((a,q)=>a+q[0],0)/C.g.length,C.g.reduce((a,q)=>a+q[1],0)/C.g.length]:C.spd||[512,330],rx=C.g?Math.max(60,(Math.max(...C.g.map(q=>q[0]))-Math.min(...C.g.map(q=>q[0])))/2+C.g[0][2]*1.6):70,ry=rx*0.55;
+    Object.assign(gl.style,{left:(CKO.l+(cc[0]-rx)*CKO.s)+'px',top:(CKO.t+(cc[1]-ry)*CKO.s)+'px',width:(2*rx*CKO.s)+'px',height:(2*ry*CKO.s)+'px',opacity:(0.85*dk).toFixed(3),display:dk>0.05?'block':'none'});}}
   if(CKO.on&&CKO.cfg.g)ckNeedles();
   if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,th=pl.delta*pl.P.ratio,c=Math.cos(th),sn=Math.sin(th),k=Wh.a/Wh.b;if(Math.abs(th-(CKO.th??99))>0.002){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
   if(pl.ck.wipers.length){const on=WX==='rain';pl.wipT=(pl.wipT||0)+(on?dt:0);const th=on?(1-Math.cos(pl.wipT*Math.PI*1.25))/2*1.35:0;
@@ -264,7 +271,7 @@ function updateCamera(dt){
   speedFx(dt);
   const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?2.2:0;headSpot.distance=pl.flash?170:60;headSpot.angle=pl.flash?0.32:0.45;}
   if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);headSpot.position.set(pl.x+ch*pl.T.L/2,pl.terrH+0.8,pl.z-sh*pl.T.L/2);headSpot.target.position.set(pl.x+ch*25,TH(pl.x+ch*25,pl.z-sh*25),pl.z-sh*25);}
-  if(CINE.intro)CINE.introCam(dt);else if(CINE.used){CINE.used=false;if(view!=='cockpit')camera.position.copy(tmpV);}
+  if(CINE.intro)CINE.introCam(dt);else if(POL.sc){POL.cam(dt);CINE.used=true;}else if(CINE.used){CINE.used=false;if(view!=='cockpit')camera.position.copy(tmpV);}
   if(window.__camFix){const f=window.__camFix;camera.position.set(pl.x+f[0],pl.terrH+f[1],pl.z+f[2]);camera.lookAt(pl.x,pl.terrH+0.7,pl.z);}
   sun.position.set(pl.x+SUNOFF.x,pl.terrH+SUNOFF.y,pl.z+SUNOFF.z);sun.target.position.set(pl.x,pl.terrH,pl.z);
 }
@@ -361,12 +368,12 @@ function applyEnv(tick){
   const H=TIME==='cycle'?CLOCK:TIME==='night'?0:TIME==='sunset'?19:12,K=envAt(H);
   NIGHT=TIME==='night'||(TIME==='cycle'&&(CLOCK<5.8||CLOCK>19.95));DUSK=TIME==='sunset'||(TIME==='cycle'&&((CLOCK>18.4&&CLOCK<20.4)||(CLOCK>5&&CLOCK<6.6)));
   if(TIME==='cycle')sunFor(CLOCK);else if(TIME==='sunset')SUNOFF.set(-110,30,30);else SUNOFF.set(-60,90,40);
-  skyMat.uniforms.uCov.value=WX==='rain'?0.3:WX==='fog'?0.35:0.56;skyMat.uniforms.uDay.value=K.day;const chg=!tick||lastNight!==NIGHT;if(NWT&&NWT.setNight&&chg)NWT.setNight(NIGHT);
+  skyMat.uniforms.uCov.value=WX==='rain'?0.3:WX==='fog'?0.35:0.56;skyMat.uniforms.uDay.value=K.day;const chg=!tick||lastNight!==NIGHT;if(NWT&&NWT.setNight){const lv=TIME==='night'?1:TIME==='cycle'?Math.max(0,Math.min(1,(0.45-(K.day||0))/0.35)):0;NWT.setNight(NIGHT,lv);}
   const U=skyMat.uniforms,fog=scene.fog;let sunI=K.sunI,sunC=K.sunC,hemiI=K.hemiI,fogC=K.fogC,fogN=260,fogF=K.fogF,exp=K.exp,clouds_c=K.cl;
   U.top.value.copy(K.top);U.mid.value.copy(K.mid);U.bot.value.copy(K.bot);if(NIGHT||!ENVGEN){const en=NIGHT?nightEnv:dayEnv;if(scene.environment!==en)scene.environment=en;}
   if(WX==='rain'){U.top.value.multiplyScalar(0.55).add(new THREE.Color(0x30353c));U.mid.value.lerp(new THREE.Color(0x6f7782),0.7);U.bot.value.lerp(new THREE.Color(0x8a9199),0.7);sunI*=0.4;hemiI*=1.1;fogC=new THREE.Color(0x0c1016).lerp(new THREE.Color(0x8a9199),Math.min(1,K.day*1.15));fogN=60;fogF=650;clouds_c=new THREE.Color(0x222831).lerp(new THREE.Color(0x8f969e),Math.min(1,K.day*1.15));}
   if(WX==='fog'){U.mid.value.lerp(new THREE.Color(0xc3c8cc),0.8);U.bot.value.lerp(new THREE.Color(0xc3c8cc),0.9);sunI*=0.5;fogC=new THREE.Color(0x10151d).lerp(new THREE.Color(0xc3c8cc),Math.min(1,K.day*1.15));fogN=8;fogF=170;}
-  if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=NIGHT?4.4:3.9;}}
+  if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=3.9+0.5*(1-(K.day||0));}}
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
    if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(K.bot).lerp(new THREE.Color(0xa4abb3),0.3).multiplyScalar(0.3+0.7*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}

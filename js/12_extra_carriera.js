@@ -298,7 +298,7 @@ function fmtT(x){return Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2
 
 // ================= PATTUGLIA: più punti persi, più è probabile che arrivi =================
 const POL={c:null,trail:[],tT:0,
-  onInfr(kind){if(!NW||this.c||!started)return;const lic=pl.lic??20,p=kind==='pedone'?0.9:Math.min(0.9,0.22+(20-lic)*0.035);if(Math.random()<p)setTimeout(()=>this.spawn(kind),2500);},
+  onInfr(kind){const mode=CFG.pol||'tutto';if(!NW||this.c||this.sc||!started||mode==='multe'||mode==='no')return;const lic=pl.lic??20,p=(kind==='pedone'?0.9:Math.min(0.9,0.22+(20-lic)*0.035))*(mode==='rara'?0.3:1);if(Math.random()<p)setTimeout(()=>this.spawn(kind),2500);},
   spawn(kind){if(this.c||pl.ended||!started)return;const m=makeCar('berlina',0xf4f4f2,true,false);const bar=new THREE.Group();const T=TYPES.berlina;
     const bM=new THREE.MeshBasicMaterial({color:0x1a4dff}),rM=new THREE.MeshBasicMaterial({color:0x0a1030});const l1=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.5),bM),l2=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.5),rM);l1.position.z=-0.3;l2.position.z=0.3;bar.add(l1,l2);bar.position.set(-0.2,(T.roofY||T.H)+0.06,0);m.add(bar);
     {const s=new THREE.Mesh(new THREE.BoxGeometry(T.L*0.62,0.12,T.W+0.01),new THREE.MeshStandardMaterial({color:0x1f3f9a}));s.position.set(0,0.62,0);m.add(s);}
@@ -309,17 +309,32 @@ const POL={c:null,trail:[],tT:0,
     else{say('Hai seminato la pattuglia');DJ.say('seminata',true);}
     if(this.siren)this.siren.stop();this.siren=null;const m=c.m;this.c=null;setTimeout(()=>scene.remove(m),caught?6000:100);},
   tick(dt){if(!started||!isFinite(pl.x))return;this.tT-=dt;if(this.tT<=0){this.tT=0.2;const L=this.trail,lx=L.length?L[L.length-1]:null;if(!lx||!(Math.hypot(lx[0]-pl.x,lx[1]-pl.z)<=2))L.push([pl.x,pl.z]);if(L.length>900){L.splice(0,300);if(this.c)this.c.i=Math.max(0,this.c.i-300);}}
-    const c=this.c;if(!c)return;const L=this.trail;if(!isFinite(c.x)||!isFinite(c.v)){c.x=pl.x-Math.cos(pl.h)*150;c.z=pl.z+Math.sin(pl.h)*150;c.v=20;c.i=Math.max(0,L.length-1);c.f=0;}
+    const c=this.c;if(!c||this.sc)return;const L=this.trail;if(!isFinite(c.x)||!isFinite(c.v)){c.x=pl.x-Math.cos(pl.h)*150;c.z=pl.z+Math.sin(pl.h)*150;c.v=20;c.i=Math.max(0,L.length-1);c.f=0;}
     // segue la scia del giocatore: sulle stesse strade, senza scorciatoie
-    const dPl=Math.hypot(pl.x-c.x,pl.z-c.z),vp=Math.hypot(pl.vx,pl.vy),vt=dPl>40?Math.max(16,vp+9):dPl>14?vp+3:Math.min(vp,dPl>9?4:0);
+    const dPl=Math.hypot(pl.x-c.x,pl.z-c.z),vp=Math.hypot(pl.vx,pl.vy);c.age=(c.age||0)+dt;const vt=dPl>40?Math.max(16,vp>12?vp*(dPl<150?1.02:0.96):vp+9):dPl>14?vp+3:Math.min(vp,dPl>9?4:0);   // chi corre si può sempre seminare: oltre i 150 m la pattuglia perde terreno
     c.v+=(Math.min(46,vt)-c.v)*Math.min(1,dt*1.5);let mv=c.v*dt;
     if(c.pre){const t=L[c.i]||[pl.x,pl.z],dx=t[0]-c.x,dz=t[1]-c.z,dd=Math.hypot(dx,dz);if(dd<3)c.pre=false;else{const k=Math.min(1,mv/dd);c.x+=dx*k;c.z+=dz*k;mv=0;c.m.rotation.y=Math.atan2(-dz,dx);}}
     while(!c.pre&&mv>0&&c.i<L.length-1){const a=L[c.i],b=L[c.i+1],sl=Math.hypot(b[0]-a[0],b[1]-a[1])||0.01,rem=sl*(1-c.f);if(mv<rem){c.f+=mv/sl;mv=0;}else{mv-=rem;c.i++;c.f=0;}}
     if(c.pre){}else if(c.i>=L.length-1){c.x=L[L.length-1][0];c.z=L[L.length-1][1];}else{const a=L[c.i],b=L[c.i+1];c.x=a[0]+(b[0]-a[0])*c.f;c.z=a[1]+(b[1]-a[1])*c.f;const h=Math.atan2(-(b[1]-a[1]),b[0]-a[0]);c.m.rotation.y+=(Math.atan2(Math.sin(h-c.m.rotation.y),Math.cos(h-c.m.rotation.y)))*Math.min(1,dt*6);}
     c.m.position.set(c.x,TH(c.x,c.z),c.z);const fl=Math.sin(simT*14)>0;c.l1.material=fl?c.bM:c.rM;c.l2.material=fl?c.rM:c.bM;
     if(this.siren)this.siren.set(dPl,simT);
-    if(dPl<22&&vp<1.2){c.hold+=dt;if(c.hold>2)this.end(true);}else c.hold=Math.max(0,c.hold-dt*0.5);
-    if(dPl>520){c.lost+=dt;if(c.lost>8)this.end(false);}else c.lost=0;}};
+    if(dPl<22&&vp<1.2){c.hold+=dt;if(c.hold>2)this.stop();}else c.hold=Math.max(0,c.hold-dt*0.5);
+    if(dPl>380||(c.age>100&&dPl>150)){c.lost+=dt;if(c.lost>7)this.end(false);}else c.lost=0;},
+  // fermo: vista da fuori, l'agente scende, viene al finestrino, consegna il verbale, risale e la pattuglia riparte
+  stop(){const c=this.c;if(!c||this.sc)return;if(this.siren)this.siren.stop();this.siren=null;
+    const T=TYPES[selKey]||TYPES.berlina,V=new THREE.Vector3(),win=pl.mesh.localToWorld(V.set(0.15,0,-(T.W/2+0.75))).clone(),door=c.m.localToWorld(new THREE.Vector3(0.35,0,-(TYPES.berlina.W/2+0.6))).clone();
+    const o=makePed();if(o.userData.hi){o.userData.hi.visible=true;o.userData.lo.visible=false;}o.traverse(q=>{if(q.isMesh&&q.material&&q.material.color){q.material=q.material.clone();q.material.color.lerp(new THREE.Color(0x1d2a4a),0.65);}});
+    o.position.set(door.x,TH(door.x,door.z),door.z);scene.add(o);
+    this.sc={t:0,ph:'out',o,win,door,view,cam:pl.mesh.localToWorld(new THREE.Vector3(4.2,1.8,-5.2)).clone()};document.body.classList.add('cine');if(view==='cockpit'){view='chase';applyView();}
+    pl.navMsg='🚓 Fermo di polizia';pl.navMsgT=3;say('Patente e libretto, prego');},
+  scTick(dt){const S=this.sc,c=this.c;if(!S)return;S.t+=dt;pl.vx=pl.vy=0;pl.hb=true;
+    const o=S.o,mx=o.userData.mixer,walk=(a,b,sp)=>{const dx=b.x-o.position.x,dz=b.z-o.position.z,d=Math.hypot(dx,dz);if(d<0.15)return true;const k=Math.min(1,sp*dt/d);o.position.x+=dx*k;o.position.z+=dz*k;o.position.y=TH(o.position.x,o.position.z);o.rotation.y=Math.atan2(-dz,dx);if(mx)mx.update(dt);return false;};
+    if(S.ph==='out'){if(walk(S.door,S.win,1.3)){S.ph='talk';S.t=0;o.rotation.y=Math.atan2(-(pl.z-o.position.z),pl.x-o.position.x);}}
+    else if(S.ph==='talk'){if(S.t>4.5){S.ph='back';const f=kind2fine(c.why);if(CFG.pol!=='no'){CAR.add(-f,'Verbale della polizia');if(!CAR.on)pl.fines=(pl.fines||0)+f;}say('Verbale di '+f+' euro. Buona giornata');pl.navMsg='🧾 Verbale: '+f+' €';pl.navMsgT=4;DJ.say('presa',true);}}
+    else if(S.ph==='back'){if(walk(S.win,S.door,1.4)){S.ph='go';S.t=0;scene.remove(o);S.v=0;}}
+    else if(S.ph==='go'){S.v=Math.min(16,S.v+dt*3.5);const h=c.m.rotation.y;c.m.position.x+=Math.cos(h)*S.v*dt;c.m.position.z-=Math.sin(h)*S.v*dt;c.m.position.y=TH(c.m.position.x,c.m.position.z);
+      if(S.t>5){const m=c.m;scene.remove(m);this.c=null;const v0=S.view;this.sc=null;pl.hb=false;document.body.classList.remove('cine');if(v0!==view){view=v0;applyView();}}}},
+  cam(dt){const S=this.sc;if(!S)return false;camera.position.copy(S.cam);camera.lookAt(S.win.x,S.win.y+1.2,S.win.z);return true;}};
 function kind2fine(k){return k==='pedone'?300:k==='rosso'?200:k==='velocita'?180:120;}
 function initSiren(){if(!AC)return null;const o=AC.createOscillator();o.type='square';const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=2000;const g=AC.createGain();g.gain.value=0;o.connect(f).connect(g).connect(ACOUT());o.start();
   return{set(d,t){if(!isFinite(d))return;const hi=((t/0.55)|0)%2;o.frequency.setTargetAtTime(hi?880:660,AC.currentTime,0.01);g.gain.setTargetAtTime(Math.min(0.12,0.12/(1+(d/25)**2)),AC.currentTime,0.08);},stop(){g.gain.setTargetAtTime(0,AC.currentTime,0.1);setTimeout(()=>{try{o.stop();}catch(e){}},500);}};}

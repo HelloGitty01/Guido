@@ -238,7 +238,7 @@ function penalty(kind){if(!started||pl.ended)return;const T={pedone:[10,250,'Ped
   let ch='';if(MODE==='deliv'&&CH.dl){const sec=kind==='pedone'?15:5,pts=kind==='pedone'?60:20;CH.left=Math.max(0.5,CH.left-sec);CH.score=Math.max(0,CH.score-pts);ch=` · −${pts} punti, −${sec} s`;}
   else if(MODE==='ring'&&CH.t0!=null){const sec=kind==='pedone'?10:3;CH.t0-=sec;ch=` · +${sec} s sul giro`;}
   pl.infrMsg=`${T[2]}! −${T[0]} punti patente (${pl.lic}/20)`+(T[1]?` · multa ${T[1]} €`:'')+ch;pl.infrT=4;
-  if(T[1])CAR.add(-T[1],'Multa: '+T[2].toLowerCase());DJ.say(kind);POL.onInfr(kind);
+  if(T[1]&&CFG.pol!=='no')CAR.add(-T[1],'Multa: '+T[2].toLowerCase());DJ.say(kind);POL.onInfr(kind);
   if(pl.lic<=0&&!pl.licGone){pl.licGone=true;say('Patente ritirata');setTimeout(()=>{pl.licGone=false;if(!pl.ended&&window.endRun)window.endRun('patente');},1500);}}
 // pedone urtato: cade, resta giù un attimo, si rialza, si spolvera e ti agita il pugno; niente fine corsa, ma punti patente e multa
 function pedHit(p,v){if(p.down)return;p.down=true;p.dT=0;const[wx,wz]=getWorldVel(),sp=Math.hypot(wx,wz)||1;p.push={x:wx/sp,z:wz/sp,s:Math.min(3.5,0.6+v*0.22)};p.base={x:p.m.position.x,y:p.m.position.y,z:p.m.position.z};p.ry=p.m.rotation.y;

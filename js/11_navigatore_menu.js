@@ -205,6 +205,7 @@ document.getElementById('tuneReset').onclick=()=>{delete TUNES[selKey];applyTune
  const c2=document.getElementById('selCycS');c2.value=String(CFG.cycStart??5.5);if(!c2.value)c2.value='5.5';CFG.cycStart=+c2.value;c2.onchange=()=>{CFG.cycStart=+c2.value;savePrefs();};
  document.getElementById('mapBtn').onclick=e=>{e.currentTarget.blur();mapToggle();};document.getElementById('photoBtn').onclick=e=>{e.currentTarget.blur();SHOT.take();};document.getElementById('recBtn').onclick=e=>{e.currentTarget.blur();recToggle();};
  document.getElementById('photoShot').onclick=()=>photoShot();document.getElementById('photoExit').onclick=()=>photoToggle();}
+{const t=document.getElementById('selPol');t.value=CFG.pol||'tutto';t.onchange=()=>{CFG.pol=t.value;savePrefs();};}
 {const t=document.getElementById('selTraf');t.value=String(CFG.traf??1);if(!t.value)t.value='1';t.onchange=()=>{CFG.traf=+t.value;savePrefs();};}
 {const box=document.getElementById('radioList');const save=l=>{try{localStorage.setItem('sim_radio',JSON.stringify(l));}catch(e){}RADIO.reload();};
   const draw=()=>{const l=RADIO.user();box.innerHTML='';l.forEach((st,k)=>{const r=document.createElement('div');r.className='row';const n=document.createElement('input');n.value=st.n||'';n.placeholder='Nome';n.size=14;
