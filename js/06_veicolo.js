@@ -151,7 +151,8 @@ function drawScreen(ck,st){
   ['P','R','N','D'].forEach((c,i)=>{q.fillStyle=(pl.sel===c)?'#ffffff':'#555';q.fillText(c,24+i*27,74);});ck.gtex.needsUpdate=true;}
 function drawCluster(ck,P,st){
   if(CKO.on){document.getElementById('ckSpd').textContent=Math.round(st.kmh);document.getElementById('ckGear').textContent=pl.sel==='R'?'R':pl.sel==='N'?'N':(CKO.cfg.man?String(pl.gear):'D'+pl.gear);const bl=(pl.blink||pl.hazard)&&pl.blinkOn;
-    document.getElementById('ckTL').style.opacity=bl&&(pl.blink===-1||pl.hazard)?1:0;document.getElementById('ckTR').style.opacity=bl&&(pl.blink===1||pl.hazard)?1:0;document.getElementById('ckBeam').style.opacity=pl.lights?1:0;}
+    document.getElementById('ckTL').style.opacity=bl&&(pl.blink===-1||pl.hazard)?1:0;document.getElementById('ckTR').style.opacity=bl&&(pl.blink===1||pl.hazard)?1:0;document.getElementById('ckBeam').style.opacity=pl.lights?1:0;
+    if(CKO.cfg.meter){const X=JOB.pax,on=!!(X&&X.on&&JOB.cur&&JOB.cur.k==='taxi'),e=document.getElementById('ckMeter'),txt=on?(10+Math.max(0,pl.km-(X.km0??pl.km))*14).toFixed(2).replace('.',',')+' €':'LIBERO',k=txt+(on?1:0);if(e.dataset.k!==k){e.dataset.k=k;e.children[0].textContent=txt;e.children[1].textContent=on?'TARIFFA 1':'- - -';}}}
   if(ck.spd){const c=ck.spd.userData.cv,g=c.getContext('2d');g.fillStyle='#07090b';g.fillRect(0,0,256,112);g.fillStyle='#ffb347';g.font='bold 72px system-ui';g.textAlign='right';g.fillText(String(Math.round(st.kmh)),178,82);
     g.font='bold 22px system-ui';g.fillStyle='#c98a3a';g.textAlign='left';g.fillText('km/h',184,82);g.fillText(pl.sel==='D'?'D'+pl.gear:pl.sel,190,40);ck.spd.userData.tex.needsUpdate=true;return;}
   const g=ck.cv.getContext('2d'),W=1024,H=384;g.textBaseline='middle';

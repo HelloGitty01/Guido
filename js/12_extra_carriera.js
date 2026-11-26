@@ -250,7 +250,7 @@ const JOB={cur:null,offers:[],pax:null,
     if(J.k==='taxi'&&selKey==='taxi'){const X=this.pax;{const tb=pl.mesh.userData.taxiB;if(tb)tb.emissiveIntensity=X&&X.on?0:1.8;}
       if(!X){if(simT>(J.next||0))this.paxSpawn();return;}
       if(!X.on){X.wait+=dt;if(X.P)PPL.wave(X.P,simT);const d=Math.hypot(pl.x-X.x,pl.z-X.z);
-        if(d<9&&Math.abs(pl.vx)<0.6){X.on=true;X.hits=pl.hits;J.harsh=0;X.dist=Math.hypot(X.to.p.x-X.x,X.to.p.z-X.z)*1.25;scene.remove(X.g);ding(1);this.go(X.to.p.x,X.to.p.z,X.to.i);say('Buongiorno! Mi porti a '+X.to.p.n+', per favore.');}
+        if(d<9&&Math.abs(pl.vx)<0.6){X.on=true;X.km0=pl.km;X.hits=pl.hits;J.harsh=0;X.dist=Math.hypot(X.to.p.x-X.x,X.to.p.z-X.z)*1.25;scene.remove(X.g);ding(1);this.go(X.to.p.x,X.to.p.z,X.to.i);say('Buongiorno! Mi porti a '+X.to.p.n+', per favore.');}
         else if(d>700||X.wait>150){this.paxRemove();J.next=simT+3;}return;}
       // corsa in atto: guida dolce = mancia
       const ha=Math.abs(pl.ax||0),la=Math.abs(pl.ay||0);if((ha>3.6||la>4.2)&&simT-(J.hT||0)>1.2){J.harsh++;J.hT=simT;if(J.harsh===3)say('Piano, per favore!');}return;}
