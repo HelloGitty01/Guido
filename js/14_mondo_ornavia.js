@@ -141,7 +141,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const base=[[mkB(fTex),12,12],[mkB(fTexB),12,12],[mk(off,{roughness:0.25,metalness:0.35,envMapIntensity:1.3}),7,6.4],[mk(ind,{roughness:0.7}),7,0],[mkB(fTexC),12,12],[mk(low),7,0],[mk(shop),7,6.4],
       [mk(chal),7,6.4],[mk(hist),7,6.4],[mk(mod),7,6.4],[mk(stn),7,6.4]];
     // pacchetto HD: facciate fotografiche (palazzoni, condomini, case di mattoni) e finestre dipinte su pietra, intonaco e mattoni veri
-    const I=window.HDON&&window.HDIMG||{};if(CFG.photoFac&&I.blocchi1&&I.pietra&&I.intonaco&&I.mattoni){
+    const I=window.HDON&&window.HDIMG||{};if(false&&CFG.photoFac&&I.blocchi1&&I.pietra&&I.intonaco&&I.mattoni){
       const ph=(img)=>T((g,n)=>g.drawImage(img,0,0,n,n),512),mul=(img,over)=>T((g,n)=>{g.drawImage(img,0,0,n,n);g.globalCompositeOperation='multiply';g.drawImage(over.image,0,0,n,n);g.globalCompositeOperation='source-over';},512);
       base.push([mk(ph(I.blocchi1)),24,30],[mk(ph(I.condominio)),20,24],[mk(ph(I.facciate)),16,13],[mk(mul(I.pietra,hist)),7,6.4],[mk(mul(I.intonaco,hist)),7,6.4],[mk(mul(I.mattoni,mod)),7,6.4],
         [mk(ph(I.blocchi2)),24,30],[mk(ph(I.blocchi3)),24,30],[mk(mul(I.pietra,stn)),7,6.4],

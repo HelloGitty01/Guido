@@ -341,6 +341,8 @@
   @keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}}
   #cineGrade{position:fixed;inset:0;z-index:11;pointer-events:none;opacity:0;transition:opacity 1s}
   .brand img.logo{width:min(230px,40vw)!important}
+  .chk{display:flex;flex-direction:column;gap:2px;margin:8px 0}.chk label{display:flex;align-items:center;gap:10px;font-weight:600}.chk input[type=checkbox]{width:20px;height:20px;margin:0}.chk .note{margin-left:30px}
+  .destGrid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.destGrid button{background:#23272e;border:1px solid #3a414c;color:#e8e8e8;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer}.destGrid button.sel{background:#5a1d22;border-color:#d0464c}
 </style>
 </head>
 <body>
@@ -351,25 +353,22 @@
 <style>#ctrlBody table{width:100%;border-collapse:collapse}#ctrlBody td{padding:3px 4px;border-bottom:1px solid #222b36}#ctrlBody button{min-width:110px}#ctrlBody h3{margin:12px 0 4px;font-size:15px}</style>
 <div id="menu"><div class="mwrap">
   <header class="brand"><img alt="Guido" src="img/logo_plate.webp" class="logo"><div class="cta top"><button id="go">Let's go !</button><button id="contBtn" class="sm" style="display:none">↻ Continua da dove eri</button><button id="exitBtn" class="sm">⏻ Esci</button></div></header>
-  <nav class="tabs" id="mTabs"><button data-t="gioco" class="on">Gioco</button><button data-t="part">Partenza</button><button data-t="auto">Auto</button><button data-t="grafica">Grafica</button><button data-t="audio">Audio</button><button data-t="musica">Musica</button><button data-t="comandi">Controlli</button><button data-t="cart">Album</button><button data-t="info">Info</button></nav>
+  <nav class="tabs" id="mTabs"><button data-t="gioco" class="on">Modalità di gioco</button><button data-t="part">Scenario</button><button data-t="auto">Auto</button><button data-t="grafica">Grafica</button><button data-t="audio">Audio e musica</button><button data-t="comandi">Controlli</button><button data-t="cart">Album</button><button data-t="info">Info</button></nav>
   <div class="mgrid tabp on" data-t="gioco">
     <section class="card span modes"><h2>Modalità di gioco</h2><div class="modeGrid" id="modeGrid"><button class="mode" data-m="free"><i>🚗</i><b>Guida libera</b><span>Gira per Valdonia senza meta</span></button><button class="mode" data-m="nav"><i>🧭</i><b>Da A a B</b><span>Il navigatore ti porta a destinazione</span></button><button class="mode" data-m="race"><i>🏁</i><b>Gara</b><span>Sfida il computer fino al traguardo</span></button><button class="mode" data-m="deliv"><i>📦</i><b>Consegne a tempo</b><span>Porta i pacchi prima che scada il tempo</span></button><button class="mode" data-m="ring"><i>⏱</i><b>Giro dell'anello</b><span>Un giro dell'autostrada a cronometro</span></button><button class="mode" data-m="taxi"><i>🚕</i><b>Tassista</b><span>Turno col taxi: carica i clienti che fanno segno</span></button><button class="mode" data-m="career"><i>💼</i><b>Carriera</b><span>Lavori, soldi e garage</span></button></div><div style="display:none"><select id="selMode"><option value="free">Guida libera</option><option value="nav">Da A a B col navigatore</option><option value="race">Gara contro il computer</option><option value="deliv">Sfida: consegne a tempo</option><option value="ring">Sfida: giro dell'anello a cronometro</option><option value="taxi">Tassista: turno di taxi</option><option value="career">Carriera: lavori, soldi e garage</option></select></div>
-      <div class="row"><label id="lblDest">Destinazione <select id="selDest"></select></label></div><div class="row" id="lbView"></div></section>
-    <section class="card"><h2>Partenza</h2>
-      <div class="row"><label id="lblStart">Partenza <select id="selStart"><option>Milano</option><option>Como</option><option>Biella</option></select></label><input id="selVia" type="hidden" value=""><span id="lblVia" style="display:none"></span></div><div id="viaRes" style="display:none"></div>
-      
-      <div class="row" id="seedRow"><span>Mondo n° <b id="seedLbl"></b></span><button id="newWorld" class="sm">Nuovo mondo</button><input id="seedIn" placeholder="numero" size="7"><button id="loadWorld" class="sm">Carica</button></div>
-    </section>
-    <section class="card"><h2>Ora e meteo</h2>
-      <div class="row"><label>Ora <select id="selTime"><option value="day">Giorno</option><option value="sunset">Tramonto</option><option value="night">Notte</option><option value="cycle">Ciclo giorno-notte</option></select></label><label>Meteo <select id="selWx"><option value="clear">Sereno</option><option value="rain">Pioggia</option><option value="fog">Nebbia</option></select></label></div>
-      <div class="row"><label>Il ciclo parte alle <select id="selCycS"><option value="5.5">5:30 (alba)</option><option value="9">9:00</option><option value="17.5">17:30 (verso il tramonto)</option><option value="21">21:00 (notte)</option></select></label><label>Durata del giorno <select id="selCyc"><option value="2">12 minuti</option><option value="1">24 minuti</option><option value="0.5">48 minuti</option></select></label></div>
-    </section>
+      <div class="row" id="lbView"></div></section>
     <section class="card span"><h2>Regole</h2>
       <div class="row"><label>Profilo di guida <select id="selAids"><option value="2">Facile</option><option value="1">Normale</option><option value="0">Realistico</option></select></label><label>Polizia <select id="selPol"><option value="tutto">Multe e pattuglie</option><option value="rara">Pattuglie rare</option><option value="multe">Solo multe</option><option value="no">Nessuna</option></select></label><label>Traffico <select id="selTraf"><option value="0">Nessuno</option><option value="0.5">Poco</option><option value="1">Normale</option><option value="1.7">Tanto</option></select></label><label>Carburante <select id="selFuel"><option value="0">Infinito</option><option value="1">Consumo realistico</option><option value="2">Consumo arcade (×6)</option></select></label></div>
     </section>
   </div>
   <div class="mgrid tabp" data-t="part">
-    <section class="card span"><h2>Da dove parti</h2><div class="loc" id="locList"></div><div class="locInfo" id="locInfo"></div></section>
+    <section class="card span"><h2>Partenza</h2><div class="loc" id="locList"></div><div class="locInfo" id="locInfo"></div><div style="display:none"><div class="row"><label id="lblStart">Partenza <select id="selStart"><option>Milano</option><option>Como</option><option>Biella</option></select></label><input id="selVia" type="hidden" value=""><span id="lblVia" style="display:none"></span></div><div id="viaRes" style="display:none"></div><div class="row" id="seedRow"><span>Mondo n° <b id="seedLbl"></b></span><button id="newWorld" class="sm">Nuovo mondo</button><input id="seedIn" placeholder="numero" size="7"><button id="loadWorld" class="sm">Carica</button></div></div></section>
+    <section class="card span" id="destCard"><h2>Arrivo</h2><p class="note" id="destNote">Serve nelle modalità "Da A a B" e "Gara": scegli dove arrivare.</p><div class="destGrid" id="destList"></div><div style="display:none"><label id="lblDest">Destinazione <select id="selDest"></select></label></div></section>
+    <section class="card span"><h2>Ora e meteo</h2>
+      <div class="row"><label>Ora <select id="selTime"><option value="day">Giorno</option><option value="sunset">Tramonto</option><option value="night">Notte</option><option value="cycle">Ciclo giorno-notte</option></select></label><label>Meteo <select id="selWx"><option value="clear">Sereno</option><option value="rain">Pioggia</option><option value="fog">Nebbia</option></select></label></div>
+      <div class="row"><label>Il ciclo parte alle <select id="selCycS"><option value="5.5">5:30 (alba)</option><option value="9">9:00</option><option value="17.5">17:30 (verso il tramonto)</option><option value="21">21:00 (notte)</option></select></label><label>Durata del giorno <select id="selCyc"><option value="2">12 minuti</option><option value="1">24 minuti</option><option value="0.5">48 minuti</option></select></label></div>
+    </section>
+
   </div>
   <div class="mgrid tabp" data-t="auto">
     <section class="card span"><h2>Scegli l'auto</h2><div class="vehWrap"><div class="veh" id="vehList"></div><div class="vehPrev"><canvas id="vehCv"></canvas><div id="vehName"></div></div></div><div class="note">Ognuna ha massa, motore, rapporti, freni e baricentro della sua categoria. In corsa la cambi col tasto V.</div></section>
@@ -378,24 +377,23 @@
   </div>
   <div class="mgrid tabp" data-t="grafica">
     <section class="card span"><h2>Grafica</h2>
-      <div class="row"><label>Qualità grafica <select id="cfgQ"><option value="bassa">Bassa (più fluida)</option><option value="media">Media</option><option value="alta">Alta</option></select></label><label>Qualità automatica <input type="checkbox" id="cfgAutoQ"></label><span class="note">se il gioco rallenta, riduce da solo alberi 3D e dettagli lontani</span></div>
-      <div class="row"><label>Modelli dettagliati <input type="checkbox" id="cfgHd"></label><span class="note">alberi veri, autobus, mucche, facciate fotografiche, cantieri (togli la spunta se il gioco va a scatti)</span></div><div class="row"><label>Facciate fotografiche in città <input type="checkbox" id="cfgPhotoFac"></label><span class="note">più realistiche ma meno nitide; di base sono disegnate</span></div>
-      <div class="row"><label>Sfocatura ai bordi in velocità <input type="checkbox" id="cfgBlur"></label><label>Tremolio ad alta velocità <input type="checkbox" id="cfgShake"></label><span class="note">aumentano la sensazione di velocità; la sfocatura pesa un po' sui dispositivi lenti</span></div>
-      <div class="row"><label>Specchietti in cabina <input type="checkbox" id="cfgMir"></label></div>
+      <div class="row"><label>Qualità grafica <select id="cfgQ"><option value="bassa">Bassa (più fluida)</option><option value="media">Media</option><option value="alta">Alta</option></select></label></div>
+      <div class="chk"><label><input type="checkbox" id="cfgAutoQ"> Qualità automatica</label><span class="note">se il gioco rallenta, riduce da solo alberi 3D e dettagli lontani</span></div>
+      <div class="chk"><label><input type="checkbox" id="cfgHd"> Modelli dettagliati</label><span class="note">alberi veri, autobus, mucche, cantieri (togli la spunta se il gioco va a scatti)</span></div>
+      <div class="chk"><label><input type="checkbox" id="cfgBlur"> Sfocatura ai bordi in velocità</label><span class="note">aumenta la sensazione di velocità; pesa un po' sui dispositivi lenti</span></div>
+      <div class="chk"><label><input type="checkbox" id="cfgShake"> Tremolio ad alta velocità</label></div>
+      <div class="chk"><label><input type="checkbox" id="cfgMir"> Specchietti in cabina</label></div>
     </section>
   </div>
   <div class="mgrid tabp" data-t="audio">
     <section class="card span"><h2>Audio</h2>
-      <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label><label>Suoni d'ambiente <input type="checkbox" id="cfgAmb"></label></div>
-      
+      <div class="row"><label>Volume motore <input type="range" id="cfgEng" min="0" max="1.5" step="0.05"></label></div>
+      <div class="chk"><label><input type="checkbox" id="cfgAmb"> Suoni d'ambiente</label><span class="note">uccelli, grilli, città, fabbriche, mare, vento</span></div>
     </section>
-  </div>
-  <div class="mgrid tabp" data-t="musica">
     <section class="card span"><h2>Musica</h2>
       <div class="row"><label>Volume autoradio <input type="range" id="cfgVol" min="0" max="1" step="0.05"></label></div>
-
       <div class="row"><b>Stazioni radio</b><span class="note">(indirizzi di flussi audio MP3/AAC; funzionano nella versione su GitHub)</span></div><div id="radioList"></div><div class="row"><button id="radioAdd" class="sm">Aggiungi stazione</button><button id="radioDef" class="sm">Ripristina predefinite</button><span class="note" id="radioNote"></span></div>
-        </section>
+    </section>
   </div>
   <div class="mgrid tabp" data-t="comandi">
     <section class="card span"><h2>Volante e pedali</h2>
@@ -413,9 +411,9 @@
     Limite in città: 50 km/h. Superarlo è consentito, ma il quadro avvisa con 3 "ding".
   </details>
   </div>
-  <div class="mgrid tabp" data-t="cart"><section class="card span"><h2>Foto e clip</h2><p class="note">Tasto O (o il pulsante Foto) per scattare, J per registrare una clip: finiscono qui. Tocca per ingrandire e salvare.</p><div id="mediaAlbum" class="pcGrid"></div></section><section class="card span"><h2>Cartoline di Valdonia · <span id="pcCount">0 / 20</span></h2><p class="note">Venti punti panoramici sparsi per Valdonia: valichi e belvedere, lungolaghi e coste, le piazze delle città più grandi. Passandoci in auto scatti la cartolina.</p><div id="pcAlbum" class="pcGrid"></div></section></div>
+  <div class="mgrid tabp" data-t="cart"><section class="card span"><h2>Foto e clip</h2><p class="note">Tasto O (o il pulsante Foto) per scattare, J per registrare una clip: finiscono qui. Tocca per ingrandire e salvare.</p><div id="mediaAlbum" class="pcGrid"></div></section></div>
 <div id="lbx"><div class="in"><div class="media"></div><div class="cap"></div><div class="bt"><button id="lbxSave">⬇ Salva</button><button id="lbxDel" class="sm">Elimina</button><button id="lbxClose" class="sm">Chiudi</button></div></div></div>
-  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><div style="text-align:center;font-size:12px;color:#8a9099;margin:-4px 0 6px" class="span">Versione 76</div><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
+  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><div style="text-align:center;font-size:12px;color:#8a9099;margin:-4px 0 6px" class="span">Versione 77</div><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
 <div class="studio"><img src="img/logo_plate.webp" alt="Guido"><div><div class="by">Un gioco realizzato da</div><div class="st">HOPTHOP STUDIO</div><div class="yr">© 2026 · ideazione, programmazione, mondo di Valdonia</div></div></div>
 <h2 style="margin:0 0 8px">Crediti dei modelli 3D</h2><p style="opacity:.8;margin:0 0 10px">Modelli scaricati da Sketchfab, usati con licenza Creative Commons Attribution 4.0 (CC BY 4.0) salvo dove indicato. Sono stati ridotti e ottimizzati per il browser.</p>
 <ul style="padding-left:18px;margin:0">

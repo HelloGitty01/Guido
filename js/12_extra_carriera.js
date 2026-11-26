@@ -399,7 +399,8 @@ const PCARD={list:null,got:{},want:null,t:0,
     // piazze delle città (le più grandi)
     (NW.cities||[]).slice().sort((a,b)=>(b.r1||0)-(a.r1||0)).forEach(C=>{if(out.length>=20||C.wx==null)return;let b=null,bd=1e18;for(const[x,z]of pts){const d=(x-C.wx)**2+(z-C.wz)**2;if(d<bd){bd=d;b=[x,z];}}if(b)out.push({k:'città',x:b[0],z:b[1],n:'Piazza di '+C.n});});
     const used=new Set();out.forEach((o,i)=>{o.id='pc'+i;o.hint='vicino a '+near(o.x,o.z);if(used.has(o.n)){const b=o.n.replace(/^(Belvedere|Costa|Lungolago|Piazza) di /,'');for(const v of['Panorama su '+b,'Vista su '+b,'Balcone di '+b,o.n+' (alto)'])if(!used.has(v)){o.n=v;break;}}used.add(o.n);});this.list=out;this.load();return out;},
-  tick(dt){if(!started||pl.ended||paused||!NW||HOME.mode)return;this.t-=dt;if(this.t>0)return;this.t=0.4;const L=this.build();if(!L)return;
+  tick(dt){return;   /* cartoline tolte: restano foto e clip */
+    if(!started||pl.ended||paused||!NW||HOME.mode)return;this.t-=dt;if(this.t>0)return;this.t=0.4;const L=this.build();if(!L)return;
     for(const o of L){if(this.got[o.id])continue;if(Math.abs(o.x-pl.x)<45&&Math.abs(o.z-pl.z)<45&&Math.hypot(o.x-pl.x,o.z-pl.z)<38){this.want=o;break;}}},
   snap(){const o=this.want;this.want=null;if(!o)return;try{const src=renderer.domElement,c=document.createElement('canvas');c.width=360;c.height=240;const g=c.getContext('2d');
       g.fillStyle='#f3efe6';g.fillRect(0,0,360,240);const sw=src.width,sh=src.height,ar=344/196;let w=sw,h=sw/ar;if(h>sh){h=sh;w=sh*ar;}g.drawImage(src,(sw-w)/2,(sh-h)/2,w,h,8,8,344,196);

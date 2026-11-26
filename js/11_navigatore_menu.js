@@ -156,12 +156,12 @@ document.getElementById('sumMenu').onclick=()=>{document.getElementById('sum').s
 let started=false,paused=true,simT=0;
 const menu=document.getElementById('menu');
 // ---- modalità di gioco a riquadri (il select nascosto resta la fonte del valore) ----
-function syncModes(){const v=document.getElementById('selMode').value;{const vl=document.getElementById('vehList');if(vl){let n=document.getElementById('vehMissNote');if(!n){n=document.createElement('p');n.id='vehMissNote';n.className='note';vl.parentNode.insertBefore(n,vl);}const m=v==='taxi'||v==='deliv';vl.style.display=m?'none':'';n.style.display=m?'':'none';n.textContent=v==='taxi'?'Col turno di taxi si parte sul taxi (Canyon \'75).':'Con le consegne si parte sul furgone delle consegne (LCT 3000 \'07).';}}document.querySelectorAll('#modeGrid .mode').forEach(b=>b.classList.toggle('sel',b.dataset.m===v));}
+function syncModes(){const v=document.getElementById('selMode').value;try{destCards();}catch(e){}{const vl=document.getElementById('vehList');if(vl){let n=document.getElementById('vehMissNote');if(!n){n=document.createElement('p');n.id='vehMissNote';n.className='note';vl.parentNode.insertBefore(n,vl);}const m=v==='taxi'||v==='deliv';vl.style.display=m?'none':'';n.style.display=m?'':'none';n.textContent=v==='taxi'?'Col turno di taxi si parte sul taxi (Canyon \'75).':'Con le consegne si parte sul furgone delle consegne (LCT 3000 \'07).';}}document.querySelectorAll('#modeGrid .mode').forEach(b=>b.classList.toggle('sel',b.dataset.m===v));}
 document.querySelectorAll('#modeGrid .mode').forEach(b=>b.onclick=()=>{const sm=document.getElementById('selMode');sm.value=b.dataset.m;if(sm.onchange)sm.onchange();savePrefs&&savePrefs();syncModes();});
 setTimeout(syncModes,0);
 // ---- menu a schede ----
 const MTAB={cur:'gioco'};
-function menuTab(t){MTAB.cur=t;if(t==='part')setTimeout(locCards,0);document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);if(t==='cart')PCARD.album();try{localStorage.setItem('sim_tab',t);}catch(e){}}
+function menuTab(t){MTAB.cur=t;if(t==='part')setTimeout(()=>{locCards();destCards();},0);document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);if(t==='cart')PCARD.album();try{localStorage.setItem('sim_tab',t);}catch(e){}}
 document.querySelectorAll('#mTabs button').forEach(b=>b.onclick=()=>menuTab(b.dataset.t));
 // ---- anteprima 3D dell'auto scelta: un piccolo studio fotografico che gira lentamente ----
 const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null,key=null,raf=0,last=0,ang=0.6;
@@ -321,6 +321,10 @@ const LOCINFO={
   'Pradalto':['Borgo di montagna','poche baite · 1235 m','Un pugno di baite di legno sotto la neve, la fontana in piazzetta e le cataste di legna. Si scende a valle per una strada stretta con sei tornanti.'],
   'Vallombra':['Borgo di montagna','poche baite · 1207 m','Borgo innevato in fondo a una lunga strada di tornanti nel bosco. Silenzio, vento e vista sulle valli.'],
   'Casa di Guido':['Casa di Guido','Garage con tutte le auto','Si parte dal garage di casa con l\'auto scelta. Fermandoti accanto a un\'altra auto del garage puoi cambiarla.']};
+// arrivo: le mete come pulsanti; attive solo dove servono (Da A a B e Gara)
+function destCards(){const sd=document.getElementById('selDest'),box=document.getElementById('destList'),card=document.getElementById('destCard');if(!sd||!box)return;const m=document.getElementById('selMode').value,on=m==='nav'||m==='race';
+  card.style.opacity=on?'':'0.45';document.getElementById('destNote').textContent=on?'Scegli dove arrivare.':'L\'arrivo serve solo nelle modalità "Da A a B" e "Gara".';
+  box.innerHTML='';[...sd.options].forEach(o=>{const b=document.createElement('button');b.textContent=o.textContent;b.classList.toggle('sel',o.value===sd.value);b.disabled=!on;b.onclick=()=>{sd.value=o.value;try{savePrefs();}catch(e){}destCards();};box.appendChild(b);});}
 function locSlug(n){return n.normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');}
 function locCards(){const ss=document.getElementById('selStart'),box=document.getElementById('locList'),inf=document.getElementById('locInfo');if(!ss||!box)return;box.innerHTML='';
   const show=()=>{const n=ss.value,I=LOCINFO[n];[...box.children].forEach(b=>b.classList.toggle('sel',b.dataset.n===n));inf.innerHTML=I?`<b>${n}</b> · ${I[0]} · ${I[1]}<br>${I[2]}`:'';};
