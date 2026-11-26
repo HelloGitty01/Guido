@@ -33,8 +33,11 @@ const grassTex=canvasTex(512,(g,n)=>{g.fillStyle='#6a8644';g.fillRect(0,0,n,n);
   for(let i=0;i<26000;i++){const v=Math.random(),x=Math.random()*n,y=Math.random()*n,l=2+Math.random()*5;g.strokeStyle=v<0.45?`rgba(${52+v*70|0},${88+v*80|0},${30+v*30|0},.7)`:v<0.9?`rgba(${120+v*50|0},${148+v*40|0},${72},.5)`:'rgba(170,160,100,.5)';
     g.lineWidth=1;g.beginPath();g.moveTo(x,y);g.lineTo(x+(Math.random()-0.5)*2.5,y-l);g.stroke();}
   for(let i=0;i<220;i++){g.fillStyle=Math.random()<0.6?'rgba(120,100,70,.35)':['rgba(250,250,240,.8)','rgba(250,220,70,.8)','rgba(200,120,200,.7)'][(Math.random()*3)|0];const x=Math.random()*n,y=Math.random()*n;g.fillRect(x,y,1.5+Math.random()*2,1.5+Math.random()*2);}});
-const paverTex=canvasTex(256,(g,n)=>{g.fillStyle='#b9b4ab';g.fillRect(0,0,n,n);for(let y=0;y<n;y+=32)for(let x=0;x<n;x+=32){const v=170+Math.random()*30|0;g.fillStyle=`rgb(${v},${v-4},${v-10})`;g.fillRect(x+1.5,y+1.5,29,29);}
-  for(let i=0;i<1500;i++){g.fillStyle='rgba(80,80,80,.12)';g.fillRect(Math.random()*n,Math.random()*n,1.5,1.5);}});
+// lastre di pietra a correre (giunti sfalsati), toni leggermente diversi, venature e qualche macchia d'usura
+const paverTex=canvasTex(512,(g,n)=>{g.fillStyle='#8f8a82';g.fillRect(0,0,n,n);const H=32,W=64;for(let r=0;r*H<n;r++){const off=(r%2)*W/2;for(let x=-W;x<n+W;x+=W){const v=172+Math.random()*26|0,w=(Math.random()-0.5)*8|0;
+    g.fillStyle=`rgb(${v+w},${v-2},${v-8-w})`;g.fillRect(x+off+1.5,r*H+1.5,W-3,H-3);for(let k=0;k<14;k++){const sx=x+off+2+Math.random()*(W-6),sy=r*H+2+Math.random()*(H-6);g.fillStyle=`rgba(${Math.random()<0.5?255:60},${Math.random()<0.5?250:60},${Math.random()<0.5?240:60},.07)`;g.fillRect(sx,sy,2+Math.random()*4,1+Math.random()*2);}
+    g.fillStyle='rgba(255,255,255,.06)';g.fillRect(x+off+1.5,r*H+1.5,W-3,2);g.fillStyle='rgba(0,0,0,.08)';g.fillRect(x+off+1.5,r*H+H-3.5,W-3,2);}}
+  for(let i=0;i<6;i++){const gr=g.createRadialGradient(Math.random()*n,Math.random()*n,0,0,0,0);const x=Math.random()*n,y=Math.random()*n,r=20+Math.random()*50,rg=g.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,'rgba(70,60,50,.10)');rg.addColorStop(1,'rgba(70,60,50,0)');g.fillStyle=rg;g.fillRect(x-r,y-r,2*r,2*r);}});
 const dirtTex=canvasTex(256,(g,n)=>{g.fillStyle='#8a7354';g.fillRect(0,0,n,n);for(let i=0;i<7000;i++){const v=Math.random();g.fillStyle=`rgba(${110+v*80|0},${90+v*60|0},${60+v*40|0},.55)`;g.fillRect(Math.random()*n,Math.random()*n,2,2);}
   [n*0.28,n*0.72].forEach(x=>{const gr=g.createLinearGradient(x-18,0,x+18,0);gr.addColorStop(0,'rgba(60,45,30,0)');gr.addColorStop(0.5,'rgba(60,45,30,.35)');gr.addColorStop(1,'rgba(60,45,30,0)');g.fillStyle=gr;g.fillRect(x-18,0,36,n);});
   for(let i=0;i<120;i++){g.fillStyle='rgba(200,190,170,.5)';g.beginPath();g.arc(Math.random()*n,Math.random()*n,1+Math.random()*2.5,0,7);g.fill();}});
@@ -108,38 +111,60 @@ const fTexB=facadeTex2(1),fTexC=facadeTex2(2);
 const tileTex=canvasTex(128,(g,n)=>{g.fillStyle='#9e4f35';g.fillRect(0,0,n,n);for(let y=0;y<n;y+=10){for(let x=(y/10)%2*8;x<n;x+=16){g.fillStyle=`rgb(${150+Math.random()*30|0},${70+Math.random()*20|0},${45+Math.random()*15|0})`;g.fillRect(x,y,14,8);}g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,y+8,n,2);}});
 const roofTileM=mat(0xffffff,{map:tileTex});
 // negozi al piano terra: atlante di 8 vetrine in un'unica texture e un'unica mesh
-// insegne: 62 attività con nomi inventati (più due portoni), atlante 8×8 di vetrine
-const SHOPS=(()=>{const C={bar:['#7a1e1e','#f3d6a0'],food:['#8a3b16','#ffe0a0'],pub:['#141414','#e8c36a'],shop:['#2d5a2d','#ffffff'],moda:['#222222','#e8e0d0'],bank:['#3a4a5a','#ffffff'],farm:['#1c7a3c','#ffffff'],tab:['#1f3d8a','#ffffff'],serv:['#5a3a6a','#ffffff'],sweet:['#b0567a','#fff2f6'],blue:['#1d4f7a','#ffffff']};
-  const L=[['Bar Centrale','bar'],['Caffè Roma','bar'],['Bar Sport','bar'],['Caffè Valdonia','bar'],['Bar Stazione','bar'],['Ristorante da Gino','food'],['Trattoria Il Mulino','food'],['Osteria del Ponte','food'],['Pizzeria Vesuvio','food'],['Pizzeria da Totò','food'],
-   ['Ristorante La Pergola','food'],['Trattoria Nonna Rina','food'],['Kebab Istanbul','food'],['Sushi Hana','food'],['Black Cat Pub','pub'],['Irish Pub Dublino','pub'],['Birreria Luppolo','pub'],['Enoteca Il Calice','pub'],['Gelateria Polare','sweet'],['Pasticceria Dolce Vita','sweet'],
-   ['Panificio Rossi','sweet'],['Cioccolateria Fondente','sweet'],['Alimentari Bruni','shop'],['Macelleria Bianchi','shop'],['Frutta e Verdura Sole','shop'],['Pescheria Il Gabbiano','blue'],['Supermercato Orna','shop'],['Drogheria Conti','shop'],['Farmacia Comunale','farm'],['Farmacia San Marco','farm'],
-   ['Erboristeria Salvia','farm'],['Tabacchi n. 12','tab'],['Tabacchi Edicola','tab'],['Ferramenta Ghidini','serv'],['Libreria Il Segnalibro','serv'],['Cartoleria Matita','serv'],['Ottica Ferri','blue'],['Fiori di Lucia','farm'],['Parrucchiere Stile','sweet'],['Barbiere Tonino','moda'],
-   ['Lavanderia Bolle','blue'],['Calzature Passo','moda'],['Boutique Elena','moda'],['Abbigliamento Sartoria','moda'],['Gioielleria Aurea','moda'],['Profumeria Iris','sweet'],['Banca di Valdonia','bank'],['Cassa Rurale','bank'],['Assicurazioni Orna','bank'],['Immobiliare Casa Mia','serv'],
-   ['Viaggi Altrove','blue'],['Telefonia Pronto','blue'],['Elettronica Volt','blue'],['Ciclo Sport Guido','serv'],['Giocattoli Trottola','sweet'],['Animali Fido','farm'],['Mobili Rovere','serv'],['Foto Ottica Lampo','blue'],['Dentista Dr. Sorriso','bank'],['Palestra Forza','pub'],
-   ['Videogiochi Pixel','pub'],['Ricambi Auto Turbo','serv']];
-  const out=L.map(([n,c])=>[n,C[c][0],C[c][1],c]);out.push(['','#4a3a2a','#000',''],['','#4a3a2a','#000','']);return out;})();
-const SHOP_COLS=8,SHOP_ROWS=8,shopUV=k=>{const u0=(k%SHOP_COLS)/SHOP_COLS,v1=1-((k/SHOP_COLS)|0)/SHOP_ROWS;return[u0,v1-1/SHOP_ROWS,u0+1/SHOP_COLS,v1];};
+// insegne: attività inventate divise per zona (c centro, s semicentro, p periferia, t località turistiche, * ovunque), con stili e caratteri diversi; alcune al neon
+// [nome, categoria, zone, stile, neon]  stile: 0 bastoni, 1 serif elegante, 2 corsivo, 3 condensato, 4 retrò, 5 neon
+const SHOPS=(()=>{const C={bar:['#7a1e1e','#f3d6a0'],food:['#8a3b16','#ffe0a0'],pub:['#141414','#e8c36a'],shop:['#2d5a2d','#ffffff'],moda:['#111111','#efe6d4'],bank:['#3a4a5a','#ffffff'],farm:['#1c7a3c','#ffffff'],tab:['#1f3d8a','#ffffff'],serv:['#5a3a6a','#ffffff'],sweet:['#b0567a','#fff2f6'],blue:['#1d4f7a','#ffffff'],disc:['#ffd400','#c8102e'],car:['#2a2a2a','#ffcc00'],souv:['#0f6e8c','#ffffff'],gel:['#f4a6c0','#5a2340'],lux:['#f2efe8','#1a1a1a']};
+  const L=[
+   ['Maison Valdonia','lux','c',1],['Atelier Rossella','moda','c',1],['Boutique Elena','moda','c',2],['Gioielleria Aurea','lux','c',1],['Profumeria Iris','sweet','c',2],['Calzature Passo','moda','cs',3],['Sartoria Dante','moda','c',1],['Orologeria Tempo','lux','c',1],['Concept Store NOVE','moda','c',3],['Pelletteria Fiorenza','moda','c',1],
+   ['Ristorante La Pergola','food','c',1],['Osteria del Ponte','food','cs',4],['Sushi Hana','food','c',3],['Bistrot Le Cave','food','c',2],['Caffè Valdonia','bar','c',1],['Caffè Roma','bar','cs',4],['Cocktail Bar Luna','pub','c',5,1],['Lounge Velvet','pub','c',5,1],['Enoteca Il Calice','pub','cs',2],['Banca di Valdonia','bank','c',1],
+   ['Assicurazioni Orna','bank','cs',0],['Libreria Il Segnalibro','serv','cs',1],['Galleria d\'Arte Ocra','lux','c',2],['Cinema Odeon','pub','c',5,1],['Teatro Lirico','lux','c',1],
+   ['Alimentari Bruni','shop','s',4],['Macelleria Bianchi','shop','s',0],['Frutta e Verdura Sole','shop','s',4],['Panificio Rossi','sweet','s',2],['Pasticceria Dolce Vita','sweet','sc',2],['Trattoria Nonna Rina','food','s',4],['Trattoria Il Mulino','food','s',2],['Pizzeria Vesuvio','food','s',3],['Pizzeria da Totò','food','sp',2],['Black Cat Pub','pub','s',5,1],
+   ['Irish Pub Dublino','pub','s',4,1],['Birreria Luppolo','pub','s',3],['Bar Sport','bar','sp',0],['Bar Centrale','bar','s',0],['Ferramenta Ghidini','serv','sp',3],['Farmacia Comunale','farm','*',0],['Farmacia San Marco','farm','*',0],['Tabacchi n. 12','tab','*',0],['Edicola Stazione','tab','sp',0],['Parrucchiere Stile','sweet','s',2],
+   ['Barbiere Tonino','moda','sp',4],['Lavanderia Bolle','blue','sp',0],['Drogheria Conti','shop','s',4],['Pescheria Il Gabbiano','blue','s',4],['Erboristeria Salvia','farm','s',2],['Cartoleria Matita','serv','s',0],['Ottica Ferri','blue','cs',3],['Fiori di Lucia','farm','s',2],['Giocattoli Trottola','sweet','s',4],['Animali Fido','farm','sp',0],
+   ['Telefonia Pronto','blue','sp',3],['Elettronica Volt','blue','sp',3],['Videogiochi Pixel','pub','sp',5,1],['Palestra Forza','pub','sp',3],['Immobiliare Casa Mia','serv','sp',0],['Viaggi Altrove','blue','cs',2],['Ciclo Sport Guido','serv','sp',3],['Foto Ottica Lampo','blue','s',3],['Dentista Dr. Sorriso','bank','sp',0],['Gelateria Polare','gel','s',2],
+   ['Ipermercato Orna','disc','p',3],['Discount Risparmio','disc','p',3],['Supermercato Valfresco','shop','p',3],['Kebab Istanbul','food','p',3,1],['Kebab Anatolia','food','p',0,1],['Pizza al Taglio','food','p',4],['Ricambi Auto Turbo','car','p',3],['Carrozzeria Fratelli Neri','car','p',0],['Officina Pistone','car','p',4],['Gommista Rapido','car','p',3],
+   ['Autolavaggio Splash','blue','p',3],['Mobili Rovere','serv','p',1],['Bricolage Fai da Te','disc','p',3],['Compro Oro','lux','p',5,1],['Sala Slot Fortuna','pub','p',5,1],['Money Transfer','tab','p',0],['Lavasecco 24h','blue','p',0],['Mini Market 24/7','shop','p',3,1],['Phone Center','blue','p',0],['Abbigliamento Low Cost','moda','p',3],
+   ['Souvenir Valdonia','souv','t',2],['Ricordi del Lago','souv','t',2],['Bazar del Porto','souv','t',4],['Gelateria Riva','gel','t',2],['Gelateria Spiaggia d\'Oro','gel','t',2],['Gelateria La Coppa','gel','t',4],['Ristorante Il Pescatore','food','t',1],['Bar Bagni Aurora','bar','t',2],['Lido Bar Sirena','bar','t',4],['Trattoria al Lago','food','t',4],
+   ['Pizzeria Belvedere','food','t',2],['Bar Funivia','bar','t',3],['Noleggio Bici e Sci','serv','t',3],['Prodotti Tipici','shop','t',1],['Cartoline & Co','souv','t',0],['Hotel Panorama','lux','t',1],['Crêperie Marina','sweet','t',2],['Chiringuito Onda','bar','t',5,1],
+   ['','door','*',0],['','door','*',0]];
+  return L.map(([n,c,z,st,ne])=>{const k=c==='door'?['#4a3a2a','#000']:C[c];return[n,k[0],k[1],c==='door'?'':c,z,st||0,!!ne];});})();
+const SHOP_COLS=11,SHOP_ROWS=11,shopUV=k=>{const u0=(k%SHOP_COLS)/SHOP_COLS,v1=1-((k/SHOP_COLS)|0)/SHOP_ROWS;return[u0,v1-1/SHOP_ROWS,u0+1/SHOP_COLS,v1];};
+// scelta dell'insegna per zona: k = numero casuale 0..1
+const SHOPZ={};SHOPS.forEach((S,i)=>{const z=S[4];for(const q of ['c','s','p','t'])if(z==='*'||z.includes(q))(SHOPZ[q]=SHOPZ[q]||[]).push(i);});
+const shopPick=(zone,r)=>{const L=SHOPZ[zone]||SHOPZ.s;return L[Math.min(L.length-1,(r*L.length)|0)];};
+const SHOPFONTS=["bold {s}px 'Oswald',Arial Narrow,Arial","{s}px 'Playfair Display',Georgia,serif","{s}px 'Pacifico','Brush Script MT',cursive","{s}px 'Bebas Neue',Impact,Arial Narrow","{s}px 'Righteous','Arial Rounded MT Bold',Arial","{s}px 'Monoton','Righteous',Impact"];
 const shopTex=(()=>{const c=document.createElement('canvas');c.width=256*SHOP_COLS;c.height=256*SHOP_ROWS;const g=c.getContext('2d');
-  SHOPS.forEach(([name,bg,fg,cat],k)=>{const x0=(k%SHOP_COLS)*256,y0=((k/SHOP_COLS)|0)*256;g.fillStyle='#8f8676';g.fillRect(x0,y0,256,256);
+  const draw=()=>{g.clearRect(0,0,c.width,c.height);SHOPS.forEach(([name,bg,fg,cat,zone,st,neon],k)=>{const x0=(k%SHOP_COLS)*256,y0=((k/SHOP_COLS)|0)*256;g.fillStyle='#8f8676';g.fillRect(x0,y0,256,256);
     if(!name){g.fillStyle='#5a3e28';g.fillRect(x0+80,y0+70,96,186);g.fillStyle='#3a2818';g.fillRect(x0+127,y0+70,2,186);g.fillStyle='#b89a5a';g.fillRect(x0+112,y0+160,6,6);g.fillRect(x0+138,y0+160,6,6);g.fillStyle='#d8d0c0';g.fillRect(x0+70,y0+60,116,10);return;}
-    g.fillStyle=bg;g.fillRect(x0+8,y0+26,240,52);g.fillStyle=fg;g.textAlign='center';g.textBaseline='middle';
-    // il nome su una o due righe, rimpicciolito finché ci sta
-    const up=name.toUpperCase(),w=228,fit=(t,max)=>{let s=max;g.font='bold '+s+'px Arial';while(g.measureText(t).width>w&&s>10){s--;g.font='bold '+s+'px Arial';}return s;};
-    if(fit(up,30)>=19||up.indexOf(' ')<0){fit(up,30);g.fillText(up,x0+128,y0+53);}
+    // fascia dell'insegna: piena, con cornice, o lettere su fondo scuro per il neon
+    const nb=st===5;g.fillStyle=nb?'#101014':bg;g.fillRect(x0+8,y0+22,240,58);if(st===1||st===4){g.strokeStyle=fg;g.globalAlpha=0.6;g.lineWidth=2;g.strokeRect(x0+13,y0+27,230,48);g.globalAlpha=1;}
+    if(cat==='disc'){g.fillStyle='#c8102e';g.fillRect(x0+8,y0+72,240,8);}
+    const col=nb?['#ff3df2','#33e6ff','#ffe14d','#ff5a3d','#7dff6a'][k%5]:fg;g.fillStyle=col;g.textAlign='center';g.textBaseline='middle';
+    const up=st===2||st===1?name:name.toUpperCase(),F=SHOPFONTS[st],w=226,fit=(t,max)=>{let sz=max;g.font=F.replace('{s}',sz);while(g.measureText(t).width>w&&sz>10){sz--;g.font=F.replace('{s}',sz);}return sz;};
+    if(nb){g.shadowColor=col;g.shadowBlur=14;}
+    const mx=st===2?34:st===3?40:30;
+    if(fit(up,mx)>=19||up.indexOf(' ')<0){fit(up,mx);g.fillText(up,x0+128,y0+52);}
     else{const ws=up.split(' ');let best=1,bd=1e9;for(let i=1;i<ws.length;i++){const a=ws.slice(0,i).join(' ').length,b=ws.slice(i).join(' ').length;if(Math.abs(a-b)<bd){bd=Math.abs(a-b);best=i;}}
-      const l1=ws.slice(0,best).join(' '),l2=ws.slice(best).join(' '),fs=Math.min(fit(l1,24),fit(l2,24));g.font='bold '+fs+'px Arial';g.fillText(l1,x0+128,y0+40);g.fillText(l2,x0+128,y0+66);}
-    if(cat==='farm'&&/FARMACIA/.test(up)){g.fillStyle='#2bd35a';g.fillRect(x0+226,y0+34,8,26);g.fillRect(x0+217,y0+43,26,8);}
-    if(cat==='pub'&&/BLACK CAT/.test(up)){g.fillStyle='#e8c36a';g.beginPath();g.arc(x0+24,y0+52,9,0,6.3);g.fill();g.beginPath();g.moveTo(x0+16,y0+46);g.lineTo(x0+18,y0+36);g.lineTo(x0+23,y0+44);g.moveTo(x0+32,y0+46);g.lineTo(x0+30,y0+36);g.lineTo(x0+25,y0+44);g.fill();}
+      const l1=ws.slice(0,best).join(' '),l2=ws.slice(best).join(' '),fs=Math.min(fit(l1,26),fit(l2,26));g.font=F.replace('{s}',fs);g.fillText(l1,x0+128,y0+39);g.fillText(l2,x0+128,y0+66);}
+    g.shadowBlur=0;
+    if(cat==='farm'&&/FARMACIA/i.test(up)){g.fillStyle='#2bd35a';g.fillRect(x0+226,y0+34,8,26);g.fillRect(x0+217,y0+43,26,8);}
+    // vetrine
     const gr=g.createLinearGradient(x0,y0+90,x0+256,y0+256);gr.addColorStop(0,'#28323c');gr.addColorStop(0.5,'#4f6070');gr.addColorStop(1,'#1d252d');g.fillStyle=gr;g.fillRect(x0+14,y0+90,150,160);g.fillRect(x0+178,y0+90,64,166);
     g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.moveTo(x0+14,y0+250);g.lineTo(x0+90,y0+90);g.lineTo(x0+120,y0+90);g.lineTo(x0+44,y0+250);g.fill();
-    const pal={food:['#e8c9a0','#c33','#fff'],bar:['#c9a','#9ac','#fff'],sweet:['#f6c','#fc9','#fff'],moda:['#a96','#69a','#ccc'],shop:['#9c6','#cc6','#c96']}[cat]||['#c9a','#9ac','#ca9'];
-    for(let i=0;i<6;i++){g.fillStyle=pal[i%3];g.fillRect(x0+24+i*22,y0+200+((k*7+i*13)%20),14,30);}
-    g.strokeStyle='#cfc6b4';g.lineWidth=6;g.strokeRect(x0+14,y0+90,150,160);g.strokeRect(x0+178,y0+90,64,166);});
-  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t;})();
+    // merce in vetrina (frutta in cassette davanti al fruttivendolo, pane, abiti, gelato, souvenir)
+    if(/Frutta/.test(name)){for(let i=0;i<3;i++){g.fillStyle='#7a5a32';g.fillRect(x0+20+i*48,y0+214,44,32);for(let j=0;j<12;j++){g.fillStyle=['#e0301e','#f29a1f','#f2d22e','#5aa52a'][(i+j)%4];g.beginPath();g.arc(x0+26+i*48+(j%6)*7,y0+214-((j/6)|0)*6,4,0,7);g.fill();}}}
+    else if(cat==='gel'){for(let i=0;i<6;i++){g.fillStyle=['#f7d6e0','#fff3c4','#c9e7b8','#6b3f26','#f2a3a3','#fff'][i];g.fillRect(x0+22+i*23,y0+214,20,14);}}
+    else{const pal={food:['#e8c9a0','#c33','#fff'],bar:['#c9a','#9ac','#fff'],sweet:['#f6c','#fc9','#fff'],moda:['#a96','#69a','#ccc'],lux:['#d8c79a','#fff','#999'],shop:['#9c6','#cc6','#c96'],souv:['#3cf','#fc3','#f66'],disc:['#fd0','#c11','#fff'],car:['#333','#fc0','#888']}[cat]||['#c9a','#9ac','#ca9'];
+      for(let i=0;i<6;i++){g.fillStyle=pal[i%3];g.fillRect(x0+24+i*22,y0+200+((k*7+i*13)%20),14,30);}}
+    g.strokeStyle=cat==='lux'||cat==='moda'?'#2a2a2a':'#cfc6b4';g.lineWidth=6;g.strokeRect(x0+14,y0+90,150,160);g.strokeRect(x0+178,y0+90,64,166);});};
+  draw();const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;
+  // quando i caratteri web sono pronti, l'atlante viene ridisegnato con i font veri
+  try{Promise.all(['Oswald','Playfair Display','Pacifico','Bebas Neue','Righteous','Monoton'].map(f=>document.fonts.load("32px '"+f+"'"))).then(()=>{draw();t.needsUpdate=true;}).catch(()=>{});}catch(e){}
+  return t;})();
 const shopQ={pos:[],uv:[],idx:[]},awnQ={pos:[],col:[],idx:[]};
 function addQuad(Q,ax,az,bx,bz,y0,y1,u0,v0,u1,v1,nx,nz){const k=Q.pos.length/3;Q.pos.push(ax,y0,az,bx,y0,bz,ax,y1,az,bx,y1,bz);if(Q.uv)Q.uv.push(u0,v0,u1,v0,u0,v1,u1,v1);Q.idx.push(k,k+1,k+2,k+1,k+3,k+2);}
 function shopFront(cx,cz,fw,nx,nz){const tx=-nz,tz=nx,n=Math.max(1,Math.round(fw/6.2)),seg=fw/n;
-  for(let i=0;i<n;i++){const k=(Math.random()*SHOPS.length)|0,[u0,v0,u1x,v1]=shopUV(k);
+  for(let i=0;i<n;i++){const k=(Math.random()*(SHOPS.length-2))|0,[u0,v0,u1x,v1]=shopUV(k);
     const a=-fw/2+i*seg+0.15,b=a+seg-0.3,ox=cx+nx*0.03,oz=cz+nz*0.03;
     // il verso dei vertici dipende dalla normale: si ordinano in modo che la faccia guardi fuori
     addQuad(shopQ,ox+tx*b,oz+tz*b,ox+tx*a,oz+tz*a,CURB,CURB+3.6,u0,v0,u1x,v1);
