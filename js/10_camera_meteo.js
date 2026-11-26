@@ -389,7 +389,7 @@ function applyEnv(tick){
   if(WX==='rain'){U.top.value.multiplyScalar(0.55).add(new THREE.Color(0x30353c));U.mid.value.lerp(new THREE.Color(0x6f7782),0.7);U.bot.value.lerp(new THREE.Color(0x8a9199),0.7);sunI*=0.4;hemiI*=1.1;fogC=new THREE.Color(0x0c1016).lerp(new THREE.Color(0x8a9199),Math.min(1,K.day*1.15));fogN=60;fogF=650;clouds_c=new THREE.Color(0x222831).lerp(new THREE.Color(0x8f969e),Math.min(1,K.day*1.15));}
   if(WX==='fog'){U.mid.value.lerp(new THREE.Color(0xc3c8cc),0.8);U.bot.value.lerp(new THREE.Color(0xc3c8cc),0.9);sunI*=0.5;fogC=new THREE.Color(0x10151d).lerp(new THREE.Color(0xc3c8cc),Math.min(1,K.day*1.15));fogN=8;fogF=170;}
   /* prospettiva aerea: in lontananza i monti virano al grigio-azzurro, non al bianco */if(WX==='clear'){const a=0.25*(K.day||0);fogC=new THREE.Color(fogC).lerp(new THREE.Color(0x92a9c0),a);U.bot.value.lerp(new THREE.Color(0x92a9c0),a*0.85);}
-  if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=3.9+0.5*(1-(K.day||0));}}
+  if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=3.1+0.5*(1-(K.day||0));}}
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
    if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(K.bot).lerp(new THREE.Color(0xa4abb3),0.3).multiplyScalar(0.3+0.7*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}

@@ -292,6 +292,24 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const treeVM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.95});
   // ---------- alberi dettagliati (pacchetto HD): vicino alla camera i modelli veri, lontano le sagome di sempre ----------
   const HDT=(()=>{if(!window.HDON)return null;try{const V={};
+    // passaggio graduale tra albero vero e albero lontano: retinatura per pixel decisa dalla distanza dell'albero (niente "pop")
+    const FADE={uR:{value:210},uB:{value:38}},fadeHook=(far)=>m=>{m.onBeforeCompile=sh=>{sh.uniforms.uFR=FADE.uR;sh.uniforms.uFB=FADE.uB;
+        sh.vertexShader='varying float vFd;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n{vec4 _ic=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vFd=distance(_ic.xz,cameraPosition.xz);}');
+        sh.fragmentShader='uniform float uFR;uniform float uFB;varying float vFd;\n'+sh.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\n{float ign=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715))));float w=clamp((uFR-vFd)/uFB,0.,1.);'+(far?'if(ign<w)discard;':'if(ign>=w)discard;')+'}');};
+      m.customProgramCacheKey=()=>far?'treeFar':'treeNear';return m;};
+    // alberi lontani: immagine del modello vero (renderizzata una volta) su un pannello che guarda sempre la telecamera
+    const bbMake=(parts)=>{const box=new THREE.Box3();parts.forEach(p=>{p.geo.computeBoundingBox();box.union(p.geo.boundingBox);});const hw=Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))*1.02,top=box.max.y*1.01,bot=Math.min(0,box.min.y);
+      const rt=new THREE.WebGLRenderTarget(256,512,{format:THREE.RGBAFormat});rt.texture.generateMipmaps=true;rt.texture.minFilter=THREE.LinearMipmapLinearFilter;rt.texture.anisotropy=4;
+      const sc=new THREE.Scene();sc.add(new THREE.AmbientLight(0xffffff,0.8));const dl=new THREE.DirectionalLight(0xffffff,0.45);dl.position.set(0.4,1,1);sc.add(dl);
+      parts.forEach(p=>{const mm=p.mat.clone();mm.onBeforeCompile=()=>{};mm.customProgramCacheKey=()=>'bbsrc';mm.alphaToCoverage=false;sc.add(new THREE.Mesh(p.geo,mm));});
+      const cam=new THREE.OrthographicCamera(-hw,hw,top,bot,-10,10);cam.position.set(0,0,5);cam.lookAt(0,0,0);
+      const pc=new THREE.Color(),pa=renderer.getClearAlpha(),pt=renderer.getRenderTarget(),tm0=renderer.toneMapping;renderer.getClearColor(pc);renderer.toneMapping=THREE.NoToneMapping;renderer.setRenderTarget(rt);renderer.setClearColor(0x33452a,0);renderer.clear();renderer.render(sc,cam);renderer.setRenderTarget(pt);renderer.setClearColor(pc,pa);renderer.toneMapping=tm0;
+      const g=new THREE.PlaneGeometry(2*hw,top-bot);g.translate(0,(top+bot)/2,0);
+      const mat=new THREE.MeshStandardMaterial({map:rt.texture,alphaTest:0.4,roughness:0.95,metalness:0,side:THREE.DoubleSide});
+      const fh=fadeHook(true);fh(mat);const ob=mat.onBeforeCompile;mat.onBeforeCompile=sh=>{ob(sh);
+        sh.vertexShader=sh.vertexShader.replace('#include <defaultnormal_vertex>','#include <defaultnormal_vertex>\n{vec4 _c=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vec2 _d=normalize(cameraPosition.xz-_c.xz+1e-4);transformedNormal=normalize((viewMatrix*vec4(normalize(vec3(_d.x,0.9,_d.y)),0.)).xyz);}')
+          .replace('#include <project_vertex>','vec4 _c2=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vec2 _d2=normalize(cameraPosition.xz-_c2.xz+1e-4);float _sx=length(instanceMatrix[0].xyz),_sy=length(instanceMatrix[1].xyz);vec3 _w=_c2.xyz+vec3(-_d2.y,0.,_d2.x)*transformed.x*_sx+vec3(0.,1.,0.)*transformed.y*_sy;vec4 mvPosition=viewMatrix*vec4(_w,1.);gl_Position=projectionMatrix*mvPosition;');};
+      mat.customProgramCacheKey=()=>'treeBB';return[{geo:g,mat}];};
     // la versione lontana non ha coordinate di texture: materiale pieno col colore medio della texture (altrimenti le foglie spariscono e restano i tronchi)
     const avgC=new Map();const farMat=(mm,by,nm)=>{let src=null;for(const m of by.keys())if(m.name===nm){src=m;break;}const map=src&&src.map;let col=new THREE.Color(0.25,0.33,0.18);
       if(map&&map.image){let a=avgC.get(map);if(!a){try{const cv=document.createElement('canvas');cv.width=cv.height=24;const g=cv.getContext('2d');g.drawImage(map.image,0,0,24,24);const d=g.getImageData(0,0,24,24).data;let r=0,gg=0,b=0,n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]>140){r+=d[i];gg+=d[i+1];b+=d[i+2];n++;}if(n)a=new THREE.Color(r/n/255,gg/n/255,b/n/255).convertSRGBToLinear();}catch(e){}avgC.set(map,a||null);}if(a)col=a.clone();}
@@ -303,10 +321,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       gShift(all,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));
       const parts=[...by.entries()].map(([m,l])=>{const mm=gFixMat(m.clone());const leaf=leafRe.test(m.name)||m.transparent||m.alphaTest>0;
         if(leaf){mm.transparent=false;mm.alphaTest=0.45;mm.alphaToCoverage=true;mm.side=THREE.DoubleSide;if(mm.map){mm.map=coverageMips(mm.map,0.45);}mm.roughness=0.9;mm.metalness=0;if(tint!==1)mm.color.multiplyScalar(tint);}else{mm.roughness=Math.max(0.8,mm.roughness);mm.metalness=0;}
-        return{geo:gMerge(l),mat:mm,name:m.name};});
+        fadeHook(false)(mm);return{geo:gMerge(l),mat:mm,name:m.name};});
       // versione leggera per la distanza (stesso modello, poche foglie e niente rami fini): stessi materiali
       let far=null;const FG=MODELS['hd_'+key2file[key]+'_far'];if(FG){const fs=FG.scene;fs.updateMatrixWorld(true);const fb=new Map();fs.traverse(m=>{if(!m.isMesh)return;const nm=m.material.name;if(!fb.has(nm))fb.set(nm,[]);fb.get(nm).push(gBake(m,m.matrixWorld));});
         const fa=[...fb.values()].flat();gShift(fa,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));far=[...fb.entries()].map(([nm,l])=>{const P=parts.find(p=>p.name===nm)||parts[0];return{geo:gMerge(l),mat:farMat(P.mat,by,P.name)};});}
+      try{far=bbMake(parts);}catch(e){console.warn('pannello albero',key,e);}
       V[key]={parts,far,items:new Set(),im:null};};
     const key2file={lin:'linden',fir:'fir',palm:'palm',cyp:'cypress',pop:'poplar'};
     prep('lin',MODELS.hd_linden,/001/);prep('fir',MODELS.hd_fir,/branch/i,0.28,1.45);prep('palm',MODELS.hd_palm,/leaves/i);prep('cyp',MODELS.hd_cypress,/2_sided/i,0,1.1);prep('pop',MODELS.hd_poplar,/branch/i,0,1.1);
@@ -326,11 +345,12 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const now=new Set(),dirty=new Set();
       // tetto complessivo: i più vicini, di qualunque specie
       {const all=[];Object.keys(V).forEach(k=>cand[k].forEach(c=>all.push(c)));if(all.length>TOT){all.sort((a,b)=>a[0]-b[0]);const lim=all[TOT-1][0];Object.keys(V).forEach(k=>cand[k]=cand[k].filter(c=>c[0]<=lim));}}
+      let eR2=R2;Object.keys(V).forEach(k=>{const L=cand[k];if(L.length>CAP){L.sort((a,b)=>a[0]-b[0]);eR2=Math.min(eR2,L[CAP-1][0]);}});{const all=[];Object.keys(V).forEach(k=>cand[k].forEach(c=>all.push(c[0])));if(all.length>=TOT){all.sort((a,b)=>a-b);eR2=Math.min(eR2,all[TOT-1]);}}FADE.uR.value=Math.sqrt(eR2);
       Object.keys(V).forEach(k=>{const L=cand[k];L.sort((a,b)=>a[0]-b[0]);const v=V[k],n=Math.min(CAP,L.length);
         for(let q=0;q<n;q++){const it=L[q][1];now.add(it);v.im.forEach(im=>{im.setMatrixAt(q,it.m);im.setColorAt(q,it.c);});}
         v.im.forEach(im=>{im.count=n;im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;});});
-      shown.forEach(it=>{if(!now.has(it)&&it.T.det){if(it.far){it.far.forEach(im=>{im.setMatrixAt(it.fq,it.m);dirty.add(im);});}else if(it.im.parent){it.im.setMatrixAt(it.q,it.m0);dirty.add(it.im);}}});
-      now.forEach(it=>{if(!shown.has(it)){if(it.far){it.far.forEach(im=>{im.setMatrixAt(it.fq,Z);dirty.add(im);});}else{if(!it.m0){it.m0=new THREE.Matrix4();it.im.getMatrixAt(it.q,it.m0);}it.im.setMatrixAt(it.q,Z);dirty.add(it.im);}}});
+      shown.forEach(it=>{if(!now.has(it)&&it.T.det){if(it.far){}else if(it.im.parent){it.im.setMatrixAt(it.q,it.m0);dirty.add(it.im);}}});
+      now.forEach(it=>{if(!shown.has(it)){if(it.far){}else{if(!it.m0){it.m0=new THREE.Matrix4();it.im.getMatrixAt(it.q,it.m0);}it.im.setMatrixAt(it.q,Z);dirty.add(it.im);}}});
       dirty.forEach(im=>im.instanceMatrix.needsUpdate=true);shown.clear();now.forEach(it=>shown.add(it));};
     return Object.keys(V).length?{V,add,drop,update,buildFar}:null;}catch(e){console.warn('alberi HD non preparati',e);return null;}})();
   // ---------- laghi: costruiti una volta sola ----------

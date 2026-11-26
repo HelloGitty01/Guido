@@ -27,11 +27,16 @@ function ctrlUI(){const ov=document.getElementById('ctrlOv'),bx=document.getElem
   if(P.pedal.mode==='one')h+=`<tr><td>Asse gas/freno</td><td colspan=2><button class="sm ca" data-w="pedal">${ctrlWait&&ctrlWait.what==='pedal'?'spingi verso il gas…':ax(P.pedal.a)}</button></td></tr>`;
   else{h+=`<tr><td>Asse acceleratore</td><td colspan=2><button class="sm ca" data-w="thrA">${ctrlWait&&ctrlWait.what==='thrA'?'premi a fondo…':ax(P.thrA.a)}</button></td></tr>`;
     h+=`<tr><td>Asse freno</td><td colspan=2><button class="sm ca" data-w="brkA">${ctrlWait&&ctrlWait.what==='brkA'?'premi a fondo…':ax(P.brkA.a)}</button></td></tr>`;}
-  Object.keys(P.btn).forEach(k=>{h+=`<tr><td>${CTRL_LBL[k]}</td><td colspan=2><button class="sm cp" data-k="${k}">${ctrlWait&&ctrlWait.kind==='btn'&&ctrlWait.act===k?'premi un pulsante…':(P.btn[k]<0?'—':'pulsante '+P.btn[k])}</button></td></tr>`;});
+  {const L=P.lever||(P.lever={mode:'one'}),nm=q=>!q?'—':q.t==='b'?'pulsante '+q.i:'asse '+q.i+(q.s>0?' +':' −'),w=x=>ctrlWait&&ctrlWait.kind==='lever'&&ctrlWait.which===x;
+   h+=`<tr><td>Leva del cambio</td><td colspan=2><select id="levMode"><option value="one"${L.mode!=='two'?' selected':''}>un comando: alterna D e R</option><option value="two"${L.mode==='two'?' selected':''}>indietro = D, avanti = R</option></select></td></tr>`;
+   if(L.mode==='two'){h+=`<tr><td>Leva indietro → D</td><td colspan=2><button class="sm cl" data-w="D">${w('D')?'tira la leva indietro…':nm(L.D)}</button></td></tr>`;h+=`<tr><td>Leva avanti → R</td><td colspan=2><button class="sm cl" data-w="R">${w('R')?'spingi la leva avanti…':nm(L.R)}</button></td></tr>`;}}
+  Object.keys(P.btn).forEach(k=>{if(P.lever&&P.lever.mode==='two'&&(k==='gear'||k==='gD'||k==='gR'))return;h+=`<tr><td>${CTRL_LBL[k]}</td><td colspan=2><button class="sm cp" data-k="${k}">${ctrlWait&&ctrlWait.kind==='btn'&&ctrlWait.act===k?'premi un pulsante…':(P.btn[k]<0?'—':'pulsante '+P.btn[k])}</button></td></tr>`;});
   h+='</table><p style="opacity:.7;font-size:12px">Clicca un comando e premi il tasto (o muovi l\'asse, o premi il pulsante). Canc toglie il tasto, Esc annulla.</p>';
   bx.innerHTML=h;
   bx.querySelectorAll('.cb').forEach(b=>b.onclick=()=>{ctrlWait={kind:'key',act:b.dataset.k,slot:+b.dataset.i};ctrlUI();});
   bx.querySelectorAll('.cp').forEach(b=>b.onclick=()=>{ctrlWait={kind:'btn',act:b.dataset.k,base:padSnap()};ctrlUI();});
+  bx.querySelectorAll('.cl').forEach(b=>b.onclick=()=>{ctrlWait={kind:'lever',which:b.dataset.w,base:padSnap()};ctrlUI();});
+  {const lm=document.getElementById('levMode');if(lm)lm.onchange=()=>{P.lever.mode=lm.value;saveCtrl();ctrlUI();};}
   bx.querySelectorAll('.ca').forEach(b=>b.onclick=()=>{ctrlWait={kind:'axis',what:b.dataset.w,base:padSnap()};ctrlUI();});
   const pm=document.getElementById('pedMode');if(pm)pm.onchange=()=>{P.pedal.mode=pm.value;saveCtrl();ctrlUI();};
   const cg=document.getElementById('calGo');if(cg)cg.onclick=()=>CAL.start();const cd=document.getElementById('calDel');if(cd)cd.onclick=()=>{CTRL.pad.cal=null;saveCtrl();ctrlUI();};
@@ -46,7 +51,11 @@ addEventListener('keydown',e=>{if(!ctrlWait||ctrlWait.kind!=='key')return;e.prev
 // cattura di assi e pulsanti del gamepad
 (function padPoll(){if(ctrlWait&&ctrlWait.kind!=='key'){const gp=(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g);
     if(gp){const B=ctrlWait.base;
-      if(ctrlWait.kind==='btn'){const i=gp.buttons.findIndex((b,j)=>(b.pressed||b.value>0.5)&&!B.bt[j]);if(i>=0){CTRL.pad.btn[ctrlWait.act]=i;ctrlWait=null;saveCtrl();ctrlUI();}}
+      if(ctrlWait.kind==='lever'){const P=CTRL.pad,L=P.lever||(P.lever={mode:'two'});let q=null;const i=gp.buttons.findIndex((b,j)=>(b.pressed||b.value>0.5)&&!B.bt[j]);
+        if(i>=0){q={t:'b',i};Object.keys(P.btn).forEach(k=>{if(P.btn[k]===i)P.btn[k]=-1;});}
+        else{let bi=-1,bd=0;gp.axes.forEach((v,j)=>{const d=v-(B.ax[j]||0);if(Math.abs(d)>Math.abs(bd)){bd=d;bi=j;}});if(bi>=0&&Math.abs(bd)>0.5&&bi!==P.steer.a)q={t:'a',i:bi,s:bd>0?1:-1,rest:B.ax[bi]||0};}
+        if(q){L[ctrlWait.which]=q;ctrlWait=null;saveCtrl();ctrlUI();}}
+      else if(ctrlWait.kind==='btn'){const i=gp.buttons.findIndex((b,j)=>(b.pressed||b.value>0.5)&&!B.bt[j]);if(i>=0){CTRL.pad.btn[ctrlWait.act]=i;ctrlWait=null;saveCtrl();ctrlUI();}}
       else{let bi=-1,bd=0;gp.axes.forEach((v,j)=>{const d=v-(B.ax[j]||0);if(Math.abs(d)>Math.abs(bd)){bd=d;bi=j;}});
         if(bi>=0&&Math.abs(bd)>0.6){const w=ctrlWait.what,P=CTRL.pad;
           if(w==='steer')P.steer={a:bi,s:bd>0?1:-1};
@@ -180,7 +189,8 @@ function readInput(dt){
   for(const gp of gps){if(!gp||ctrlWait||PADSTALE)continue;const CP=CTRL.pad,BT=CP.btn,ax=(gp.axes[CP.steer.a]||0)*CP.steer.s;
     const PB=CP.cal&&CP.cal.ok?[CP.cal.thr,CP.cal.brk].filter(q=>q&&q.t==='b').map(q=>q.i):[],B=i=>i>=0&&!PB.includes(i)&&gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>0.5),prev=pl.gpPrev||{};if(B(BT.hb))pl.hb=true;if(B(BT.flash))pl.flash=true;const now={};Object.keys(BT).forEach(k=>now[k]=B(BT[k]));
     const ed=k=>now[k]&&!prev[k];
-    if(ed('gear')){selectGear(pl.sel==='R'?'D':'R');}
+    {const L=CP.lever;if(L&&L.mode==='two'){const on=q=>!!q&&(q.t==='b'?B(q.i):((gp.axes[q.i]||0)-(q.rest||0))*q.s>0.5),lp=pl.lvPrev||{},nD=on(L.D),nR=on(L.R);if(nD&&!lp.D)selectGear('D');if(nR&&!lp.R)selectGear('R');pl.lvPrev={D:nD,R:nR};}
+      else if(ed('gear')){selectGear(pl.sel==='R'?'D':'R');}}
     if(ed('gD'))selectGear('D');if(ed('gR'))selectGear('R');
     if(now.horn!==!!prev.horn)setHorn(now.horn);
     if(ed('view'))toggleView();if(ed('lights'))toggleLights();if(ed('haz'))pl.hazard=!pl.hazard;
