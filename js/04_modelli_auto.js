@@ -134,7 +134,7 @@ function prepCarLevel(sc,k,cfg,flatTo){
   const wheels=[];sc.traverse(o=>{if(/wheel/i.test(o.name)&&!/steer/i.test(o.name)){let p=o.parent,inW=false;while(p){if(wheels.includes(p))inW=true;p=p.parent;}if(!inW)wheels.push(o);}});
   const groups=new Map(),out=new THREE.Group(),info={wheels:[],wsX:null,rearX:null,glass:new THREE.Box3(),paintMeshes:[]};
   const role=o=>{const n=o.name,mn=(o.material&&o.material.name)||'';
-    if(cfg.plain&&/lightbar|bullbar/i.test(n))return'skip';if(/lightbar/i.test(n))return'beacon';if(/taxi_beacon/i.test(n))return'taxib';    if(/brakelight/i.test(n))return'tail';if(/headlight/i.test(n)&&!/glass/i.test(n))return'head';if(/reverse/i.test(n))return'rev';if(/blinker/i.test(n))return'blink';
+    if(cfg.plain&&/lightbar|bullbar/i.test(n))return'skip';if(/lightbar/i.test(n))return'beacon';if(/taxi_beacon/i.test(n))return'taxib';    if(/brakelight/i.test(n))return'tail';if(/headlight/i.test(n)&&!/headlights?_?glass/i.test(n))return'head';if(/reverse/i.test(n))return'rev';if(/blinker/i.test(n))return'blink';
     if(k==='utilitaria'&&mn==='LIGHTS1')return'plights';if(/bodymat/i.test(mn)||/_body$/i.test(mn)||(k==='furgone'&&mn==='body')||(k==='utilitaria'&&mn==='Top_chassis1'))return'paint';if(k==='furgone'&&/362/.test(mn))return'decal';if(/transperent|glass/i.test(mn))return'glass';if(/rollcage/i.test(n))return'cage';return'other';};
   const add=(key,mat,r,b)=>{if(!groups.has(key))groups.set(key,{mat,r,list:[]});groups.get(key).list.push(b);};
   const wheelOf=o=>{let p=o;while(p){const i=wheels.indexOf(p);if(i>=0)return i;p=p.parent;}return -1;};
@@ -250,12 +250,7 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
   const RC=new THREE.Raycaster(),bodyMs=[];if(T.fleet){g.updateMatrixWorld(true);g.traverse(o=>{if(o.isMesh&&o.userData.role!=='wheel'&&o.userData.role!=='glass')bodyMs.push(o);});}
   const flush=(front,y,z,w,h,mat)=>{for(let zz=z;Math.abs(zz)>0.25;zz-=Math.sign(z)*0.05){RC.set(new THREE.Vector3(front?hl+1.5:-hl-1.5,y,zz),new THREE.Vector3(front?-1:1,0,0));RC.far=2.4;const hit=RC.intersectObjects(bodyMs,false)[0];
       if(hit&&Math.abs(hit.point.x)>hl-0.7){const m=new THREE.Mesh(new THREE.BoxGeometry(0.02,h,w),mat);m.position.copy(hit.point);m.position.x+=front?0.012:-0.02;g.add(m);return m;}}return null;};
-  if(T.fleet){const Wb=T.W/2-(k==='hellcat'||k==='taxi'?0.25:0.12),hy2=k==='zil'?0.9:Math.max(0.55,T.Hm*0.38);
-    if(!ud.headM){ud.headM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15});[1,-1].forEach(sd=>flush(true,hy2,sd*(Wb-0.22),0.2,0.09,ud.headM));}
-    if(!ud.tailM){ud.tailM=new THREE.MeshStandardMaterial({color:0xb01008,emissive:0xff0000,emissiveIntensity:0.15,toneMapped:false});[1,-1].forEach(sd=>flush(false,hy2+0.04,sd*(Wb-0.12),0.16,0.1,ud.tailM));}
-    if(!ud.revM){ud.revM=new THREE.MeshStandardMaterial({color:0xf4f4f4,emissive:0xffffff,emissiveIntensity:0});[1,-1].forEach(sd=>flush(false,hy2-0.06,sd*(Wb-0.32),0.07,0.05,ud.revM));}
-    if(!ud.indL){ud.indL=new THREE.MeshStandardMaterial({color:0xff9a10,emissive:0xff8a00,emissiveIntensity:0});ud.indR=ud.indL.clone();
-      [[ud.indL,-1],[ud.indR,1]].forEach(([mm,sd])=>{flush(true,hy2-0.08,sd*Wb,0.09,0.05,mm);flush(false,hy2+0.12,sd*Wb,0.08,0.05,mm);});}}
+  if(T.fleet){const dummy=()=>new THREE.MeshStandardMaterial({color:0,emissive:0});ud.headM=ud.headM||dummy();ud.tailM=ud.tailM||dummy();ud.revM=ud.revM||dummy();if(!ud.indL){ud.indL=dummy();ud.indR=dummy();}}
   if(!ud.headM){ud.headM=new THREE.MeshStandardMaterial({color:0xf2f2ea,emissive:0xfff4d8,emissiveIntensity:0.15});[1,-1].forEach(sd=>{const h=new THREE.Mesh(new THREE.CircleGeometry(0.09,12),ud.headM);h.rotation.y=Math.PI/2;h.position.set(hl+0.01,hy,sd*(T.W/2-0.3));gx.add(h);});}
   if(!ud.tailM){ud.tailM=new THREE.MeshStandardMaterial({color:0x6a0808,emissive:0xff0000,emissiveIntensity:0.15,toneMapped:false});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.16,0.1),ud.tailM);t.position.set(-hl-0.01,hy,sd*(T.W/2-0.12));gx.add(t);});}
   if(!ud.revM){ud.revM=new THREE.MeshStandardMaterial({color:0xcfcfcf,emissive:0xffffff,emissiveIntensity:0});[1,-1].forEach(sd=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.06,0.08),ud.revM);t.position.set(-hl-0.01,hy-0.14,sd*(T.W/2-0.12));gx.add(t);});}

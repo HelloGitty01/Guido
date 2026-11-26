@@ -165,6 +165,8 @@ function ckGeo(u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes
 function ckQuad(k,u0,u1,v0,v1){const m=new THREE.Mesh(ckGeo(u0,u1,v0,v1),mirrorM);m.userData.uv=[u0,u1,v0,v1];CKO.hud.add(m);CKO.q[k]=m;return m;}
 ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
 // lancette vere sui quadranti dell'abitacolo (tachimetro e contagiri), sopra la foto e sotto il volante
+// sedile più alto: le foto (tranne la Lasley) sono già scese di 55 px sotto il cielo dell'abitacolo, qui si spostano le coordinate
+{const D=55;['volvo','wagoneer','daily','zil','hellcat','taxi'].forEach(k=>{const C=CKIMG[k];if(!C||C.dy)return;C.dy=D;C.g.forEach(e=>e[1]+=D);C.wheel.c[1]+=D;C.wheel.box[1]+=D;C.wheel.box[3]+=D;Object.values(C.glass).forEach(b=>{b[1]+=D;b[3]+=D;});['spd','turnL','turnR','beam','meter','gear'].forEach(q=>{if(C[q])C[q][1]+=D;});if(CKNAV[k])CKNAV[k][1]+=D;});}
 function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,dk=CKO.dark||0,key=Math.round(kmh*2)+'|'+Math.round(rpm/25)+'|'+Math.round(dk*20);if(key===CKO.nv)return;CKO.nv=key;
   const c=document.getElementById('ckNdl'),g=c.getContext('2d'),k=CKO.nk||1;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.setTransform(k,0,0,k,0,0);g.lineCap='round';
   if(dk>0.05)for(const[x,y,r,t]of C.g){if(t==='L')continue;const gr=g.createRadialGradient(x,y,0,x,y,r*1.15);gr.addColorStop(0,`rgba(255,236,200,${0.5*dk})`);gr.addColorStop(0.8,`rgba(255,220,170,${0.32*dk})`);gr.addColorStop(1,'rgba(255,220,170,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r*1.15,0,7);g.fill();}   // quadranti retroilluminati al buio
@@ -245,7 +247,10 @@ function updateCamera(dt){
     const C=CKO.cfg,cc=C.g?[C.g.reduce((a,q)=>a+q[0],0)/C.g.length,C.g.reduce((a,q)=>a+q[1],0)/C.g.length]:C.spd||[512,330],rx=C.g?Math.max(60,(Math.max(...C.g.map(q=>q[0]))-Math.min(...C.g.map(q=>q[0])))/2+C.g[0][2]*1.6):70,ry=rx*0.55;
     Object.assign(gl.style,{left:(CKO.l+(cc[0]-rx)*CKO.s)+'px',top:(CKO.t+(cc[1]-ry)*CKO.s)+'px',width:(2*rx*CKO.s)+'px',height:(2*ry*CKO.s)+'px',opacity:(0.85*dk).toFixed(3),display:dk>0.05?'block':'none'});}}
   if(CKO.on&&CKO.cfg.g)ckNeedles();
-  if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,th=pl.delta*pl.P.ratio,c=Math.cos(th),sn=Math.sin(th),k=Wh.a/Wh.b;if(Math.abs(th-(CKO.th??99))>0.002){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
+  // volante: segue lo sterzo con una piccola inerzia a molla (solo effetto visivo, lo sterzo vero non cambia)
+  if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,tg=pl.delta*pl.P.ratio,h=Math.min(dt,0.05),w0=20,z=0.82;if(CKO.thv==null||!isFinite(CKO.thv)){CKO.thv=tg;CKO.thw=0;}
+    for(let i=0,n=Math.ceil(h/0.008),hh=h/Math.max(1,n);i<n;i++){const a=w0*w0*(tg-CKO.thv)-2*z*w0*CKO.thw;CKO.thw+=a*hh;CKO.thv+=CKO.thw*hh;}
+    const th=CKO.thv,c=Math.cos(th),sn=Math.sin(th),k=Wh.a&&Wh.b?Wh.a/Wh.b:1;if(Math.abs(th-(CKO.th??99))>0.0004){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
   if(pl.ck.wipers.length){const on=WX==='rain';pl.wipT=(pl.wipT||0)+(on?dt:0);const th=on?(1-Math.cos(pl.wipT*Math.PI*1.25))/2*1.35:0;
     pl.ck.wipers.forEach(w=>{const dir=new THREE.Vector3(0,0,1).multiplyScalar(Math.cos(th)).add(w.u.clone().multiplyScalar(Math.sin(th)));w.bl.position.copy(w.piv).addScaledVector(dir,0.29);w.bl.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir);w.bl.visible=on||true;});}
   {const f=new THREE.Vector3(Math.cos(pl.h),0,-Math.sin(pl.h)),pf=new THREE.Vector3(pl.clipXf,0,0),pr=new THREE.Vector3(pl.clipXr,0,0);m.localToWorld(pf);m.localToWorld(pr);

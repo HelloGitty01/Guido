@@ -51,9 +51,11 @@ function initAudio(){
   const sq=AC.createOscillator();sq.type='triangle';sq.frequency.value=900;const sq2=AC.createOscillator();sq2.type='sine';sq2.frequency.value=1780;
   const v1=AC.createOscillator();v1.frequency.value=6.3;const v1g=AC.createGain();v1g.gain.value=26;v1.connect(v1g);v1g.connect(sq.frequency);
   const v2=AC.createOscillator();v2.frequency.value=13.7;const v2g=AC.createGain();v2g.gain.value=12;v2.connect(v2g);v2g.connect(sq.frequency);const v3g=AC.createGain();v3g.gain.value=44;v1.connect(v3g);v3g.connect(sq2.frequency);
-  const sqf=AC.createBiquadFilter();sqf.type='bandpass';sqf.Q.value=5;sqf.frequency.value=900;const sqt=AC.createGain();sqt.gain.value=0.32;sq.connect(sqf).connect(sqt).connect(sqg);const sq2g=AC.createGain();sq2g.gain.value=0.1;sq2.connect(sq2g).connect(sqg);
-  const sqb1=AC.createBiquadFilter();sqb1.type='bandpass';sqb1.Q.value=16;sqb1.frequency.value=900;const sqb1g=AC.createGain();sqb1g.gain.value=2.2;nz.connect(sqb1).connect(sqb1g).connect(sqg);
-  const sqb2=AC.createBiquadFilter();sqb2.type='bandpass';sqb2.Q.value=12;sqb2.frequency.value=1850;const sqb2g=AC.createGain();sqb2g.gain.value=1.1;nz.connect(sqb2).connect(sqb2g).connect(sqg);
+  const sqf=AC.createBiquadFilter();sqf.type='bandpass';sqf.Q.value=5;sqf.frequency.value=900;const sqt=AC.createGain();sqt.gain.value=0.07;sq.connect(sqf).connect(sqt).connect(sqg);const sq2g=AC.createGain();sq2g.gain.value=0.025;sq2.connect(sq2g).connect(sqg);
+  const sqb1=AC.createBiquadFilter();sqb1.type='bandpass';sqb1.Q.value=9;sqb1.frequency.value=900;const sqb1g=AC.createGain();sqb1g.gain.value=2.6;nz.connect(sqb1).connect(sqb1g).connect(sqg);
+  const sqb2=AC.createBiquadFilter();sqb2.type='bandpass';sqb2.Q.value=7;sqb2.frequency.value=1850;const sqb2g=AC.createGain();sqb2g.gain.value=1.0;nz.connect(sqb2).connect(sqb2g).connect(sqg);
+  // corpo largo dello stridio: rumore filtrato, meno "fischio" e più gomma che graffia
+  {const b3=AC.createBiquadFilter();b3.type='bandpass';b3.Q.value=2.2;b3.frequency.value=1300;const g3=AC.createGain();g3.gain.value=0.9;nz.connect(b3).connect(g3).connect(sqg);}
   sq.start();sq2.start();v1.start();v2.start();nodes.push(sq,sq2,v1,v2);
   const wf=AC.createBiquadFilter();wf.type='bandpass';wf.frequency.value=700;wf.Q.value=0.4;const wg=AC.createGain();wg.gain.value=0;nz.connect(wf).connect(wg).connect(EB);
   const rf=AC.createBiquadFilter();rf.type='lowpass';rf.frequency.value=380;const rg=AC.createGain();rg.gain.value=0;nz.connect(rf).connect(rg).connect(EB);
@@ -91,9 +93,9 @@ function updateAudio(st){if(!eng||!AC)return;const P=eng.P,t=AC.currentTime;
   eng.master.gain.setTargetAtTime((0.10+load*0.10+r*0.07)*(eng.SN.exh||1)*(CFG.engVol??1),t,0.06);
   if(eng.bl){const bf=st.rpm/60*11.5;eng.bl.o1.frequency.setTargetAtTime(bf,t,0.03);eng.bl.o2.frequency.setTargetAtTime(bf*2.02,t,0.03);eng.bl.g.gain.setTargetAtTime(Math.min(0.06,(0.004+load*0.05)*r*r*1.6)*(CFG.engVol??1),t,0.05);}
   if(eng.SN.rough)eng.cg.gain.setTargetAtTime((P.diesel?0.45:0.22)*(0.4+load*0.9)*eng.SN.rough,t,0.05);
-  {const sf0=pl.surfR||'asphalt',v=Math.abs(pl.vx),lat=v>6?Math.max(0,st.slip/(pl.alPk||0.2)-0.85)*0.9:0,brake=(pl.absOn&&v>8)?0.05*(0.6+0.4*Math.abs(Math.sin(t*2*Math.PI*13))):((pl.lockF||pl.lockR)&&v>3?0.22:0),spin=(pl.spinW>0.15&&v<(pl.surfR==='asphalt'?22:15))?(pl.surfR==='asphalt'?0.14:0.1):0;
+  {const sf0=pl.surfR||'asphalt',v=Math.abs(pl.vx),lat=v>6?Math.max(0,st.slip/(pl.alPk||0.2)-0.95)*0.8:0,brake=(pl.absOn&&v>8)?0.05*(0.6+0.4*Math.abs(Math.sin(t*2*Math.PI*13))):((pl.lockF||pl.lockR)&&v>3?0.22:0),spin=(pl.spinW>0.15&&v<(pl.surfR==='asphalt'?22:15))?(pl.surfR==='asphalt'?Math.min(0.14,Math.max(0,pl.spinW-0.5)*0.35)*(v<12?1:Math.max(0,1-(v-12)/10)):0.1):0;
    const amt=Math.min(0.3,lat+brake+spin);
-   if(sf0==='asphalt'&&!pl.flip){eng.sqg.gain.setTargetAtTime(amt*(WX==='rain'?0.4:1),t,0.04);{const f0=760+v*4+lat*260+(pl.lockF||pl.lockR?120:0);eng.sq.frequency.setTargetAtTime(f0,t,0.05);eng.sq2.frequency.setTargetAtTime(f0*1.98,t,0.05);eng.sqf.frequency.setTargetAtTime(f0,t,0.05);eng.sqb1.frequency.setTargetAtTime(f0,t,0.05);eng.sqb2.frequency.setTargetAtTime(f0*2.05,t,0.05);}eng.tg.gain.setTargetAtTime(0,t,0.05);}
+   if(sf0==='asphalt'&&!pl.flip){{const up=amt>(eng.sqA||0);eng.sqA=amt;eng.sqg.gain.setTargetAtTime(amt*(WX==='rain'?0.4:1),t,up?0.09:0.16);}eng.sqW=Math.max(-1,Math.min(1,(eng.sqW||0)+(Math.random()-0.5)*0.25));{const f0=(720+v*3.2+lat*220+(pl.lockF||pl.lockR?100:0))*(1+eng.sqW*0.035);eng.sq.frequency.setTargetAtTime(f0,t,0.12);eng.sq2.frequency.setTargetAtTime(f0*1.98,t,0.12);eng.sqf.frequency.setTargetAtTime(f0,t,0.12);eng.sqb1.frequency.setTargetAtTime(f0,t,0.12);eng.sqb2.frequency.setTargetAtTime(f0*2.05,t,0.12);}eng.tg.gain.setTargetAtTime(0,t,0.05);}
    else{eng.sqg.gain.setTargetAtTime(0,t,0.05);eng.tg.gain.setTargetAtTime(Math.min(0.25,(lat+spin+brake)*1.4)*(sf0==='asphalt'?0:1),t,0.05);}}
   const v=st.kmh/3.6,sf=pl.surfR||'asphalt';
   {const sc=(sf==='asphalt'&&!pl.air)?Math.max(0,Math.min(0.12,((pl.slip||0)/(pl.alPk||0.2)-0.65)*0.5))*Math.min(1,v/9):0;eng.scg.gain.setTargetAtTime(sc,t,0.06);eng.scf.frequency.setTargetAtTime(240+v*5,t,0.1);}
