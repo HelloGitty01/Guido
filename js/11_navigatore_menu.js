@@ -161,7 +161,7 @@ document.querySelectorAll('#modeGrid .mode').forEach(b=>b.onclick=()=>{const sm=
 setTimeout(syncModes,0);
 // ---- menu a schede ----
 const MTAB={cur:'gioco'};
-function menuTab(t){MTAB.cur=t;document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);if(t==='cart')PCARD.album();try{localStorage.setItem('sim_tab',t);}catch(e){}}
+function menuTab(t){MTAB.cur=t;if(t==='part')setTimeout(locCards,0);document.querySelectorAll('#mTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('#menu .tabp').forEach(p=>p.classList.toggle('on',p.dataset.t===t));if(t==='auto')VP.show(selKey);if(t==='cart')PCARD.album();try{localStorage.setItem('sim_tab',t);}catch(e){}}
 document.querySelectorAll('#mTabs button').forEach(b=>b.onclick=()=>menuTab(b.dataset.t));
 // ---- anteprima 3D dell'auto scelta: un piccolo studio fotografico che gira lentamente ----
 const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null,key=null,raf=0,last=0,ang=0.6;
@@ -300,3 +300,23 @@ function updateSkids(){const T=pl.T;if(!T||pl.flip)return;const ch=Math.cos(pl.h
     if(L0&&Math.hypot(x-L0[0],z-L0[1])<3){const dx=x-L0[0],dz=z-L0[1],l=Math.hypot(dx,dz),nx=-dz/l*0.1,nz=dx/l*0.1,y0=TH(L0[0],L0[1])+0.035,y1=TH(x,z)+0.035,a=skI*12;
       skPos.set([L0[0]+nx,y0,L0[1]+nz,L0[0]-nx,y0,L0[1]-nz,x+nx,y1,z+nz,x-nx,y1,z-nz],a);skI=(skI+1)%SKN;skGeo.attributes.position.needsUpdate=true;}
     skLast[k]=[x,z];});}
+
+// ---- tab Partenza: una scheda per località, con vista dall'alto e descrizione ----
+const LOCINFO={
+  'Valdorna':['Capitale','≈ 220.000 abitanti · 4 km','La capitale di Valdonia: grattacieli e sedi delle grandi aziende in centro, viali alberati, negozi eleganti, locali e teatri. In periferia quartieri popolari e grandi superfici commerciali. È l\'anello autostradale A1 a collegarla al resto del paese.'],
+  'Porto Calvino':['Città di mare · porto','≈ 80.000 abitanti · 2,4 km','Il grande porto di Valdonia, con navi portacontainer, traghetti e il lungomare. Case di mattoni nel quartiere del porto, pescherie e ristoranti di pesce.'],
+  'Lido Serena':['Località balneare','≈ 45.000 abitanti · 1,8 km','Spiaggia, stabilimenti e lungomare con gelaterie, bar dei bagni e negozietti di souvenir. D\'estate è la meta preferita dei valdoniani.'],
+  'Ravenzo':['Città di pianura','≈ 40.000 abitanti · 1,7 km','Cittadina tranquilla di pianura, con un centro storico raccolto, trattorie e mercato. Buon punto di partenza per le strade provinciali.'],
+  'Castellago':['Paese di lago','≈ 17.000 abitanti · 1,1 km','Affacciato sul lago, con il borgo in pietra, la passeggiata sull\'acqua, gelaterie e ristoranti con dehors.'],
+  'Montecastro':['Paese di collina','≈ 13.000 abitanti · 1 km · 470 m','Arroccato sulle colline, con belvedere sulla valle, prodotti tipici e strade panoramiche piene di curve.'],
+  'Pievalta':['Paese di montagna','≈ 17.000 abitanti · 1,1 km · 970 m','Il paese più alto: case di legno e pietra, il passo poco sopra, aria fresca e strade di montagna con tornanti.'],
+  'San Rocco Terme':['Località termale','≈ 23.000 abitanti · 1,3 km','Terme, alberghi e viali eleganti tra le colline. Bar, pasticcerie e qualche negozio di souvenir.'],
+  'Ferrandina':['Città industriale','≈ 65.000 abitanti · 2,2 km','Capannoni, fabbriche e magazzini attorno a un centro operaio. Officine, carrozzerie, discount e tanto traffico di camion.'],
+  'Collebruna':['Città di collina','≈ 45.000 abitanti · 1,8 km','Città di collina con un bel centro storico, la cattedrale e quartieri residenziali verdi.'],
+  'Casa di Guido':['Casa di Guido','Garage con tutte le auto','Si parte dal garage di casa con l\'auto scelta. Fermandoti accanto a un\'altra auto del garage puoi cambiarla.']};
+function locSlug(n){return n.normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');}
+function locCards(){const ss=document.getElementById('selStart'),box=document.getElementById('locList'),inf=document.getElementById('locInfo');if(!ss||!box)return;box.innerHTML='';
+  const show=()=>{const n=ss.value,I=LOCINFO[n];[...box.children].forEach(b=>b.classList.toggle('sel',b.dataset.n===n));inf.innerHTML=I?`<b>${n}</b> · ${I[0]} · ${I[1]}<br>${I[2]}`:'';};
+  [...ss.options].forEach(o=>{const n=o.value||o.textContent,I=LOCINFO[n]||['',''],b=document.createElement('button');b.dataset.n=n;b.innerHTML=`<img loading="lazy" src="img/loc/${locSlug(n)}.webp" alt=""><b>${n}</b><span>${I[0]}${I[1]?' · '+I[1].split(' · ')[0]:''}</span>`;
+    b.onclick=()=>{ss.value=n;if(ss.onchange)ss.onchange();show();};box.appendChild(b);});show();}
+setTimeout(locCards,0);setTimeout(locCards,1500);

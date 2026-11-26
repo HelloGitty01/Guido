@@ -77,6 +77,12 @@
   #maGear button.on{background:rgba(255,255,255,.85);color:#111}
   #maArc{position:fixed;right:0;bottom:-6vh;width:min(52vw,90vh);height:min(40vw,62vh);z-index:3;touch-action:none}
   #maArc svg{width:100%;height:100%;overflow:visible}
+  .loc{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .loc button{text-align:left;background:#fbf8f5;color:var(--ink);border:2px solid var(--line);border-radius:14px;padding:0 0 10px;overflow:hidden;font-family:inherit;cursor:pointer;transition:transform .12s,border-color .12s}
+  .loc button:hover{transform:translateY(-2px);border-color:#e7b4ad}.loc button.sel{border-color:#b3242b;box-shadow:0 0 0 2px rgba(179,36,43,.35)}
+  .loc img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#ccc}.loc b{display:block;font-size:15px;margin:8px 12px 2px}.loc span{display:block;font-size:12px;opacity:.7;margin:0 12px}
+  #lblStart{display:none!important}
+  .locInfo{margin-top:12px;font-size:14px;line-height:1.5}.locInfo b{font-size:16px}
 </style>
 <style>
   /* ===== identità di Guido: rosso del logo, vino scuro, cielo chiaro, verde colline ===== */
@@ -345,7 +351,7 @@
 <style>#ctrlBody table{width:100%;border-collapse:collapse}#ctrlBody td{padding:3px 4px;border-bottom:1px solid #222b36}#ctrlBody button{min-width:110px}#ctrlBody h3{margin:12px 0 4px;font-size:15px}</style>
 <div id="menu"><div class="mwrap">
   <header class="brand"><img alt="Guido" src="img/logo_plate.webp" class="logo"><div class="cta top"><button id="go">Let's go !</button><button id="contBtn" class="sm" style="display:none">↻ Continua da dove eri</button><button id="exitBtn" class="sm">⏻ Esci</button></div></header>
-  <nav class="tabs" id="mTabs"><button data-t="gioco" class="on">Gioco</button><button data-t="auto">Auto</button><button data-t="grafica">Grafica</button><button data-t="audio">Audio</button><button data-t="musica">Musica</button><button data-t="comandi">Controlli</button><button data-t="cart">Album</button><button data-t="info">Info</button></nav>
+  <nav class="tabs" id="mTabs"><button data-t="gioco" class="on">Gioco</button><button data-t="part">Partenza</button><button data-t="auto">Auto</button><button data-t="grafica">Grafica</button><button data-t="audio">Audio</button><button data-t="musica">Musica</button><button data-t="comandi">Controlli</button><button data-t="cart">Album</button><button data-t="info">Info</button></nav>
   <div class="mgrid tabp on" data-t="gioco">
     <section class="card span modes"><h2>Modalità di gioco</h2><div class="modeGrid" id="modeGrid"><button class="mode" data-m="free"><i>🚗</i><b>Guida libera</b><span>Gira per Valdonia senza meta</span></button><button class="mode" data-m="nav"><i>🧭</i><b>Da A a B</b><span>Il navigatore ti porta a destinazione</span></button><button class="mode" data-m="race"><i>🏁</i><b>Gara</b><span>Sfida il computer fino al traguardo</span></button><button class="mode" data-m="deliv"><i>📦</i><b>Consegne a tempo</b><span>Porta i pacchi prima che scada il tempo</span></button><button class="mode" data-m="ring"><i>⏱</i><b>Giro dell'anello</b><span>Un giro dell'autostrada a cronometro</span></button><button class="mode" data-m="career"><i>💼</i><b>Carriera</b><span>Lavori, soldi e garage</span></button></div><div style="display:none"><select id="selMode"><option value="free">Guida libera</option><option value="nav">Da A a B col navigatore</option><option value="race">Gara contro il computer</option><option value="deliv">Sfida: consegne a tempo</option><option value="ring">Sfida: giro dell'anello a cronometro</option><option value="career">Carriera: lavori, soldi e garage</option></select></div>
       <div class="row"><label id="lblDest">Destinazione <select id="selDest"></select></label></div><div class="row" id="lbView"></div></section>
@@ -361,6 +367,9 @@
     <section class="card span"><h2>Regole</h2>
       <div class="row"><label>Profilo di guida <select id="selAids"><option value="2">Facile</option><option value="1">Normale</option><option value="0">Realistico</option></select></label><label>Polizia <select id="selPol"><option value="tutto">Multe e pattuglie</option><option value="rara">Pattuglie rare</option><option value="multe">Solo multe</option><option value="no">Nessuna</option></select></label><label>Traffico <select id="selTraf"><option value="0">Nessuno</option><option value="0.5">Poco</option><option value="1">Normale</option><option value="1.7">Tanto</option></select></label><label>Carburante <select id="selFuel"><option value="0">Infinito</option><option value="1">Consumo realistico</option><option value="2">Consumo arcade (×6)</option></select></label></div>
     </section>
+  </div>
+  <div class="mgrid tabp" data-t="part">
+    <section class="card span"><h2>Da dove parti</h2><div class="loc" id="locList"></div><div class="locInfo" id="locInfo"></div></section>
   </div>
   <div class="mgrid tabp" data-t="auto">
     <section class="card span"><h2>Scegli l'auto</h2><div class="vehWrap"><div class="veh" id="vehList"></div><div class="vehPrev"><canvas id="vehCv"></canvas><div id="vehName"></div></div></div><div class="note">Ognuna ha massa, motore, rapporti, freni e baricentro della sua categoria. In corsa la cambi col tasto V.</div></section>
@@ -406,7 +415,7 @@
   </div>
   <div class="mgrid tabp" data-t="cart"><section class="card span"><h2>Foto e clip</h2><p class="note">Tasto O (o il pulsante Foto) per scattare, J per registrare una clip: finiscono qui. Tocca per ingrandire e salvare.</p><div id="mediaAlbum" class="pcGrid"></div></section><section class="card span"><h2>Cartoline di Valdonia · <span id="pcCount">0 / 20</span></h2><p class="note">Venti punti panoramici sparsi per Valdonia: valichi e belvedere, lungolaghi e coste, le piazze delle città più grandi. Passandoci in auto scatti la cartolina.</p><div id="pcAlbum" class="pcGrid"></div></section></div>
 <div id="lbx"><div class="in"><div class="media"></div><div class="cap"></div><div class="bt"><button id="lbxSave">⬇ Salva</button><button id="lbxDel" class="sm">Elimina</button><button id="lbxClose" class="sm">Chiudi</button></div></div></div>
-  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><div style="text-align:center;font-size:12px;color:#8a9099;margin:-4px 0 6px" class="span">Versione 67</div><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
+  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><div style="text-align:center;font-size:12px;color:#8a9099;margin:-4px 0 6px" class="span">Versione 68</div><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
 <div class="studio"><img src="img/logo_plate.webp" alt="Guido"><div><div class="by">Un gioco realizzato da</div><div class="st">HOPTHOP STUDIO</div><div class="yr">© 2026 · ideazione, programmazione, mondo di Valdonia</div></div></div>
 <h2 style="margin:0 0 8px">Crediti dei modelli 3D</h2><p style="opacity:.8;margin:0 0 10px">Modelli scaricati da Sketchfab, usati con licenza Creative Commons Attribution 4.0 (CC BY 4.0) salvo dove indicato. Sono stati ridotti e ottimizzati per il browser.</p>
 <ul style="padding-left:18px;margin:0">
