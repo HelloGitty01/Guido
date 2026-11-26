@@ -200,6 +200,18 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     return Object.assign((T,CR,SP,x0,z0)=>{if(CR.length){const P=[],I=[];CR.forEach(([ax,az,bx,bz,ya,yb])=>{const s=P.length/3;P.push(ax-x0,ya,az-z0,bx-x0,ya,bz-z0,ax-x0,yb,az-z0,bx-x0,yb,bz-z0);I.push(s,s+1,s+2,s+1,s+3,s+2);});
         const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setIndex(I);g.computeVertexNormals();const m=new THREE.Mesh(g,crM);m.position.set(x0,0,z0);scene.add(m);T.objs.push(m);}
       SP.forEach(([x,z,y,hh,pyr])=>{const G=new THREE.Group();G.position.set(x,y,z);if(pyr){const c=new THREE.Mesh(cone,spM);c.scale.set(1,hh*0.35,1);G.add(c);}const s=new THREE.Mesh(cyl,spM);s.scale.set(1,hh,1);s.position.y=pyr?hh*0.3:0;G.add(s);const t=new THREE.Mesh(tip,tipM);t.position.y=(pyr?hh*0.3:0)+hh;G.add(t);scene.add(G);T.objs.push(G);});},{crM});})();
+  // passeggeri: alla fermata chi aspetta va verso la porta e sale, qualcuno scende e se ne va a piedi
+  const BUSPAX=(()=>{const M=[];
+    const walk=(m,tx,tz,sp,dt)=>{const dx=tx-m.position.x,dz=tz-m.position.z,d=Math.hypot(dx,dz);if(d<0.2)return true;const k=Math.min(1,sp*dt/d);m.position.x+=dx*k;m.position.z+=dz*k;m.rotation.y=Math.atan2(dx,dz);if(m.userData.mixer)m.userData.mixer.update(dt*1.2);return false;};
+    return{stop(st,c){const bp=c.mesh.position,L=c.T.L,hx=c.dx||1,hz=c.dz||0,hl=Math.hypot(hx,hz)||1,fx=hx/hl,fz=hz/hl;let sx=st.x-bp.x,sz=st.z-bp.z;const sl=Math.hypot(sx,sz)||1;sx/=sl;sz/=sl;
+        const door={x:bp.x+fx*L*0.32+sx*(c.T.W/2+0.35),z:bp.z+fz*L*0.32+sz*(c.T.W/2+0.35)};
+        const P=(st.peds||[]).filter(m=>m.visible&&m.parent);const nb=Math.min(P.length,1+((Math.random()*P.length)|0));
+        for(let i=0;i<nb;i++)M.push({m:P[i],ph:'in',door,t:i*1.1});
+        if(HDX&&HDX.person){const no=(Math.random()*3)|0;for(let i=0;i<no;i++){const m=HDX.person((Math.random()*8)|0);m.position.set(door.x,st.h||bp.y,door.z);m.visible=false;scene.add(m);
+          const ax=fx*(i%2?1:-1),az=fz*(i%2?1:-1);M.push({m,ph:'out',t:0.8+i*1.3,to:{x:door.x+sx*1.5+ax*14,z:door.z+sz*1.5+az*14},tmp:true});}}},
+      tick(dt){for(let i=M.length-1;i>=0;i--){const q=M[i];if(q.t>0){q.t-=dt;continue;}q.m.visible=true;
+        if(q.ph==='in'){if(walk(q.m,q.door.x,q.door.z,1.3,dt)){q.m.visible=false;const m=q.m;M.splice(i,1);setTimeout(()=>{if(m.parent)m.visible=true;},45000);}}
+        else if(walk(q.m,q.to.x,q.to.z,1.25,dt)){scene.remove(q.m);M.splice(i,1);}}}};})();
   // località turistiche: negozietti, souvenir, gelaterie, dehors
   const TOURIST=new Set(['Lido Serena','Porto Calvino','Castellago','Montecastro','San Rocco Terme','Pievalta']);
   // insegne al neon: stesso atlante, solo la fascia alta, che lampeggia (di sera molto evidente)
@@ -822,12 +834,13 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             for(let k=0;k<7;k++){const o=k*1.8-6,px=x+tx*o+nx*sd*(ed-0.45),pz=z+tz*o+nz*sd*(ed-0.45);put('cone',k%3,px,pz,h+0.02,k);}
             const dir=sd>0?-1:1,wx=x+tx*dir*14+nx*sd*(ed+0.7),wz=z+tz*dir*14+nz*sd*(ed+0.7);put('works',0,wx,wz,h+NW.SWH,Math.atan2(-tz*dir,tx*dir)-Math.PI/2);}}
         // fermata del bus sulle strade principali
-        if(R.c<=5)for(let s=Math.ceil((a+40)/330)*330-40;s<b&&nbus<3;s+=330){const t=(s-a)/L,x=R.X[i]+tx*(s-a),z=R.Z[i]+tz*(s-a),h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t+NW.SWH;if(NW.nearJ(x,z,25))continue;nbus++;
+        const SL=(()=>{const r=[];for(let s0=Math.ceil((a+40)/330)*330-40;s0<b;s0+=330)r.push(s0);if(L>=45&&NW.cityAt(R.X[i],R.Z[i])&&hsh(l[q],i+311)<0.4)r.push(a+L/2);return r;})();   /* in città anche a metà isolato */
+        if(R.c<=5||(R.c<=7&&SL.length&&NW.cityAt(R.X[i],R.Z[i])))for(const s of SL){if(nbus>=6)break;const t=(s-a)/L,x=R.X[i]+tx*(s-a),z=R.Z[i]+tz*(s-a),h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t+NW.SWH;if(NW.nearJ(x,z,25))continue;nbus++;
           const sd=((s/330)|0)%2?1:-1,off=R.w/2+2.6,bx=x+nx*sd*off,bz=z+nz*sd*off,ry2=ry;
-          {const ri=l[q];let A=BST.get(ri);if(!A)BST.set(ri,A=[]);if(!A.some(o=>Math.abs(o.s-s)<1))A.push({s,x:bx,z:bz});}
+          let stO;{const ri=l[q];let A=BST.get(ri);if(!A)BST.set(ri,A=[]);stO=A.find(o=>Math.abs(o.s-s)<1);if(!stO)A.push(stO={s,x:bx,z:bz});stO.peds=[];stO.h=h;}
           // chi aspetta l'autobus (pacchetto HD)
           if(HDX&&HDX.person){const np=(hsh(s|0,l[q]+5)*3.4)|0;for(let k=0;k<np;k++){const o=(k-(np-1)/2)*0.95+(hsh(k,s|0)-0.5)*0.4,dd=0.1+hsh(k+3,s|0)*1.0,px=bx+tx*(o+2.6)-nx*sd*dd,pz=bz+tz*(o+2.6)-nz*sd*dd;
-            const m=HDX.person((hsh(s|0,k+l[q])*8)|0);m.position.set(px,h,pz);m.rotation.y=Math.atan2(-nx*sd,-nz*sd)+(hsh(k,9)-0.5)*1.4;scene.add(m);T.dobj.push(m);if(m.userData.mixer)anims.push({m,T});}}pb.add(GB,0x3d4f63,bx,h+2.5,bz,ry2,3.6,0.08,1.6);pb.add(GB,0xbfd8e6,bx-nx*sd*0.75,h+1.3,bz-nz*sd*0.75,ry2,3.4,2.3,0.05);[-1.7,1.7].forEach(o=>pb.add(GB,0x3d4f63,bx+tx*o,h+1.25,bz+tz*o,ry2,0.08,2.5,1.5));
+            const m=HDX.person((hsh(s|0,k+l[q])*8)|0);m.position.set(px,h,pz);m.rotation.y=Math.atan2(-nx*sd,-nz*sd)+(hsh(k,9)-0.5)*1.4;scene.add(m);T.dobj.push(m);if(m.userData.mixer)anims.push({m,T});stO.peds.push(m);}}pb.add(GB,0x3d4f63,bx,h+2.5,bz,ry2,3.6,0.08,1.6);pb.add(GB,0xbfd8e6,bx-nx*sd*0.75,h+1.3,bz-nz*sd*0.75,ry2,3.4,2.3,0.05);[-1.7,1.7].forEach(o=>pb.add(GB,0x3d4f63,bx+tx*o,h+1.25,bz+tz*o,ry2,0.08,2.5,1.5));
           pb.add(GB,0x7a5a3a,bx-nx*sd*0.45,h+0.48,bz-nz*sd*0.45,ry2,2.6,0.08,0.4);pb.add(GC6,0x8a8f94,bx+tx*2.3+nx*sd*0.6,h+1.4,bz+tz*2.3+nz*sd*0.6,0,0.07,2.8,0.07);
           const sg=new THREE.Mesh(new THREE.CircleGeometry(0.32,16),tm('bus',(g,w,h)=>{g.fillStyle='#f2c400';g.beginPath();g.arc(w/2,h/2,w/2-2,0,7);g.fill();g.fillStyle='#103a7a';g.font='bold 80px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('BUS',w/2,h/2+4);}));
           sg.position.set(bx+tx*2.3+nx*sd*0.6,h+2.75,bz+tz*2.3+nz*sd*0.6);sg.rotation.y=Math.atan2(nx*sd,nz*sd);scene.add(sg);T.dobj.push(sg);
@@ -1328,7 +1341,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           if(c.bs&&(c.bs.ri!==e.ri||c.bs.dir!==dir||(c.bs.ph===0&&(c.bs.to-=dt)<0))){c.lastSt=c.bs.st;c.bs=null;}
           if(c.bs){const B=c.bs,d=(dir?cu-B.st.s:B.st.s-cu)-c.T.L*0.3;
             if(B.ph===0){if(d<-6){c.bs=null;}else{gap=Math.min(gap,d+2.6);vl=0;v0=Math.min(v0,d<40?6:v0);if(c.v<0.3&&d<4)B.ph=1;}}
-            else if(B.ph===1){gap=Math.min(gap,0.1);B.t-=dt;if(B.t<=0){B.ph=2;B.t=2.2;}}
+            else if(B.ph===1){gap=Math.min(gap,0.1);if(!B.pax){B.pax=1;BUSPAX.stop(B.st,c);}B.t-=dt;if(B.t<=0){B.ph=2;B.t=2.2;}}
             else{B.t-=dt;if(B.t>0.8)gap=Math.min(gap,0.1);if(B.t<=0){c.lastSt=B.st;c.bs=null;}}}
           const tgt=c.bs&&(c.bs.ph>0||((dir?cu-c.bs.st.s:c.bs.st.s-cu)<35))&&c.bs.ph<2?Math.max(0,R.w/2-(c.lofs||0)-1.45):0;c.bo=(c.bo||0)+(tgt-(c.bo||0))*Math.min(1,dt*0.9);v0*=0.85;}
         // frecce: prima di svoltare all'incrocio e quando si cambia corsia; sorpasso sulle strade con due corsie per senso
@@ -1415,7 +1428,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const pa=D.ln.geometry.attributes.position;if(m.userData.hand){m.userData.hand.getWorldPosition(_hp);}else{_hp.set(q.x,q.y+0.85,q.z);}pa.setXYZ(0,_hp.x,_hp.y,_hp.z);D.m.userData.collar.getWorldPosition(_hp);pa.setXYZ(1,_hp.x,_hp.y,_hp.z);pa.needsUpdate=true;D.ln.geometry.computeBoundingSphere();}}}
     function p0(c){return c.mesh.position;}
     return {step,list,peds:peds2,made:()=>made,spawnNear,crash:tryCrash,dbl:tryDbl,wrecks:WRECKS,cw:CWL,ZB};})();
-  return {NEON,nightLv:()=>Math.max(0,nightLv),VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
+  return {BUSPAX,NEON,nightLv:()=>Math.max(0,nightLv),VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
 })();
 
 

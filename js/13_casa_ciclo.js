@@ -268,7 +268,7 @@ function loop(now){
   if(pl.ck&&pl.ck.mirrors)pl.ck.mirrors.forEach(m=>m.visible=CFG.mir!==false);
   if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir===1?2:QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
     scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
-  frameN++;updateMaples();updateCarLOD();if(NWT){NWT.update(dt);if(NWT.NEON)NWT.NEON.tick(dt,NWT.nightLv());}
+  frameN++;updateMaples();updateCarLOD();if(NWT){NWT.update(dt);if(NWT.NEON)NWT.NEON.tick(dt,NWT.nightLv());if(NWT.BUSPAX)NWT.BUSPAX.tick(dt);}
   renderer.render(scene,camera);if(PCARD.want)PCARD.snap();if(SHOT.want)SHOT.snap();
   if(CKO.on){renderer.autoClear=false;renderer.clearDepth();renderer.render(CKO.hud,CKO.cam);renderer.autoClear=true;}
   requestAnimationFrame(loop);

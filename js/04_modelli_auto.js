@@ -325,7 +325,7 @@ function makeCar(k,color,shadow=true,fine=false,opt={}){
 const typeKeys=Object.keys(TYPES).filter(k=>k!=='camion'&&!TYPES[k].fleet),typeW=CARX.utilitaria?[0.26,0.26,0.2,0.17,0.11]:CARX.berlina?[0,0.36,0.28,0.24,0.12]:[0.32,0.2,0.2,0.2,0.08];
 // auto della flotta del giocatore anche nel traffico (il camion più di rado)
 const FLEET_TRAF=[['volvo',1],['wagoneer',0.5],['hellcat',0.8],['taxi',1.2],['zil',0.5],['daily',0.8]];
-function randTrafType(){if(Math.random()<(window.__busP??0.05))return 'bus';if(Math.random()<(window.__fleetP??(MOBILE?0.1:0.15))){const ok=FLEET_TRAF.filter(([k])=>CARX[k]&&TYPES[k]);const tot=ok.reduce((a,[,w])=>a+w,0);let r=Math.random()*tot;for(const[k,w]of ok){if((r-=w)<=0)return k;}}return randType();}
+function randTrafType(){if(Math.random()<(window.__busP??0.08))return 'bus';if(Math.random()<(window.__fleetP??(MOBILE?0.1:0.15))){const ok=FLEET_TRAF.filter(([k])=>CARX[k]&&TYPES[k]);const tot=ok.reduce((a,[,w])=>a+w,0);let r=Math.random()*tot;for(const[k,w]of ok){if((r-=w)<=0)return k;}}return randType();}
 function randType(){let r=Math.random(),a=0;for(let i=0;i<5;i++){a+=typeW[i];if(r<a)return typeKeys[i];}return 'utilitaria';}
 const randColor=()=>COLORS[(Math.random()*COLORS.length)|0];
 
