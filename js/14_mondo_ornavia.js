@@ -252,7 +252,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const snowRoofM=new THREE.MeshStandardMaterial({roughness:0.75,side:THREE.DoubleSide,map:canvasTex(256,(g,n)=>{g.fillStyle='#f4f6f9';g.fillRect(0,0,n,n);for(let i=0;i<900;i++){const v=225+Math.random()*30|0;g.fillStyle=`rgba(${v-12},${v-6},${v},.35)`;g.fillRect(Math.random()*n,Math.random()*n,3+Math.random()*10,2+Math.random()*4);}
     g.fillStyle='rgba(110,80,55,.85)';for(let x=0;x<n;x+=37){if(Math.random()<0.5)g.fillRect(x,n-10-Math.random()*20,4,30);}})});
   const tileRoofM=addRelief(new THREE.MeshStandardMaterial({map:tileTex,roughness:0.9,side:THREE.DoubleSide}),6,0.9),darkRoofM=new THREE.MeshStandardMaterial({map:plankTex,color:0x7a6a60,roughness:0.9,side:THREE.DoubleSide});
-  const roofM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9,side:THREE.DoubleSide});
+  const roofM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9,side:THREE.DoubleSide});const tileRoofVM=tileRoofM.clone();tileRoofVM.vertexColors=true;tileRoofVM.onBeforeCompile=tileRoofM.onBeforeCompile;tileRoofVM.customProgramCacheKey=()=>'tileRoofV';
   const stoneTex=canvasTex(128,(g,n)=>{g.fillStyle='#fff';g.fillRect(0,0,n,n);for(let x=0;x<n;x+=16){g.fillStyle='rgba(90,80,70,.25)';g.fillRect(x,0,3,n);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x+3,0,2,n);}
     g.fillStyle='rgba(60,60,70,.35)';for(let x=6;x<n;x+=32){g.beginPath();g.moveTo(x,n*0.95);g.lineTo(x,n*0.35);g.quadraticCurveTo(x+6,n*0.15,x+12,n*0.35);g.lineTo(x+12,n*0.95);g.fill();}});
   stoneTex.wrapS=stoneTex.wrapT=THREE.RepeatWrapping;const stoneM=addRelief(new THREE.MeshStandardMaterial({map:stoneTex,vertexColors:true,roughness:0.8,side:THREE.DoubleSide}),5,0.9);
@@ -1261,7 +1261,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function detail(T){if(T.det)return;T.det=true;T.dobj=[];T.segs=[];furniture(T);VX.tile(T);const x0=T.i*TS,z0=T.j*TS,rnd=a=>hsh(T.i*131+a,T.j*977+a*7);
     if(HIDE){(bldT.get(T.key)||[]).forEach(bi=>{const b=NW.J.blds[bi],rg=b[3],n=rg.length/2;if(b[6]>2)return;for(let q=0;q<n;q++)addSeg(T,rg[q*2],rg[q*2+1],rg[(q+1)%n*2],rg[(q+1)%n*2+1]);});return;}
     // edifici: facciate per tipo, negozi al piano terra sul lato della strada, tetti a falde o piani
-    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],XP=[],XU=[],XI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],CRP=[],SPI=[],PSP=[],PSU=[],PSI=[],col=new THREE.Color();
+    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],TC=[],DP=[],DU=[],DI=[],XP=[],XU=[],XI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],CRP=[],SPI=[],PSP=[],PSU=[],PSI=[],col=new THREE.Color();
       const quad=(G,ax,az,bx,bz,ya,yb,u0,u1,va,vb)=>{const s=G.P.length/3;G.P.push(ax-x0,ya,az-z0,bx-x0,ya,bz-z0,ax-x0,yb,az-z0,bx-x0,yb,bz-z0);G.U.push(u0,va,u1,va,u0,vb,u1,vb);for(let t=0;t<4;t++)G.C.push(col.r,col.g,col.b);G.I.push(s,s+1,s+2,s+1,s+3,s+2);};
       const tri=(A,Uv,I,pts,uvs)=>{const s=A.length/3;pts.forEach(p=>A.push(p[0]-x0,p[1],p[2]-z0));uvs.forEach(u=>Uv.push(u[0],u[1]));I.push(s,s+1,s+2);};
       bl.forEach(bi=>{const b=NW.J.blds[bi],h=b[0],cc=b[1],gnd=b[2],ring=b[3],church=b[4],holes=b[5],mh=b[6]||0,kd=b[7]==null?0:b[7],roof=b[8]||0;const n=ring.length/2;if(n<3)return;
@@ -1318,7 +1318,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const m03=[(ex[0][0]+ex[3][0])/2,(ex[0][1]+ex[3][1])/2],m12=[(ex[1][0]+ex[2][0])/2,(ex[1][1]+ex[2][1])/2],yr=y1-(roof>=2?0.15:0.05),yt=y1+rh;
           const A=roof===3?XP:roof===2?DP:TP,Uv=roof===3?XU:roof===2?DU:TU,I=roof===3?XI:roof===2?DI:TI,uv=p=>[p[0]/3,p[2]/3];
           const P3=(p,y)=>[p[0],y,p[1]];const s0=[P3(ex[0],yr),P3(ex[1],yr),P3(m12,yt),P3(m03,yt)],s1=[P3(ex[2],yr),P3(ex[3],yr),P3(m03,yt),P3(m12,yt)];
+          const nv0=A.length/3;
           [s0,s1].forEach(Q=>{const w=Math.hypot(Q[1][0]-Q[0][0],Q[1][2]-Q[0][2]),hh=Math.hypot(rh,span/2+ov);tri(A,Uv,I,[Q[0],Q[1],Q[2]],[[0,0],[w/3,0],[w/3,hh/3]]);tri(A,Uv,I,[Q[0],Q[2],Q[3]],[[0,0],[w/3,hh/3],[0,hh/3]]);});
+          // coppi di età e provenienza diverse: ogni tetto ha la sua tinta (nuovi, sbiaditi, scuriti, coi licheni)
+          if(A===TP){const h1=hsh(cx|0,cz|0),h2=hsh((cz|0)+5,(cx|0)+11),TT=[[1,1,1],[0.93,0.80,0.71],[1.04,0.88,0.84],[0.76,0.61,0.54],[0.84,0.81,0.72],[1.0,0.93,0.78],[0.88,0.70,0.62],[0.70,0.66,0.62]],t=TT[(h1*TT.length)|0],b=0.86+h2*0.22;
+            for(let q=nv0;q<A.length/3;q++)TC.push(t[0]*b,t[1]*b,t[2]*b);}
           // timpani col colore della facciata
           [[k[1],k[2]],[k[3],k[0]]].forEach(([p,q])=>{const m=[(p[0]+q[0])/2,(p[1]+q[1])/2],s=G.P.length/3;G.P.push(p[0]-x0,y1,p[1]-z0,q[0]-x0,y1,q[1]-z0,m[0]-x0,yt-0.1,m[1]-z0);G.U.push(0,0.2,0.2,0.2,0.1,0.25);for(let t=0;t<3;t++)G.C.push(col.r,col.g,col.b);G.I.push(s,s+1,s+2);});}
         else{const ct=[];for(let q=0;q<n;q++)ct.push(new THREE.Vector2(ring[q*2],ring[q*2+1]));const hs=(holes||[]).map(hr=>{const a=[];for(let q=0;q<hr.length;q+=2)a.push(new THREE.Vector2(hr[q],hr[q+1]));return a;});
@@ -1329,7 +1333,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             quad(G,ax+ox,az+oz,bx+ox,bz+oz,y1-0.5,y1+0.6,0.02,0.04,0.02,0.04);}}}});
       const put=(A,Uv,I,M,Cc)=>{if(!I.length)return;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(A,3));if(Uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(Uv,2));if(Cc)g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));g.setIndex(I);g.computeVertexNormals();
         const m=new THREE.Mesh(g,M);m.position.set(x0,0,z0);m.castShadow=true;m.receiveShadow=true;scene.add(m);T.dobj.push(m);};
-      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(XP,XU,XI,snowRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);put(PSP,PSU,PSI,POSTER);DEHORS(T,DH,x0,z0);TOWERX(T,CRP,SPI,x0,z0);}
+      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofVM,TC);put(DP,DU,DI,darkRoofM);put(XP,XU,XI,snowRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);put(PSP,PSU,PSI,POSTER);DEHORS(T,DH,x0,z0);TOWERX(T,CRP,SPI,x0,z0);}
     // alberi veri (censimento e filari)
     const tl=treeT.get(T.key);if(tl&&tl.length){const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),co=new THREE.Color(),UPV=new THREE.Vector3(0,1,0);
       const by=[[],[],[],[],[],[]];tl.forEach(ti=>{const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;

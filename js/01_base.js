@@ -36,6 +36,18 @@ scene.background = new THREE.Color(HORIZON);
 scene.fog = new THREE.Fog(HORIZON, 260, 1500);
 /* foschia atmosferica: cresce in fretta nei primi chilometri e poi si stabilizza (prospettiva aerea),
    più un ritocco colore leggero applicato prima della nebbia, così l'orizzonte resta identico al cielo */
+// colori "naturali": dopo la conversione della luce, meno saturazione, verdi verso l'oliva, bianchi meno sparati (nessun costo: è nello stesso calcolo)
+{const nat=CFG.col!=='viv';THREE.ShaderChunk.tonemapping_pars_fragment+=`
+vec3 guidoGrade(vec3 c){
+${nat?`float l=dot(c,vec3(0.2126,0.7152,0.0722));
+  float gx=max(0.0,c.g-max(c.r,c.b));c.g-=gx*0.35;c.r+=gx*0.12;
+  c=mix(vec3(l),c,0.70);
+  c=c*0.95+0.012;c=c/(1.0+max(0.0,l-0.75)*0.25);
+  c*=vec3(1.0,0.99,0.975);`:''}
+  return c;}`;
+document.body.classList.toggle('natcol',nat);THREE.ShaderChunk.tonemapping_fragment=`#if defined( TONE_MAPPING )
+	gl_FragColor.rgb = guidoGrade(toneMapping( gl_FragColor.rgb ));
+#endif`;}
 THREE.ShaderChunk.fog_fragment=`#ifdef USE_FOG
 {vec3 gq=gl_FragColor.rgb;float lq=dot(gq,vec3(0.299,0.587,0.114));gq=mix(vec3(lq),gq,0.84);gq=gq*vec3(1.025,1.0,0.965)+vec3(0.004,0.008,0.02)*(1.0-clamp(lq*2.0,0.0,1.0));gl_FragColor.rgb=gq;}
 #ifdef FOG_EXP2
