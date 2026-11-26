@@ -304,8 +304,8 @@ function updateCamera(dt){
     {const lx=pl.x+ch*5,ly=(pl.yb??pl.terrH)+1.1+Math.sin(pl.slopeP)*5,lz=pl.z-sh*5,w=ORB.w;camLook.set(lx+(pl.x-lx)*w,ly+(pl.terrH+0.9-ly)*w,lz+(pl.z-lz)*w);}camera.lookAt(camLook);
   }
   speedFx(dt);
-  const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?2.2:0;headSpot.distance=pl.flash?170:60;headSpot.angle=pl.flash?0.32:0.45;}
-  if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);headSpot.position.set(pl.x+ch*pl.T.L/2,pl.terrH+0.8,pl.z-sh*pl.T.L/2);headSpot.target.position.set(pl.x+ch*25,TH(pl.x+ch*25,pl.z-sh*25),pl.z-sh*25);}
+  const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?3.2:0;headSpot.distance=pl.flash?170:70;headSpot.angle=pl.flash?0.36:0.62;headSpot.penumbra=0.55;}
+  if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);{const y0=pl.yb??pl.terrH,fl=pl.flash?40:16;headSpot.position.set(pl.x+ch*(pl.T.L/2+0.1),y0+0.72,pl.z-sh*(pl.T.L/2+0.1));headSpot.target.position.set(pl.x+ch*fl,TH(pl.x+ch*fl,pl.z-sh*fl),pl.z-sh*fl);}}
   if(CINE.intro)CINE.introCam(dt);else if(POL.sc){POL.cam(dt);CINE.used=true;}else if(CINE.used){CINE.used=false;if(view!=='cockpit')camera.position.copy(tmpV);}
   if(window.__camFix){const f=window.__camFix;camera.position.set(pl.x+f[0],pl.terrH+f[1],pl.z+f[2]);camera.lookAt(pl.x,pl.terrH+0.7,pl.z);}
   sun.position.set(pl.x+SUNOFF.x,pl.terrH+SUNOFF.y,pl.z+SUNOFF.z);sun.target.position.set(pl.x,pl.terrH,pl.z);
