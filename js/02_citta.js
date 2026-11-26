@@ -89,21 +89,30 @@ function heightAt(x,z){
   return near?CURB:0.015;}
 
 // edifici
-function facadeTex(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
+// finestra realistica: riflesso del cielo, tende o tapparella abbassata a varie altezze, vetro diviso; i rettangoli restano annotati per le luci notturne
+function glassWin(g,x,y,w,h){const T=g.getTransform();(g.canvas.__w=g.canvas.__w||[]).push([x*T.a+T.e,y*T.d+T.f,w*T.a,h*T.d]);
+  const gr=g.createLinearGradient(x,y,x+w*0.3,y+h);gr.addColorStop(0,'#9fb4c4');gr.addColorStop(0.45,'#5f7484');gr.addColorStop(1,'#3a4752');g.fillStyle=gr;g.fillRect(x,y,w,h);
+  const r=Math.random();
+  if(r<0.45){const c=['#efe9dc','#e6dcc6','#f4f1ea','#d9cdb5'][(Math.random()*4)|0];g.fillStyle=c;g.globalAlpha=0.85;g.fillRect(x,y,w*0.28,h);g.fillRect(x+w*0.72,y,w*0.28,h);g.globalAlpha=0.35;g.fillRect(x,y,w,h*0.12);g.globalAlpha=1;
+    g.fillStyle='rgba(0,0,0,.08)';for(let k=2;k<w*0.28;k+=4){g.fillRect(x+k,y,1,h);g.fillRect(x+w*0.72+k,y,1,h);}}
+  if(r>0.3){const d=Math.random()<0.25?0.92:Math.random()*0.6,c=['#d8d2c4','#cfc9bd','#a9a49a','#e2dccd'][(Math.random()*4)|0];g.fillStyle=c;g.fillRect(x,y,w,h*d);g.fillStyle='rgba(0,0,0,.18)';for(let k=3;k<h*d;k+=3.5)g.fillRect(x,y+k,w,0.8);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x,y+h*d-1.5,w,1.5);}
+  g.fillStyle='rgba(255,255,255,.22)';g.beginPath();g.moveTo(x+w*0.15,y+h);g.lineTo(x+w*0.45,y);g.lineTo(x+w*0.6,y);g.lineTo(x+w*0.3,y+h);g.fill();
+  g.fillStyle='rgba(240,238,232,.95)';g.fillRect(x+w/2-1,y,2,h);g.strokeStyle='rgba(240,238,232,.95)';g.lineWidth=2;g.strokeRect(x+1,y+1,w-2,h-2);}
+function facadeTex(){const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');g.scale(2,2);
   g.fillStyle='#f4efe6';g.fillRect(0,0,256,256);
   for(let i=0;i<6000;i++){const v=Math.random();g.fillStyle=`rgba(${120+v*80|0},${110+v*70|0},${90+v*60|0},.07)`;g.fillRect(Math.random()*256,Math.random()*256,2,2);}
   g.fillStyle='rgba(90,80,70,.18)';for(let r=0;r<4;r++)g.fillRect(0,r*64+60,256,2);
   for(let r=0;r<4;r++)for(let k=0;k<4;k++){const x=k*64+20,y=r*64+12;
-    g.fillStyle='#c9c1b2';g.fillRect(x-3,y-3,30,44);g.fillStyle='#2b3742';g.fillRect(x,y,24,38);
+    g.fillStyle='#c9c1b2';g.fillRect(x-3,y-3,30,44);glassWin(g,x,y,24,38);
     g.fillStyle='#5c7351';g.fillRect(x-11,y,9,38);g.fillRect(x+26,y,9,38);g.fillStyle='#d8d0c1';g.fillRect(x-6,y+40,36,5);}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;}
 const fTex=facadeTex();
-function facadeTex2(kind){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#f2ede4';g.fillRect(0,0,256,256);
+function facadeTex2(kind){const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#f2ede4';g.fillRect(0,0,256,256);
   for(let i=0;i<6000;i++){const v=Math.random();g.fillStyle=`rgba(${120+v*80|0},${110+v*70|0},${90+v*60|0},.07)`;g.fillRect(Math.random()*256,Math.random()*256,2,2);}
   for(let r=0;r<4;r++)for(let k=0;k<4;k++){const x=k*64+16,y=r*64+10;
-    if(kind===1){g.fillStyle='#d9d2c4';g.fillRect(x-4,y-4,40,50);g.fillStyle='#2b3742';g.fillRect(x,y,32,40);g.fillStyle='#e9e6df';g.fillRect(x+15,y,2,40);g.fillRect(x,y+19,32,2);
+    if(kind===1){g.fillStyle='#d9d2c4';g.fillRect(x-4,y-4,40,50);glassWin(g,x,y,32,40);
       if(r%2===0){g.fillStyle='#6b5a4a';g.fillRect(x-8,y+40,48,5);for(let b=0;b<6;b++)g.fillRect(x-6+b*8,y+28,2,12);}}
-    else{g.fillStyle='#c9c1b2';g.fillRect(x+1,y-3,30,46);g.fillStyle='#2b3742';g.fillRect(x+4,y,24,40);g.fillStyle='#7a5236';g.fillRect(x-7,y,10,40);g.fillRect(x+29,y,10,40);
+    else{g.fillStyle='#c9c1b2';g.fillRect(x+1,y-3,30,46);glassWin(g,x+4,y,24,40);g.fillStyle='#7a5236';g.fillRect(x-7,y,10,40);g.fillRect(x+29,y,10,40);
       g.fillStyle='rgba(0,0,0,.15)';for(let s2=0;s2<40;s2+=4){g.fillRect(x-7,y+s2,10,1);g.fillRect(x+29,y+s2,10,1);}}}
   g.fillStyle='rgba(90,80,70,.18)';for(let r=0;r<4;r++)g.fillRect(0,r*64+60,256,2);
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;}

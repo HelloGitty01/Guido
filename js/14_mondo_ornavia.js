@@ -107,8 +107,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   facTex.wrapS=facTex.wrapT=THREE.RepeatWrapping;facTex.anisotropy=4;
   const bldM=addRelief(new THREE.MeshStandardMaterial({map:facTex,vertexColors:true,roughness:0.88,side:THREE.DoubleSide}),4,0.8);
   // facciate per tipo di edificio: ogni tessera = 2 finestre (7 m) x 2 piani (6,4 m); il piano terra dei palazzi ha i negozi
-  const FAC=(()=>{const N=256,C=128;const win=(g,x,y,w,h,frame)=>{if(frame){g.fillStyle=frame;g.fillRect(x-5,y-5,w+10,h+9);}const gr=g.createLinearGradient(x,y,x+w,y+h);gr.addColorStop(0,'#2c3640');gr.addColorStop(0.55,'#46525d');gr.addColorStop(1,'#26303a');g.fillStyle=gr;g.fillRect(x,y,w,h);
-        g.fillStyle='rgba(220,230,240,.18)';g.fillRect(x+2,y+2,w*0.35,h-4);g.fillStyle='rgba(200,200,190,.9)';g.fillRect(x+w/2-1.5,y,3,h);};
+  const FAC=(()=>{const N=256,C=128;const win=(g,x,y,w,h,frame)=>{if(frame){g.fillStyle=frame;g.fillRect(x-5,y-5,w+10,h+9);}glassWin(g,x,y,w,h);};
     const T=(draw,size)=>{const sz=size||N,k=CFG.facX===false?1:2;const t=canvasTex(sz*k,(g,n)=>{g.scale(k,k);draw(g,sz);});t.anisotropy=8;return t;};   // disegnate al doppio della risoluzione: finestre e cornici nitide
     const dirt=(g,n,a)=>{for(let i=0;i<900;i++){g.fillStyle=`rgba(70,60,50,${Math.random()*a})`;g.fillRect(Math.random()*n,Math.random()*n,2,3);}};
     const hist=T((g,n)=>{g.fillStyle='#fff';g.fillRect(0,0,n,n);dirt(g,n,0.05);for(let r=0;r<2;r++)for(let c=0;c<2;c++){const x=c*C,y=r*C;
@@ -377,7 +376,9 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       for(let k=0;k<5;k++){g.beginPath();g.arc(420+k*8,40+k*30,60-k*8,0,7);g.fill();}g.globalAlpha=1;g.fillRect(0,214,512,10);g.fillStyle=fg;g.textAlign='left';
       g.font='bold '+(b.length>16?52:64)+'px Arial';g.fillText(b,32,110);g.font='italic 34px Arial';g.fillText(sl,34,170);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(8,8,496,240);});}
   // finestre accese di notte: maschera ricavata dalle zone scure delle facciate (una finestra su tre circa)
-  function nightMask(tex){const img=tex.image;if(!img||!img.getContext)return null;const w=img.width,h=img.height,d=img.getContext('2d').getImageData(0,0,w,h).data,L=new Float32Array(w*h);
+  function nightMask(tex){const img=tex.image;if(!img||!img.getContext)return null;
+    if(img.__w&&img.__w.length){const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const g=c.getContext('2d');g.fillStyle='#000';g.fillRect(0,0,c.width,c.height);
+      for(const[x,y,w,h]of img.__w){if(Math.random()>0.4)continue;g.fillStyle=`rgb(255,${200+Math.random()*40|0},${120+Math.random()*60|0})`;g.fillRect(x,y,w,h);}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;}const w=img.width,h=img.height,d=img.getContext('2d').getImageData(0,0,w,h).data,L=new Float32Array(w*h);
     for(let i=0;i<w*h;i++)L[i]=0.3*d[i*4]+0.59*d[i*4+1]+0.11*d[i*4+2];const sorted=Array.from(L).sort((a,b)=>a-b),th=Math.min(80,sorted[(w*h*0.18)|0]+4);
     const lab=new Int32Array(w*h).fill(-1),c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),out=g.createImageData(w,h);let id=0;
     for(let i=0;i<w*h;i++){if(L[i]>=th||lab[i]>=0)continue;const lit=Math.random()<0.38,col=[255,200+Math.random()*40,120+Math.random()*60],st=[i];lab[i]=id;
@@ -970,8 +971,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const tri=(A,Uv,I,pts,uvs)=>{const s=A.length/3;pts.forEach(p=>A.push(p[0]-x0,p[1],p[2]-z0));uvs.forEach(u=>Uv.push(u[0],u[1]));I.push(s,s+1,s+2);};
       bl.forEach(bi=>{const b=NW.J.blds[bi],h=b[0],cc=b[1],gnd=b[2],ring=b[3],church=b[4],holes=b[5],mh=b[6]||0,kd=b[7]==null?0:b[7],roof=b[8]||0;const n=ring.length/2;if(n<3)return;
         const blk=hsh(Math.floor(ring[0]/115)+911,Math.floor(ring[1]/115)+373),bseed=hsh(bi,77)<0.75?((blk*99991)|0):bi;   /* isolati con uno stile comune: moderno, storico, mattoni... */
-        const k0=(kd&15)%FAC_N,kind=FAC_HD?hdKind(k0,(NW.cityAt(ring[0],ring[1])||{}).st,h,bseed):k0,shopF=(kd&16)&&mh<0.5&&h>6,[FM,su,sv]=FAC[kind],G=GG[kind];
-        col.setHex(church===1?0xe4ddd0:cc).convertSRGBToLinear();if(kind===11||kind===12||kind===13||kind===17||kind===18||kind===14||kind===19||kind===16||kind===20||kind===15||kind===21||kind===22){
+        const k00=(kd&15)%FAC_N,k0=!FAC_HD&&[0,1,4,8,9].includes(k00)&&hsh(bi,77)<0.75?[8,9,0,1,4][(blk*5)|0]:k00,kind=FAC_HD?hdKind(k0,(NW.cityAt(ring[0],ring[1])||{}).st,h,bseed):k0,shopF=(kd&16)&&mh<0.5&&h>6,[FM,su,sv]=FAC[kind],G=GG[kind];
+        col.setHex(church===1?0xe4ddd0:cc).convertSRGBToLinear();if(kind===11||kind===12||kind===13||kind===17||kind===18||kind===14||kind===19||kind===16||kind===20||kind===15||kind===21||kind===22||(!FAC_HD&&[0,1,4,8,9,6].includes(kind))){
           // tinte realistiche (ocra, terracotta, salmone, crema, giallino, verde salvia, grigi, azzurrino), simili nello stesso isolato
           const PAL=[0xe3c590,0xd59a78,0xe8b49a,0xefe3c8,0xf0dc9c,0xc9d3b0,0xcfcac2,0xbfcad0,0xc98a6a,0xf2efe8,0xdcc8a8,0xb9a48a],pi=hsh(bi,3)<0.6?((blk*PAL.length)|0):((hsh(bi,5)*PAL.length)|0);
           col.setHex(PAL[pi%PAL.length]).convertSRGBToLinear();const w=kind===13||kind===16||kind===20||kind===14||kind===19?0.35:0.75;col.setRGB(1-w+w*col.r*(0.94+0.12*hsh(bi,4)),1-w+w*col.g*(0.94+0.12*hsh(bi,4)),1-w+w*col.b*(0.94+0.12*hsh(bi,4)));}const y0=mh>0.5?gnd:gnd-1.5,y1=gnd+h;

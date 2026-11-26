@@ -226,7 +226,7 @@ HOME.camera=function(dt){const g=HOME.gd,ret=HOME.mode==='return',back=ret?5.2:3
   tmpV.set(bx,gy+up,bz);if(HOME.camInit){camera.position.copy(tmpV);HOME.camInit=false;}else camera.position.lerp(tmpV,1-Math.exp(-dt*(ret?2.5:5)));
   if(camera.fov!==60){camera.fov=60;camera.updateProjectionMatrix();}camLook.set(g.x+Math.sin(g.h)*1.5,gy+1.2,g.z+Math.cos(g.h)*1.5);camera.lookAt(camLook);
   sun.position.set(g.x+SUNOFF.x,gy+SUNOFF.y,g.z+SUNOFF.z);sun.target.position.set(g.x,gy,g.z);}
-window.__x={pedHit,penalty,HOME,PCARD,POL,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
+window.__x={HZN,pedHit,penalty,HOME,PCARD,POL,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
 const hud=document.getElementById('hud'),navBox=document.getElementById('navBox'),endBtn=document.getElementById('endBtn');endBtn.onclick=()=>endRun('fine');
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;

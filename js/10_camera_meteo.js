@@ -373,6 +373,7 @@ function applyEnv(tick){
   U.top.value.copy(K.top);U.mid.value.copy(K.mid);U.bot.value.copy(K.bot);if(NIGHT||!ENVGEN){const en=NIGHT?nightEnv:dayEnv;if(scene.environment!==en)scene.environment=en;}
   if(WX==='rain'){U.top.value.multiplyScalar(0.55).add(new THREE.Color(0x30353c));U.mid.value.lerp(new THREE.Color(0x6f7782),0.7);U.bot.value.lerp(new THREE.Color(0x8a9199),0.7);sunI*=0.4;hemiI*=1.1;fogC=new THREE.Color(0x0c1016).lerp(new THREE.Color(0x8a9199),Math.min(1,K.day*1.15));fogN=60;fogF=650;clouds_c=new THREE.Color(0x222831).lerp(new THREE.Color(0x8f969e),Math.min(1,K.day*1.15));}
   if(WX==='fog'){U.mid.value.lerp(new THREE.Color(0xc3c8cc),0.8);U.bot.value.lerp(new THREE.Color(0xc3c8cc),0.9);sunI*=0.5;fogC=new THREE.Color(0x10151d).lerp(new THREE.Color(0xc3c8cc),Math.min(1,K.day*1.15));fogN=8;fogF=170;}
+  /* prospettiva aerea: in lontananza i monti virano al grigio-azzurro, non al bianco */if(WX==='clear'){const a=0.25*(K.day||0);fogC=new THREE.Color(fogC).lerp(new THREE.Color(0x92a9c0),a);U.bot.value.lerp(new THREE.Color(0x92a9c0),a*0.85);}
   if(NW&&WX!=='fog'){if(WX==='rain'){fogN*=2.5;fogF*=2.5;}else{fogN=30;fogF*=3.9+0.5*(1-(K.day||0));}}
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
@@ -397,22 +398,29 @@ function applyEnv(tick){
 
 /* ---------- orizzonte a strati: tre catene di colline lontane, sempre più velate ----------
    seguono il giocatore, si abbassano verso il mare e prendono il colore della foschia */
-const HZN={L:[],cx:null,cz:null,N:200,
-  init(){if(this.L.length||!NW)return;const N=this.N;
-    [[5500,0.46,760,11],[4500,0.3,560,23],[3600,0.17,380,37]].forEach(([R,hz,amp,sd],i)=>{const g=new THREE.BufferGeometry(),pos=new Float32Array((N+1)*2*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));
-      const idx=[];for(let k=0;k<N;k++){const a=k*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}g.setIndex(idx);
-      const me=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x8899aa,fog:false,side:THREE.DoubleSide,depthWrite:false}));me.frustumCulled=false;me.renderOrder=-0.9+i*0.1;me.visible=false;scene.add(me);
-      this.L.push({me,R,hz,amp,sd});});},
+const HZN={L:[],cx:null,cz:null,N:220,RF:[0,0,0.4,0.65,0.85,1],
+  init(){if(this.L.length||!NW)return;const N=this.N,RN=this.RF.length;
+    [[5500,0.24,780,11],[4500,0.13,560,23],[3600,0.05,380,37]].forEach(([R,hz,amp,sd],i)=>{const g=new THREE.BufferGeometry(),pos=new Float32Array((N+1)*RN*3),col=new Float32Array((N+1)*RN*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
+      const idx=[];for(let k=0;k<N;k++)for(let r=0;r<RN-1;r++){const a=k*RN+r,b=(k+1)*RN+r;idx.push(a,b,a+1,a+1,b,b+1);}g.setIndex(idx);
+      const me=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,fog:false,side:THREE.DoubleSide,depthWrite:false}));me.frustumCulled=false;me.renderOrder=-0.9+i*0.1;me.visible=false;scene.add(me);
+      this.L.push({me,R,hz,amp,sd,top:new Float32Array(N+1),nz:new Float32Array((N+1)*RN)});});},
   ridge(a,sd){let r=0,am=1,f=3,t=0;for(let k=0;k<7;k++){const w=Math.sin(a*f+sd*(k+1)*2.3+Math.sin(a*f*0.5+sd)*1.3);r+=am*(k<2?w:1-2*Math.abs(w));t+=am;am*=0.52;f*=2.2;}r=0.5+0.5*r/t;return Math.max(0,Math.min(1,r))**1.9;},
-  build(px,pz){const N=this.N,gy=(pl.terrH||NW.Hg(px,pz)||0);
+  build(px,pz){const N=this.N,RF=this.RF,RN=RF.length,gy=(pl.terrH||NW.Hg(px,pz)||0);this.gy=gy;
     for(const Ly of this.L){const P=Ly.me.geometry.attributes.position.array;
       for(let k=0;k<=N;k++){const a=k/N*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);let land=0,hm=-1e9,n=0;
         for(let d=1200;d<=Ly.R;d+=700){const x=px+ca*d,z=pz+sa*d;n++;let w=null;try{w=waterLv(x,z);}catch(e){}const h=NW.Hg(x,z);if(w==null&&h>2){land++;hm=Math.max(hm,h);}}
-        const lf=land/n,base=Math.max(gy-30,hm*0.85),top=base+Ly.amp*(0.12+0.88*this.ridge(a,Ly.sd))*(0.12+0.88*lf);
-        P.set([ca*Ly.R,gy-600,sa*Ly.R,ca*Ly.R,Math.max(top,gy+25+Ly.amp*0.05),sa*Ly.R],k*6);}
+        const lf=land/n,base=Math.max(gy-30,hm*0.85),top=Math.max(base+Ly.amp*(0.12+0.88*this.ridge(a,Ly.sd))*(0.12+0.88*lf),gy+25+Ly.amp*0.05),bot=gy-600;Ly.top[k]=top;
+        for(let r=0;r<RN;r++){const y=r?gy-20+(top-gy+20)*RF[r]:bot,o=(k*RN+r)*3;P[o]=ca*Ly.R;P[o+1]=y;P[o+2]=sa*Ly.R;Ly.nz[k*RN+r]=Math.sin(k*12.9898+r*78.233+Ly.sd)*43758.5453%1;}}
       Ly.me.geometry.attributes.position.needsUpdate=true;Ly.me.position.set(px,0,pz);}
     this.cx=px;this.cz=pz;this.color();},
   tick(){if(!NW||!started)return;this.init();if(!this.L.length)return;const x=camera.position.x,z=camera.position.z;
     if(this.cx==null||Math.hypot(x-this.cx,z-this.cz)>350)this.build(x,z);else for(const Ly of this.L)Ly.me.position.set(this.cx,0,this.cz);},
-  color(fc,day){if(fc){this.fc=fc.clone();this.day=day;}if(!this.L.length||!this.fc)return;fc=this.fc;day=this.day;const base=fc.clone().multiplyScalar(0.34+0.05*day).lerp(new THREE.Color(DUSK?0x4d4a72:0x35506a),(DUSK?0.6:0.45)*day);
-    for(const Ly of this.L){Ly.me.material.color.copy(base).lerp(fc,Ly.hz);Ly.me.visible=WX!=='fog'&&this.cx!=null;}}};
+  // versanti: boschi scuri in basso, roccia più in alto, neve sulle vette più alte; tutto velato dalla foschia, più fitta a valle
+  color(fc,day){if(fc){this.fc=fc.clone();this.day=day;}if(!this.L.length||!this.fc||this.cx==null)return;fc=this.fc;day=this.day||0;const RF=this.RF,RN=RF.length,N=this.N,c=new THREE.Color(),tmp=new THREE.Color();
+    const lit=0.35+0.65*day,L=h=>new THREE.Color(h).convertSRGBToLinear(),forest=L(0x2c4632).multiplyScalar(lit),rock=L(0x57564f).multiplyScalar(lit),snow=L(0xeef1f5).multiplyScalar(0.25+0.75*day),dusk=DUSK?L(0x4d4a72):null;
+    for(const Ly of this.L){const C=Ly.me.geometry.attributes.color.array,gy=this.gy||0;
+      for(let k=0;k<=N;k++){const rel=(Ly.top[k]-gy)/Ly.amp;
+        for(let r=0;r<RN;r++){const q=r?RF[r]:0,nz=Ly.nz[k*RN+r];c.copy(forest).lerp(rock,Math.min(1,Math.max(0,q-0.55)*2.4*Math.min(1,rel*1.6)+nz*0.2));
+          if(rel>0.55&&q>0.7)c.lerp(snow,Math.min(1,(rel-0.55)*4)*Math.min(1,(q-0.7)*3.3)*(0.6+0.4*nz));if(dusk)c.lerp(dusk,0.3*day);
+          c.lerp(fc,Math.min(1,Ly.hz+(1-q)*0.12));const o=(k*RN+r)*3;C[o]=c.r;C[o+1]=c.g;C[o+2]=c.b;}}
+      Ly.me.geometry.attributes.color.needsUpdate=true;Ly.me.visible=WX!=='fog';}}};
