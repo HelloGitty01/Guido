@@ -146,10 +146,13 @@ function applyView(){if(!pl.ck)return;ckRestore();pl.camInit=false;pl.ck.g.visib
 const tmpV=new THREE.Vector3(),camLook=new THREE.Vector3(),CAMS={y:0,vy:0,ax:0,ay:0};
 // abitacoli disegnati (immagini scelte da Giorgio): i vetri sono trasparenti e mostrano il mondo vero, gli specchi mostrano la vista dietro
 // schermo del navigatore negli abitacoli disegnati: centro e larghezza nell'immagine (sulla Challenger è lo schermo di bordo)
-const CKNAV={volvo:[712,328,170],utilitaria:[1825,892,370],wagoneer:[700,352,140],taxi:[831,343,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
+const CKNAV={volvo:[1315,815,256],utilitaria:[1825,892,370],wagoneer:[700,352,140],taxi:[831,343,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
 // abitacoli fotografici (immagini scelte da Giorgio, ritoccate): vetri trasparenti sul mondo vero, lancette, spie, display e specchi veri.
 // g: [x,y,raggio,tipo (s velocità, r giri, f benzina, t temperatura),fondo scala,colore,angolo iniziale,angolo finale]
-const CKIMG={utilitaria:{g:[[1288,857,80,'s',140,'#f06030'],[1113,859,29,'f',1,'#f4f4ec',200,340],[1462,859,29,'t',1,'#f4f4ec',200,340]],man:true,
+const CKIMG={volvo:{g:[[907,787,56,'s',220,'#f4f4ec'],[792,800,38,'r',1,'#f4f4ec'],[1015,800,38,'f',1,'#f4f4ec',200,340]],
+    wheel:{src:'cockpit/carter_w.webp',c:[860,960],a:330,b:315,box:[476,593,1246,1328]},src:'cockpit/carter.webp',size:[2576,1438],
+    glass:{C:[1120,243,1458,328],L:[52,597,298,740],R:[2298,597,2532,742]},spd:[907,816],fs:17,spdCol:'#f6f6f0',turnL:[745,752],turnR:[1068,752],beam:[850,744],ifs:13},
+  utilitaria:{g:[[1288,857,80,'s',140,'#f06030'],[1113,859,29,'f',1,'#f4f4ec',200,340],[1462,859,29,'t',1,'#f4f4ec',200,340]],man:true,
     wheel:{src:'cockpit/lasley_w.webp',c:[760,1030],a:430,b:410,box:[310,600,1210,1460]},src:'cockpit/lasley.webp',size:[2576,1438],
     glass:{C:[1150,210,1428,310],L:[72,522,228,678],R:[2352,534,2508,690]},round:{L:1,R:1},spd:[1288,900],fs:34,spdCol:'#f6f6f0',turnL:[1180,800],turnR:[1398,800],beam:[1288,958],ifs:20}};
 const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
