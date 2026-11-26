@@ -271,7 +271,9 @@ const RESUME={now:null,t:0,get(){try{return JSON.parse(localStorage.getItem('sim
 document.getElementById('contBtn').onclick=()=>{const r=RESUME.get();if(!r||!PHYS[r.k])return;selKey=r.k;[...document.getElementById('vehList').children].forEach((x,i)=>x.classList.toggle('sel',Object.keys(PHYS)[i]===r.k));
   document.getElementById('selMode').value='free';document.getElementById('selTime').value=r.time||'day';if(r.wx)document.getElementById('selWx').value=r.wx;RESUME.now=r;document.getElementById('go').click();};
 setTimeout(()=>RESUME.btn(),0);
-function startDrive(){runStart=simT;if(MA.reset)MA.reset();if(!RESUME.now)CINE.startIntro();
+function startDrive(){runStart=simT;if(MA.reset)MA.reset();
+  // prima di darti il controllo: quartieri vicini completi e materiali già preparati (niente calo nei primi secondi)
+  if(NWT){try{const cp=camera.position.clone();camera.position.set(pl.x,(pl.terrH||0)+2,pl.z);NWT.update(0,true);camera.position.copy(cp);updateCarLOD();renderer.compile(scene,camera);}catch(e){console.warn('preparazione',e);}}if(!RESUME.now)CINE.startIntro();
   if(!FUEL.st.length)fuelInit();pl.fuel=tankOf(pl.P)*(MODE==='free'||MODE==='nav'?0.6:1);pl.fuelFor=selKey;pl.dry=false;FUEL.low=false;ORB.yaw=ORB.pitch=0;ORB.w=0;
   if(MODE==='nav'||MODE==='race'){route=buildRoute(document.getElementById('selDest').value);if(route){destMark.position.set(route.dest.x,TH(route.dest.x,route.dest.z)+30,route.dest.z);destMark.visible=true;
     say(MODE==='race'?'Gara verso '+document.getElementById('selDest').selectedOptions[0].textContent+'. Pronti...':'Percorso calcolato verso '+document.getElementById('selDest').selectedOptions[0].textContent);}}
