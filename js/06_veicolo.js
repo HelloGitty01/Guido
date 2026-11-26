@@ -40,7 +40,7 @@ function torque(P,rpm){const d=Math.max(0,Math.abs(rpm-P.rpk)-P.pl);let t=P.Tmax
 
 // ---- specchietti: una telecamera posteriore grandangolare renderizza su texture, ripartita fra i 3 specchi ----
 const MIRROR_RT=new THREE.WebGLRenderTarget(MOBILE?320:640,MOBILE?96:192);
-const rearCam=new THREE.PerspectiveCamera(30,(MOBILE?320:640)/(MOBILE?96:192),0.3,380);rearCam.rotation.y=Math.PI/2;
+const rearCam=new THREE.PerspectiveCamera(30,(MOBILE?320:640)/(MOBILE?96:192),0.3,200);rearCam.rotation.y=Math.PI/2;
 function mirrorGeo(w,h,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}return g;}
 const mirrorM=new THREE.MeshBasicMaterial({map:MIRROR_RT.texture});
 const fabricTex=canvasTex(128,(g,n)=>{g.fillStyle='#2a2b2e';g.fillRect(0,0,n,n);for(let i=0;i<3000;i++){const v=30+Math.random()*25|0;g.fillStyle=`rgb(${v},${v},${v+2})`;g.fillRect(Math.random()*n,Math.random()*n,1,1);}});

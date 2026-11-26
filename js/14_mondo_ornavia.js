@@ -291,6 +291,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     return V;})();
   const treeVM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.95});
   // ---------- alberi dettagliati (pacchetto HD): vicino alla camera i modelli veri, lontano le sagome di sempre ----------
+  const PROF=(name,f)=>function(...a){if(!window.__prof)return f.apply(this,a);const t=performance.now(),r=f.apply(this,a),d=performance.now()-t,P=window.__prof,q=P[name]||(P[name]={n:0,tot:0,max:0,list:[]});q.n++;q.tot+=d;q.max=Math.max(q.max,d);if(q.list.length<200)q.list.push(+d.toFixed(1));if(d>3&&typeof PERF!=='undefined')PERF.tag(name,d);return r;};
   const HDT=(()=>{if(!window.HDON)return null;try{const V={};
     // passaggio graduale tra albero vero e albero lontano: retinatura per pixel decisa dalla distanza dell'albero (niente "pop")
     const FADE={uR:{value:210},uB:{value:38}},fadeHook=(far)=>m=>{m.onBeforeCompile=sh=>{sh.uniforms.uFR=FADE.uR;sh.uniforms.uFB=FADE.uB;
@@ -1242,6 +1243,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       try{const L=T.dobj.slice(n0).filter(o=>!o.isSprite&&!o.isLight&&!o.isInstancedMesh);L.forEach(o=>o.updateMatrixWorld(true));mergeStatic({children:L},null,m=>{scene.add(m);T.dobj.push(m);},true);}catch(e){console.warn('unione zona',e);}
       // tutto ciò che non si muove: niente ricalcolo delle matrici a ogni fotogramma
       for(let q=n0;q<T.dobj.length;q++){const o=T.dobj[q];if(o.isSprite||!o.matrixAutoUpdate||o.userData.mixer||o.userData.mov)continue;o.updateMatrixWorld(true);o.traverse(c=>{c.matrixAutoUpdate=false;});}}
+    build=PROF('vx',build);
     function drop(T){const qi=Q.indexOf(T);if(qi>=0)Q.splice(qi,1);for(let q=FA.length-1;q>=0;q--)if(FA[q].T===T)FA.splice(q,1);for(let q=FIRE.length-1;q>=0;q--)if(FIRE[q].T===T)FIRE.splice(q,1);for(let q=SMK.length-1;q>=0;q--)if(SMK[q].T===T)SMK.splice(q,1);}
     function update(dt){const t0=performance.now();while(Q.length&&performance.now()-t0<4){const T=Q.shift();if(T.det)build(T);}
       const cx=camera.position.x,cz=camera.position.z,t=simT;FA.forEach(A=>animUpd(A,dt,t,cx,cz));
@@ -1423,12 +1425,13 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function drop(T){undetail(T);T.objs.forEach(o=>{scene.remove(o);if(o.isInstancedMesh)o.dispose();else if(o.geometry)o.geometry.dispose();});tiles.delete(T.key);}
   function buildFar(i,j){const x0=i*FS,z0=j*FS,m=terrain(x0,z0,FS,25,(x,z)=>NW.Hg(x,z)-1.5,farM);m.receiveShadow=false;const F={i,j,m};far.set(tk(i,j),F);return F;}
   const okTile=(x,z,s)=>x+s>NW.GX0&&z+s>NW.GZ0&&x<NW.GX1&&z<NW.GZ1;
+  detail=PROF('detail',detail);build=PROF('tile',build);undetail=PROF('undetail',undetail);
   let lastBox=null;
   function update(dt,force){const cx=camera.position.x,cz=camera.position.z;if(!NW.inside(cx,cz)&&!force)return;const ci=Math.floor(cx/TS),cj=Math.floor(cz/TS);
     let n=force?1e9:1,allNear=true;const want=[];
     for(let a=-RAD;a<=RAD;a++)for(let b=-RAD;b<=RAD;b++){const i=ci+a,j=cj+b;if(!okTile(i*TS,j*TS,TS))continue;const T=tiles.get(tk(i,j)),dd=Math.max(Math.abs(a),Math.abs(b));
       if(!T){want.push([dd,i,j]);allNear=false;}else if(dd<=DET&&!T.det)want.push([dd-0.5,i,j]);else if(dd>DET+1&&T.det)undetail(T);}
-    want.sort((p,q)=>p[0]-q[0]);for(const [dd,i,j] of want){if(n--<=0)break;const T=tiles.get(tk(i,j));if(T)detail(T);else{const t=build(i,j);if(Math.round(dd)<=DET&&force)detail(t);}}
+    let heavy=false;want.sort((p,q)=>p[0]-q[0]);for(const [dd,i,j] of want){if(n--<=0)break;heavy=true;const T=tiles.get(tk(i,j));if(T)detail(T);else{const t=build(i,j);if(Math.round(dd)<=DET&&force)detail(t);}}
     tiles.forEach(T=>{if(Math.abs(T.i-ci)>RAD+1||Math.abs(T.j-cj)>RAD+1)drop(T);});
     if(allNear){lastBox=[(ci-RAD)*TS+1,(cj-RAD)*TS+1,(ci+RAD+1)*TS-1,(cj+RAD+1)*TS-1];}
     if(lastBox)nearBox.value.set(...lastBox);
@@ -1436,7 +1439,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     if(!HIDE&&(n>0||force)){const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);for(let a=-FR;a<=FR;a++)for(let b=-FR;b<=FR;b++){const i=fi+a,j=fj+b;if(!okTile(i*FS,j*FS,FS))continue;if(!far.has(tk(i,j))){buildFar(i,j);if(!force)break;}}}
     far.forEach((F,k)=>{const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);if(Math.abs(F.i-fi)>FR+1||Math.abs(F.j-fj)>FR+1){scene.remove(F.m);F.m.geometry.dispose();far.delete(k);}});
     if(HDT)HDT.update(dt,force);WAVT.value+=dt;
-    anims.forEach(a=>{const p=a.m.position;if(Math.abs(p.x-cx)+Math.abs(p.z-cz)<160)a.m.userData.mixer.update(dt);});LMX.update(dt);VX.update(dt);}
+    anims.forEach(a=>{const p=a.m.position;if(Math.abs(p.x-cx)+Math.abs(p.z-cz)<160)a.m.userData.mixer.update(dt);});LMX.update(dt);if(!heavy||force)VX.update(dt);}
   function segQ(x,z){return bseg.get(tk(Math.floor(x/BC),Math.floor(z/BC)))||[];}
   function addDyn(list){const T={segs:[]};list.forEach(q=>addSeg(T,...q));return T;}
   function remDyn(T){T.segs.forEach(s=>{for(let a=Math.floor(Math.min(s[0],s[2])/BC);a<=Math.floor(Math.max(s[0],s[2])/BC);a++)for(let b=Math.floor(Math.min(s[1],s[3])/BC);b<=Math.floor(Math.max(s[1],s[3])/BC);b++){const l=bseg.get(tk(a,b));if(l){const p=l.indexOf(s);if(p>=0)l.splice(p,1);}}});T.segs=[];}

@@ -142,4 +142,11 @@ Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:10,far
 sun.shadow.bias=-0.0005; scene.add(sun); scene.add(sun.target);
 
 function mat(c,o={}){return new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.85,metalness:0},o));}
-
+// pannello prestazioni (Grafica → Mostra prestazioni): fps, tempi, chiamate grafiche e cosa ha causato gli scatti
+const PERF={on:false,el:null,t:[],last:0,acc:0,tags:[],hitch:[],calls:0,tris:0,
+  set(on){this.on=on;window.__prof=on?{}:null;if(on&&!this.el){const e=document.createElement('div');e.id='perfBox';e.style.cssText='position:fixed;left:8px;top:8px;z-index:60;font:11px/1.35 monospace;color:#dfe;background:rgba(0,0,0,.55);padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre';document.body.appendChild(e);this.el=e;}if(this.el)this.el.style.display=on?'block':'none';},
+  tag(n,ms){if(this.on)this.tags.push(n+' '+ms.toFixed(0));},
+  frame(now){if(!this.on)return;const i=renderer.info.render;this.calls=i.calls;this.tris=i.triangles;const d=this.last?now-this.last:16;this.last=now;this.t.push(d);if(this.t.length>120)this.t.shift();
+    if(d>45){this.hitch.unshift(d.toFixed(0)+' ms '+(this.tags.join(', ')||'?'));this.hitch.length=Math.min(this.hitch.length,4);}this.tags.length=0;
+    this.acc+=d;if(this.acc<500)return;this.acc=0;const T=this.t.slice().sort((a,b)=>a-b),avg=this.t.reduce((a,b)=>a+b,0)/this.t.length;
+    this.el.textContent='fps '+(1000/avg).toFixed(0)+'   media '+avg.toFixed(1)+' ms   peggiore '+T[T.length-1].toFixed(0)+' ms\nchiamate '+this.calls+'   triangoli '+(this.tris/1e6).toFixed(2)+' M\n'+(this.hitch.length?'scatti:\n'+this.hitch.join('\n'):'nessuno scatto');}};
