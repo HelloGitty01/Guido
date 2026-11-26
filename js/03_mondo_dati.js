@@ -9,7 +9,8 @@ const ALPV={"roads":[{"r":[6,0,6.5,0,"Strada per Pradalto","",0,0,[17720.8,11236
 NW=(()=>{const D=window.NWDATA;if(!D)return null;
   const J=D.j,M=J.meta,[GX0,GZ0,GS,GNX,GNZ]=M.grid,HM=D.hm,LM=D.lm;
   if(!J.__alp){J.__alp=1;ALPV.roads.forEach(o=>{const ri=J.roads.length,N=o.r[8].length/3,nb=J.nodes.length/2;J.roads.push(o.r);J.nodes.push(o.r[8][(N-1)*3],o.r[8][(N-1)*3+1]);J.edges.push([ri,0,N-1,o.nd,nb,0]);});
-    ALPV.blds.forEach(b=>J.blds.push(b));J.alp=ALPV.alp;}
+    ALPV.blds.forEach(b=>J.blds.push(b));J.alp=ALPV.alp;
+    ALPV.roads.forEach(o=>{const p=o.r[8],N=p.length/3,i=N-8,j=N-14,h=Math.atan2(-(p[j*3+1]-p[i*3+1]),p[j*3]-p[i*3]);J.starts.push([o.n,p[i*3],p[i*3+1],h]);});}   // si può partire dai paesini
   const GX1=GX0+(GNX-1)*GS,GZ1=GZ0+(GNZ-1)*GS;
   const inside=(x,z)=>x>GX0+1&&z>GZ0+1&&x<GX1-1&&z<GZ1-1;
   function Hg(x,z){let fx=(x-GX0)/GS,fz=(z-GZ0)/GS;fx=fx<0?0:fx>GNX-1.001?GNX-1.001:fx;fz=fz<0?0:fz>GNZ-1.001?GNZ-1.001:fz;

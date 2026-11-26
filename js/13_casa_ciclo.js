@@ -88,7 +88,7 @@ HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign
   // piazzale in asfalto e pavimento del garage
   const asph=M(0x45474b,0.95,{polygonOffset:true,polygonOffsetFactor:-2});plane(29,29.3,asph,-14,0.035,-10.15);
   const conc=M(0x9c988f,0.9,{polygonOffset:true,polygonOffsetFactor:-2});plane(24,11.4,conc,-14,0.04,-30.3);
-  const wl=M(0xf2f0ea,0.6,{polygonOffset:true,polygonOffsetFactor:-3});const NB=Object.keys(PHYS).length,BW=24/NB;for(let i=0;i<=NB;i++)plane(0.12,9.5,wl,-26+i*BW,0.045,-30.8);
+  const wl=M(0xf2f0ea,0.6,{polygonOffset:true,polygonOffsetFactor:-3});const GAR=Object.keys(PHYS).filter(k=>!PHYS[k].mission),NB=GAR.length,BW=24/NB;for(let i=0;i<=NB;i++)plane(0.12,9.5,wl,-26+i*BW,0.045,-30.8);
   // garage: muri, pilastri, tetto piano, fascia rossa come il logo
   const plast=M(0xe9dcc2,0.9),grey=M(0x6c6e70,0.8),red=M(0xc8202a,0.6),roofM=M(0x5d5f62,0.9);
   box(24.6,4.3,0.3,plast,-14,2.15,-36.15);box(0.3,4.3,11.9,plast,-26.15,2.15,-30.25);box(0.3,4.3,11.9,plast,-1.85,2.15,-30.25);
@@ -146,7 +146,7 @@ HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign
   G.traverse(o=>{if(o.isMesh){o.castShadow=o.castShadow!==false;o.receiveShadow=true;}});
   HOME.segS=NWT.addDyn(segs);
   // le auto in garage, una per posto, col muso verso l'uscita
-  HOME.carH=-(HOME.A+Math.PI/2);Object.keys(PHYS).forEach((k,i)=>{const u=-26+(i+0.5)*24/Object.keys(PHYS).length,v=-30.4,[x,z]=hW(u,v),m=makeCar(k,0x8a1f1f,true,true);m.position.set(x,HOME.y,z);m.rotation.set(0,HOME.carH,0);scene.add(m);
+  HOME.carH=-(HOME.A+Math.PI/2);const GAR2=Object.keys(PHYS).filter(k=>!PHYS[k].mission);GAR2.forEach((k,i)=>{const u=-26+(i+0.5)*24/GAR2.length,v=-30.4,[x,z]=hW(u,v),m=makeCar(k,0x8a1f1f,true,true);m.position.set(x,HOME.y,z);m.rotation.set(0,HOME.carH,0);scene.add(m);
     const T=TYPES[k],c=Math.cos(HOME.carH),s=-Math.sin(HOME.carH),hl=T.L/2,hw=T.W/2,P=[[-hl,-hw],[hl,-hw],[hl,hw],[-hl,hw]].map(([a,b])=>[x+a*c-b*s,z+a*s+b*c]),sg=[];for(let q=0;q<4;q++)sg.push([P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]]);
     HOME.cars[k]={m,x,z,u,v,segs:sg,dyn:NWT.addDyn(sg)};});
   // Guido e Gatto
@@ -172,7 +172,7 @@ HOME.begin=function(){HOME.mode='walk';HOME.stillT=0;HOME.t=0;document.getElemen
   pl.navMsg='Ciao Guido! Vai in garage e scegli il mezzo: avvicinati e premi Invio.';pl.navMsgT=6;
   HOME.enter(selKey,true,true);};
 function fade(cb){const f=document.getElementById('fadeOv');f.style.opacity=1;setTimeout(()=>{cb();setTimeout(()=>f.style.opacity=0,120);},380);}
-HOME.enter=function(k,instant,board){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on&&!CAR.s.own[k]){if(CAR.buy(k)){HOME.near=null;}return;}HOME.busy=true;const go=()=>{HOME.busy=false;const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
+HOME.enter=function(k,instant,board){if(HOME.mode!=='walk'||HOME.busy)return;if(CAR.on&&!CAR.s.own[k]){if(CAR.buy(k)){HOME.near=null;}return;}HOME.busy=true;const go=()=>{HOME.busy=false;const C=HOME.cars[k]||Object.values(HOME.cars)[0];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
     resetPlayer();pl.x=C.x;pl.z=C.z;pl.h=C.pad?C.h:HOME.carH;pl.vx=pl.vy=pl.r=0;NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;C.m.visible=false;if(C.dyn){NWT.remDyn(C.dyn);C.dyn=null;}
     HOME.guido.visible=false;HOME.mode=null;HOME.doorA=0;document.getElementById('homeUI').style.display='none';applyView();pl.camInit=false;RADIO.pause(false);try{savePrefs();}catch(e){}
     HOME.wasOut=false;HOME.c.st='porch';HOME.catTo(4.6,1.6);pl.navMsg='Si parte con: '+PHYS[k].label;pl.navMsgT=3;if(DRV){if(board){const[dx,dz]=hW(5.0,-1);DRV.from={x:dx,z:dz};}else DRV.skipBoard=true;}startDrive();};
@@ -181,7 +181,7 @@ HOME.finish=function(){if(HOME.done)return;HOME.done=true;document.getElementByI
 HOME.arrive=function(){if(CAR.on){CAR.repair();CAR.save();}pl.vx=pl.vy=0;pl.hb=true;muteCar(true);pl.navMsg='Bentornato a casa!';pl.navMsgT=4;say('Bentornato a casa');HOME.finish();};
 // cambio auto a casa: fermandosi vicino a un'altra auto del garage si può passare a quella (quella di prima torna al suo posto)
 HOME.swap=function(k){if(HOME.busy||HOME.mode)return;if(CAR.on&&!CAR.s.own[k]){CAR.buy(k);HOME.swapK=null;return;}HOME.busy=true;fade(()=>{HOME.busy=false;try{const O=HOME.cars[selKey];if(O){O.m.visible=HOME.vis!==false;if(!O.dyn)O.dyn=NWT.addDyn(O.segs);}
-  const C=HOME.cars[k];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
+  const C=HOME.cars[k]||Object.values(HOME.cars)[0];selKey=k;[...vl.children].forEach((b,i)=>b.classList.toggle('sel',Object.keys(PHYS)[i]===k));
   resetPlayer();pl.x=C.x;pl.z=C.z;pl.h=C.pad?C.h:HOME.carH;pl.vx=pl.vy=pl.r=0;NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;C.m.visible=false;if(C.dyn){NWT.remDyn(C.dyn);C.dyn=null;}
   applyView();pl.camInit=false;try{savePrefs();}catch(e){}HOME.swapK=null;document.getElementById('homeUI').style.display='none';pl.navMsg='Ora guidi: '+PHYS[k].label;pl.navMsgT=3;}catch(e){console.error('cambio auto',e);}});};
 HOME.swapTick=function(){if(HOME.mode||!HOME.ok||!started||!pl.mesh||HOME.vis===false||CINE.intro){if(CINE.intro&&HOME.swapK){HOME.swapK=null;document.getElementById('homeUI').style.display='none';}return;}const sp=Math.abs(pl.vx||0);let best=null,bd=1e9;
@@ -226,7 +226,7 @@ HOME.camera=function(dt){const g=HOME.gd,ret=HOME.mode==='return',back=ret?5.2:3
   tmpV.set(bx,gy+up,bz);if(HOME.camInit){camera.position.copy(tmpV);HOME.camInit=false;}else camera.position.lerp(tmpV,1-Math.exp(-dt*(ret?2.5:5)));
   if(camera.fov!==60){camera.fov=60;camera.updateProjectionMatrix();}camLook.set(g.x+Math.sin(g.h)*1.5,gy+1.2,g.z+Math.cos(g.h)*1.5);camera.lookAt(camLook);
   sun.position.set(g.x+SUNOFF.x,gy+SUNOFF.y,g.z+SUNOFF.z);sun.target.position.set(g.x,gy,g.z);}
-window.__x={AMB,HZN,pedHit,penalty,HOME,PCARD,POL,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
+window.__x={setView:v=>{view=v;applyView();},switchCar,JOB,AMB,HZN,pedHit,penalty,HOME,PCARD,POL,getRoute:()=>route,FUEL,CH,MAP,PHOTO,ORB,REC,mapToggle,photoToggle,photoShot,recToggle,chArrive,chStart,tankOf,setClock:h=>{CLOCK=h;},st:()=>({CLOCK,NIGHT,DUSK,MODE,TIME,paused,route:!!route,view,sunI:+sun.intensity.toFixed(2),exp:renderer.toneMappingExposure,fog:scene.fog.color.getHexString(),sun:[SUNOFF.x|0,SUNOFF.y|0,SUNOFF.z|0],lights:pl.lights})};
 const hud=document.getElementById('hud'),navBox=document.getElementById('navBox'),endBtn=document.getElementById('endBtn');endBtn.onclick=()=>endRun('fine');
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;

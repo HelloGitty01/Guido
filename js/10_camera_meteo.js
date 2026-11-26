@@ -147,13 +147,8 @@ const tmpV=new THREE.Vector3(),camLook=new THREE.Vector3(),CAMS={y:0,vy:0,ax:0,a
 // abitacoli disegnati (immagini scelte da Giorgio): i vetri sono trasparenti e mostrano il mondo vero, gli specchi mostrano la vista dietro
 // schermo del navigatore negli abitacoli disegnati: centro e larghezza nell'immagine (sulla Challenger è lo schermo di bordo)
 const CKNAV={volvo:[712,328,170],utilitaria:[660,292,150],wagoneer:[700,352,140],taxi:[831,343,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
-const CKIMG={volvo:{g:[[480,357,16,'s',180,'#ff8a2a'],[435,356,14,'r',0,'#ff8a2a']],man:true,wheel:{src:'cockpit/volvo_w.webp',c:[475,436],a:123,b:136,box:[348,296,603,572]},src:'cockpit/volvo.webp',size:[1024,572],glass:{C:[647,73,815,121],L:[143,296,240,348]},spd:[481,366],fs:9,turnL:[447,342],turnR:[515,342],beam:[481,343]},
-  utilitaria:{man:true,wheel:{src:'cockpit/panda_w.webp',c:[472,381],a:120,b:111,box:[348,266,597,497]},src:'cockpit/panda.webp',size:[1024,503],glass:{C:[592,64,743,115],L:[172,272,244,304]},spd:[519,322],fs:9,turnL:[405,305],turnR:[552,305],beam:[466,305]},
-  wagoneer:{g:[[488,348,17,'s',180,'#f2f2ec'],[436,351,16,'r',0,'#f2f2ec']],zoom:1.16,wheel:{src:'cockpit/jeep_w.webp',c:[462,420],a:135,b:135,box:[323,281,602,560]},src:'cockpit/jeep.webp',size:[1024,572],glass:{C:[626,83,796,118],L:[123,287,229,333]},spd:[490,361],fs:8,gear:[490,371],turnL:[466,331],turnR:[514,331],beam:[490,331]},
-  taxi:{g:[[472,346,19,'s',200,'#ff3b20'],[527,345,13,'r',0,'#ff3b20']],wheel:{src:'cockpit/taxi_w.webp',c:[456,418],a:112,b:129,box:[340,285,573,552]},src:'cockpit/taxi.webp',size:[1024,572],glass:{C:[620,114,790,153],L:[121,290,216,346]},spd:[475,353],fs:7,gear:[445,353],turnL:[455,325],turnR:[497,325],beam:[476,325]},
-  hellcat:{g:[[476,344,19,'s',240,'#ff4a1c'],[421,345,14,'r',0,'#ff4a1c']],wheel:{src:'cockpit/hellcat_w.webp',c:[469,421],a:129,b:134,box:[336,283,603,560]},src:'cockpit/hellcat.webp',size:[1024,572],glass:{C:[612,142,773,177],L:[76,309,172,349]},spd:[473,357],fs:7,gear:[424,357],turnL:[447,323],turnR:[499,323],beam:[473,323]},
-  zil:{g:[[478,343,14,'s',120,'#ff9a3a'],[558,344,14,'r',0,'#ff9a3a']],wheel:{src:'cockpit/zil_w.webp',c:[524,384],a:112,b:103,box:[408,277,641,492]},man:true,src:'cockpit/zil.webp',size:[1024,503],glass:{C:[681,80,815,116],L:[30,112,190,298]},spd:[472,352],fs:7,gear:[472,361],turnL:[503,330],turnR:[538,330],beam:[520,330]},
-  daily:{g:[[466,367,18,'s',140,'#ffa040'],[550,367,15,'r',0,'#ffa040']],wheel:{src:'cockpit/daily_w.webp',c:[507,423],a:130,b:126,box:[373,293,642,554]},man:true,src:'cockpit/daily.webp',size:[1024,572],glass:{C:[668,76,806,112],L:[103,222,193,358]},spd:[463,378],fs:7,gear:[507,372],turnL:[482,345],turnR:[532,345],beam:[507,344]}};
+// abitacoli fotografici tolti: ogni auto usa il proprio abitacolo 3D (modelli CC-BY)
+const CKIMG={};
 const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
 function ckQuad(k,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}const m=new THREE.Mesh(g,mirrorM);CKO.hud.add(m);CKO.q[k]=m;return m;}
 ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
@@ -225,7 +220,7 @@ function speedFx(dt){const v=Math.abs(pl.vx),on=started&&!PHOTO.on&&!pl.ended&&!
 function camKick(v){CAMS.vy-=v*2.2;}
 function updateCamera(dt){
   const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
-  pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;
+  pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;if(m.userData.steerW)m.userData.steerW.rotation.x=pl.delta*pl.P.ratio;
   // con l'abitacolo fotografico si vede solo la foto: niente cofano 3D dal parabrezza (le luci restano accese)
   if(pl.mesh&&pl.mesh.userData.ckHid!==CKO.on){pl.mesh.userData.ckHid=CKO.on;pl.mesh.traverse(o=>{if(o.isMesh||o.isSprite||o.isPoints||o.isLine)o.layers.set(CKO.on?1:0);});}
   // di notte l'abitacolo si oscura seguendo la luce esterna; quadro strumenti e schermo restano accesi

@@ -97,8 +97,8 @@ function makeOpponent(){const P=route.P,N=P.pts.length,vt=new Float32Array(N);
   for(let i=0;i<N;i++){const a=P.pts[Math.max(0,i-1)],b=P.pts[i],c=P.pts[Math.min(N-1,i+1)];const d1=[b[0]-a[0],b[1]-a[1]],d2=[c[0]-b[0],c[1]-b[1]],l=(Math.hypot(...d1)+Math.hypot(...d2))/2||1;
     const ang=Math.abs(Math.atan2(d1[0]*d2[1]-d1[1]*d2[0],d1[0]*d2[0]+d1[1]*d2[1]));const R_=ang>1e-4?l/ang:1e4;vt[i]=Math.min(limitAt(b[0],b[1])/3.6*1.12,Math.sqrt(6.2*R_));}
   for(let i=N-2;i>=0;i--){const ds=P.cum[i+1]-P.cum[i];vt[i]=Math.min(vt[i],Math.sqrt(vt[i+1]**2+2*5.5*ds));}
-  const mesh=makeCar('berlina',0x1f4fa8);scene.add(mesh);
-  const o={P,vt,s:-12,v:0,mesh,T:TYPES.berlina,dx:1,dz:0,a:0,hold:0,honkCd:0,flashT:0,horn:{f:420,ratio:1.26,wave:'square',cut:2400,single:false,det:0},opp:true,lo:0};
+  const mesh=makeCar('volvo',0x1f4fa8);scene.add(mesh);
+  const o={P,vt,s:-12,v:0,mesh,T:TYPES.volvo,dx:1,dz:0,a:0,hold:0,honkCd:0,flashT:0,horn:{f:420,ratio:1.26,wave:'square',cut:2400,single:false,det:0},opp:true,lo:0};
   cars.push(o);return o;}
 function updateOpp(dt){const o=opp;if(!o||!route)return;const P=o.P;const i=Math.max(0,Math.min(P.pts.length-1,P.cum.findIndex(c=>c>o.s)));
   let vT=o.s<0?6:o.vt[i]||8;
@@ -132,7 +132,7 @@ let ghost=null,recSamples=[],recT=0;
 const ghostM=new THREE.MeshBasicMaterial({color:0x7fd6ff,transparent:true,opacity:0.33,depthWrite:false});
 function loadRecord(){try{return JSON.parse(localStorage.getItem(recKey())||'null');}catch(e){return null;}}
 function startGhost(){if(ghost){scene.remove(ghost.mesh);ghost=null;}recSamples=[];recT=0;if(!route)return;const rec=loadRecord();if(!rec||!rec.s)return;
-  const mesh=makeCar(rec.veh||'berlina',0x7fd6ff,false);CARLOD.list=CARLOD.list.filter(e=>e.g!==mesh);mesh.traverse(o=>{if(o.isMesh)o.material=ghostM;});scene.add(mesh);ghost={rec,mesh};}
+  const mesh=makeCar(CARX[rec.veh]?rec.veh:'volvo',0x7fd6ff,false);CARLOD.list=CARLOD.list.filter(e=>e.g!==mesh);mesh.traverse(o=>{if(o.isMesh)o.material=ghostM;});scene.add(mesh);ghost={rec,mesh};}
 function updateGhost(){if(!route||pl.ended)return;const t=simT-runStart;
   if(t>=recT){recSamples.push([Math.round(pl.x*10)/10,Math.round(pl.z*10)/10,Math.round(pl.h*100)/100]);recT+=0.25;}
   if(ghost){const S=ghost.rec.s,f=t/0.25,i=Math.min(S.length-2,Math.floor(f)),k=Math.min(1,f-i);if(i<0)return;const a=S[i],b=S[i+1]||a;
@@ -156,7 +156,7 @@ document.getElementById('sumMenu').onclick=()=>{document.getElementById('sum').s
 let started=false,paused=true,simT=0;
 const menu=document.getElementById('menu');
 // ---- modalità di gioco a riquadri (il select nascosto resta la fonte del valore) ----
-function syncModes(){const v=document.getElementById('selMode').value;document.querySelectorAll('#modeGrid .mode').forEach(b=>b.classList.toggle('sel',b.dataset.m===v));}
+function syncModes(){const v=document.getElementById('selMode').value;{const vl=document.getElementById('vehList');if(vl){let n=document.getElementById('vehMissNote');if(!n){n=document.createElement('p');n.id='vehMissNote';n.className='note';vl.parentNode.insertBefore(n,vl);}const m=v==='taxi'||v==='deliv';vl.style.display=m?'none':'';n.style.display=m?'':'none';n.textContent=v==='taxi'?'Col turno di taxi si parte sul taxi (Canyon \'75).':'Con le consegne si parte sul furgone delle consegne (LCT 3000 \'07).';}}document.querySelectorAll('#modeGrid .mode').forEach(b=>b.classList.toggle('sel',b.dataset.m===v));}
 document.querySelectorAll('#modeGrid .mode').forEach(b=>b.onclick=()=>{const sm=document.getElementById('selMode');sm.value=b.dataset.m;if(sm.onchange)sm.onchange();savePrefs&&savePrefs();syncModes();});
 setTimeout(syncModes,0);
 // ---- menu a schede ----
@@ -229,7 +229,7 @@ document.getElementById('ctrlClose').onclick=()=>{ctrlWait=null;document.getElem
 document.getElementById('ctrlReset').onclick=()=>{CTRL=JSON.parse(JSON.stringify(CTRL_DEF));Object.keys(KEYMAP).forEach(k=>delete KEYMAP[k]);Object.assign(KEYMAP,CTRL.keys);CTRL.keys=KEYMAP;saveCtrl();ctrlUI();};
 [['cfgRap','rap'],['cfgPrec','prec'],['cfgRit','rit'],['cfgJdz','jdz',0.08],['cfgJgain','jgain',1]].forEach(([id,k,d])=>{const el=document.getElementById(id);el.value=CFG[k]??d;el.oninput=()=>{CFG[k]=+el.value;savePrefs();};});
 if(PREF.mode)selMode.value=PREF.mode;if(PREF.dest&&[...selDest.options].some(o=>o.value===PREF.dest))selDest.value=PREF.dest;if(PREF.time)selTime.value=PREF.time;if(PREF.wx)selWx.value=PREF.wx;selMode.onchange&&selMode.onchange();
-document.getElementById('seedLbl').textContent=SEED;{if(NW){const ss=document.getElementById('selStart');ss.innerHTML='';NW.cities.filter(c=>!c.v).forEach(c=>{const o=document.createElement('option');o.textContent=c.n;ss.appendChild(o);});}document.getElementById('seedRow').style.display=WORLD_NW?'none':'';
+document.getElementById('seedLbl').textContent=SEED;{if(NW){const ss=document.getElementById('selStart');ss.innerHTML='';NW.cities.filter(c=>!c.v).forEach(c=>{const o=document.createElement('option');o.textContent=c.n;ss.appendChild(o);});(NW.J.alp||[]).forEach(a=>{const o=document.createElement('option');o.textContent=a[2];ss.appendChild(o);});}document.getElementById('seedRow').style.display=WORLD_NW?'none':'';
 if(WORLD_NW){document.getElementById('lblStart').style.display='';const ss=document.getElementById('selStart');try{const v=localStorage.getItem('sim_start');if(v)ss.value=v;}catch(e){}ss.onchange=()=>{try{localStorage.setItem('sim_start',ss.value);}catch(e){}fillVia();};
     const sv=document.getElementById('selVia'),vr=document.getElementById('viaRes');sv.value='';
     const norm=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/['’.]/g,' ').replace(/\s+/g,' ').trim();
@@ -248,9 +248,13 @@ if(WORLD_NW){document.getElementById('lblStart').style.display='';const ss=docum
 function goWorld(n){try{localStorage.setItem('sim_seed',n);}catch(e){}location.hash='#w'+n;location.reload();}
 document.getElementById('newWorld').onclick=()=>goWorld(1+Math.floor(_rnd()*99999));
 document.getElementById('loadWorld').onclick=()=>{const n=parseInt(document.getElementById('seedIn').value,10);if(n>0)goWorld(n);};
+// mezzi delle missioni: il taxi per il tassista, il furgone LCT per le consegne; non si scelgono dal garage
+const MISSION={prev:null};
 function startRun(){if(window.SIGLA)SIGLA.stop();endBtn.style.display='block';document.getElementById('sideBtns').style.display='flex';document.getElementById('pauseBtn').style.display='block';document.getElementById('carBtn').style.display='block';document.getElementById('radioBtn').style.display='block';{const nb=document.getElementById('navMuteBtn');nb.style.display='block';nb.textContent=CFG.navMute?'🔇 Voce':'🔊 Voce';};savePrefs();document.getElementById('pauseOv').style.display='none';
   MODE=document.getElementById('selMode').value;TIME=document.getElementById('selTime').value;WX=document.getElementById('selWx').value;
   document.getElementById('jobBtn').style.display=MODE==='career'?'block':'none';CAR.on=false;JOB.drop(true);if(POL.c)POL.end(false);POL.trail=[];EVT.list.forEach(e=>EVT.remove(e));EVT.list=[];if(MODE==='career'){CAR.load();CAR.on=true;if(!CAR.s.own[selKey])selKey='utilitaria';}
+  if(PHYS[selKey]&&PHYS[selKey].mission)selKey=(PREF&&PREF.veh&&PHYS[PREF.veh]&&!PHYS[PREF.veh].mission)?PREF.veh:'utilitaria';
+  if(MODE==='deliv'){MISSION.prev=selKey;selKey='zil';}else if(MODE==='taxi'){MISSION.prev=selKey;selKey='taxi';CAR.load();CAR.on=true;}else MISSION.prev=null;
   peds.forEach(p=>{if(p.down){p.down=false;p.m.rotation.z=0;}});
   if(opp){scene.remove(opp.mesh);cars.splice(cars.indexOf(opp),1);opp=null;}
   HOME.reset();RADIO.pause(false);resetPlayer();if(NWT){const cn=document.getElementById('selStart').value;NWT.spawn(cn,document.getElementById('selVia').value);}lastNight=null;if(TIME==='cycle')CLOCK=+(CFG.cycStart??7);applyEnv();applyView();started=true;paused=false;menu.style.display='none';AC&&AC.resume();
@@ -272,6 +276,7 @@ function startDrive(){runStart=simT;if(MA.reset)MA.reset();if(!RESUME.now)CINE.s
     say(MODE==='race'?'Gara verso '+document.getElementById('selDest').selectedOptions[0].textContent+'. Pronti...':'Percorso calcolato verso '+document.getElementById('selDest').selectedOptions[0].textContent);}}
   if(MODE==='race'&&route){opp=makeOpponent();raceT=-3.5;}else raceT=0;
   if(MODE==='deliv'||MODE==='ring')chStart();
+  if(MODE==='taxi'){JOB.accept({k:'taxi',t:'Turno di taxi',pay:null,need:'taxi'});}
   if(MODE==='career')setTimeout(()=>say('Carriera: hai '+CAR.fmt(CAR.s.money)+'. Premi K, o il tasto Lavori, per vedere le offerte.'),1500);
   startGhost();if(ghost)setTimeout(()=>{pl.navMsg='Auto fantasma: il tuo record';pl.navMsgT=3;},2500);
 }
@@ -313,6 +318,8 @@ const LOCINFO={
   'San Rocco Terme':['Località termale','≈ 23.000 abitanti · 1,3 km','Terme, alberghi e viali eleganti tra le colline. Bar, pasticcerie e qualche negozio di souvenir.'],
   'Ferrandina':['Città industriale','≈ 65.000 abitanti · 2,2 km','Capannoni, fabbriche e magazzini attorno a un centro operaio. Officine, carrozzerie, discount e tanto traffico di camion.'],
   'Collebruna':['Città di collina','≈ 45.000 abitanti · 1,8 km','Città di collina con un bel centro storico, la cattedrale e quartieri residenziali verdi.'],
+  'Pradalto':['Borgo di montagna','poche baite · 1235 m','Un pugno di baite di legno sotto la neve, la fontana in piazzetta e le cataste di legna. Si scende a valle per una strada stretta con sei tornanti.'],
+  'Vallombra':['Borgo di montagna','poche baite · 1207 m','Borgo innevato in fondo a una lunga strada di tornanti nel bosco. Silenzio, vento e vista sulle valli.'],
   'Casa di Guido':['Casa di Guido','Garage con tutte le auto','Si parte dal garage di casa con l\'auto scelta. Fermandoti accanto a un\'altra auto del garage puoi cambiarla.']};
 function locSlug(n){return n.normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');}
 function locCards(){const ss=document.getElementById('selStart'),box=document.getElementById('locList'),inf=document.getElementById('locInfo');if(!ss||!box)return;box.innerHTML='';

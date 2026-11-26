@@ -66,7 +66,7 @@ function switchCar(k){if(!PHYS[k]||k===selKey)return;if(!CAR.owns(k)){pl.navMsg=
   resetPlayer();Object.assign(pl,S);pl.camInit=true;camera.position.copy(cam);
   if(pl.sel==='D')pl.gear=Math.min(pl.P.gears.length,Math.max(1,pl.gear||1));pl.rpm=pl.P.idle;applyView();
   pl.navMsg='Ora guidi: '+PHYS[k].label;pl.navMsgT=3;try{savePrefs();}catch(e){}}
-function cycleCar(d){if(!started||pl.flip)return;const K=Object.keys(PHYS).filter(k=>CAR.owns(k)||k===selKey);if(K.length<2)return;const i=K.indexOf(selKey);switchCar(K[(i+d+K.length)%K.length]);}
+function cycleCar(d){if(!started||pl.flip)return;const K=Object.keys(PHYS).filter(k=>!PHYS[k].mission&&CAR.owns(k)||k===selKey);if(K.length<2)return;const i=K.indexOf(selKey);switchCar(K[(i+d+K.length)%K.length]);}
 const G=9.81;
 function startFlip(dir,strong){if(pl.flip)return;setTimeout(()=>crashSound(8,'side',dir),300);pl.flip={phi:pl.susp.r+pl.slopeR,w:dir*(strong?3.2:2.2),dir,target:dir*(strong?Math.PI:Math.PI/2),done:false,t:0};pl.flips=(pl.flips||0)+1;crashSound(10);
   pl.infrMsg='Ribaltamento!';pl.infrT=4;}
@@ -368,6 +368,12 @@ function impact(vn,cx,cz,nx,nz){
   const depth=Math.min(0.16,0.018*vn);
   deformMesh(pl.mesh.userData.body,lx,0.55,lz,nlx,nlz,depth);
   if(pl.ck.hood&&zone==='front')deformMesh(pl.ck.hood,lx,0.55,lz,nlx,nlz,depth);
+  // vernice segnata (più opaca e graffiata) e, negli urti forti davanti, parabrezza incrinato visto dall'abitacolo
+  {const pm=ud0=>ud0&&ud0.paint;const P=pm(pl.mesh.userData);if(P){P.roughness=Math.min(0.75,(P.roughness||0.3)+sev*0.18);if('clearcoat' in P)P.clearcoat=Math.max(0,P.clearcoat-sev*0.6);P.color.multiplyScalar(1-sev*0.06);}}
+  if(zone==='front'&&D.front>0.3&&pl.ck&&pl.ck.eye&&!pl.ck.crack){const cv=document.createElement('canvas');cv.width=cv.height=512;const g=cv.getContext('2d');g.strokeStyle='rgba(235,240,245,.75)';g.lineWidth=1.4;
+    const cx=180+Math.random()*150,cy=200+Math.random()*120;for(let k=0;k<16;k++){let x=cx,y=cy,a=k/16*6.28+Math.random()*0.3;g.beginPath();g.moveTo(x,y);for(let q=0;q<9;q++){a+=(Math.random()-0.5)*0.6;const l=12+Math.random()*30;x+=Math.cos(a)*l;y+=Math.sin(a)*l;g.lineTo(x,y);}g.stroke();}
+    for(let r=14;r<70;r+=18){g.beginPath();for(let k=0;k<=20;k++){const a=k/20*6.28,rr=r*(0.8+Math.random()*0.4);g.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}g.stroke();}
+    const tx=new THREE.CanvasTexture(cv),m=new THREE.Mesh(new THREE.PlaneGeometry(1.1,0.6),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false}));const E=pl.ck.eye;m.position.set(E.x+0.75,E.y-0.02,E.z*0.3);m.rotation.y=-Math.PI/2;m.rotateX(-0.5);pl.ck.g.add(m);pl.ck.crack=m;}
   // fari/fanali rotti
   const ud=pl.mesh.userData;
   if(D.front>0.3)ud.heads.forEach(h=>{if(Math.sign(h.position.z)===Math.sign(lz)||D.front>0.6)h.visible=false;});

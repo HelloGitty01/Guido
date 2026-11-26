@@ -147,6 +147,14 @@ function setHorn(on){if(on&&!horn)hornPush();if(!AC)return;const t=AC.currentTim
     const os=(HORNF[selKey]||[420,520]).map((f,k)=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=k?4:-3;o.connect(mix);o.start();return o;});horn={os,g};}
   else if(!on&&horn){const h=horn;horn=null;h.g.gain.cancelScheduledValues(t);h.g.gain.setTargetAtTime(0,t,0.025);setTimeout(()=>h.os.forEach(o=>{try{o.stop();}catch(e){}}),200);}}
 
+// ================= SIRENE dei mezzi di soccorso nel traffico (ambulanza, polizia, pompieri): bitonali, si sentono da lontano =================
+const SIREN={L:[],add(c){if(!AC)return;try{const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain(),pn=AC.createStereoPanner?AC.createStereoPanner():null;o.type=c.em.kind==='fire'?'sawtooth':'triangle';f.type='lowpass';f.frequency.value=2200;g.gain.value=0;
+    o.connect(f).connect(g);if(pn){g.connect(pn).connect(ACOUT());}else g.connect(ACOUT());o.start();this.L.push({c,o,g,f,pn});}catch(e){}},
+  rem(c){const i=this.L.findIndex(q=>q.c===c);if(i<0)return;const q=this.L[i];try{q.o.stop();}catch(e){}this.L.splice(i,1);},
+  tick(){if(!AC||!this.L.length)return;const t=AC.currentTime,fx=Math.cos(pl.h),fz=-Math.sin(pl.h);for(const q of this.L){const c=q.c,p=c.mesh.position,dx=p.x-pl.x,dz=p.z-pl.z,d=Math.hypot(dx,dz);
+    const pat={cop:[650,870,0.33],amb:[590,790,0.5],fire:[440,590,0.62]}[c.em.kind]||[600,800,0.5],hi=((simT/pat[2])|0)%2;q.o.frequency.setTargetAtTime(hi?pat[1]:pat[0],t,0.01);
+    const v=(paused||pl.ended?0:1)*Math.min(0.09,6/(d+30))*(view==='cockpit'?0.6:1);q.g.gain.setTargetAtTime(v,t,0.1);q.f.frequency.setTargetAtTime(d>200?900:2200,t,0.3);if(q.pn){const side=(dx*fz-dz*fx)/(d||1);q.pn.pan.setTargetAtTime(Math.max(-1,Math.min(1,-side)),t,0.1);}}}};
+window.SIREN=SIREN;
 // ================= SUONI D'AMBIENTE =================
 // città (brusio, clacson, motorini, sirene lontane), zone industriali (rombo, colpi metallici, sfiati, cicalini di retromarcia),
 // campagna e montagna (uccelli di giorno, cicale col sole d'estate, grilli la notte), vento in quota, onde al mare e risacca al lago.
@@ -187,7 +195,7 @@ const AMB={on:false,t:0,g:null,
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+1);g.gain.linearRampToValueAtTime(0,t+3.2);o.connect(f).connect(g).connect(this.g);o.start(t);o.stop(t+3.3);},
   dog(v){const t=AC.currentTime,n=1+(Math.random()*3|0);for(let i=0;i<n;i++){const t0=t+i*(0.35+Math.random()*0.2),o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(420,t0);o.frequency.exponentialRampToValueAtTime(260,t0+0.14);f.type='bandpass';f.frequency.value=800;f.Q.value=1.5;
     g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+0.01);g.gain.exponentialRampToValueAtTime(0.0003,t0+0.18);o.connect(f).connect(g).connect(this.g);o.start(t0);o.stop(t0+0.2);}},
-  tick(dt){if(!AC||!started||!NW)return;const on=CFG.amb!==false&&!paused&&!pl.ended&&AC.state==='running';if(!this.g){if(!on)return;this.init();}
+  tick(dt){SIREN.tick();if(!AC||!started||!NW)return;const on=CFG.amb!==false&&!paused&&!pl.ended&&AC.state==='running';if(!this.g){if(!on)return;this.init();}
     const t=AC.currentTime;this.g.gain.setTargetAtTime(on?(view==='cockpit'?0.55:1)*Math.max(0.25,1-Math.abs(pl.vx)/38):0,t,0.4);if(!on)return;
     const day=Math.max(0,Math.min(1,DAYLV)),act=0.35+0.65*day,L=this.lv;   // di notte tutto più quieto
     this.t-=dt;if(this.t<=0){this.t=0.5;const x=pl.x,z=pl.z,C=NW.cityAt(x,z),ind=NWT&&NWT.indAt&&NWT.indAt(x,z),city=!!C&&!ind,h=pl.terrH||0,rain=WX==='rain';

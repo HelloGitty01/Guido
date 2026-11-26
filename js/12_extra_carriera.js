@@ -181,7 +181,7 @@ const CAR={on:false,s:null,saveT:0,toastT:0,
   def(){return{money:3000,own:{utilitaria:1},earned:0,spent:0,jobs:0,fines:0,best:{}};},
   load(){try{this.s=Object.assign(this.def(),JSON.parse(localStorage.getItem('sim_career')||'null')||{});}catch(e){this.s=this.def();}},
   save(){try{localStorage.setItem('sim_career',JSON.stringify(this.s));}catch(e){}},
-  owns(k){return !this.on||!!this.s.own[k];},
+  owns(k){return !this.on||!!this.s.own[k]||!!(PHYS[k]&&PHYS[k].mission);},
   fmt(v){return Math.round(v).toLocaleString('it-IT')+' €';},
   add(v,why){if(!this.on||!v)return;this.s.money+=v;if(v>0)this.s.earned+=v;else this.s.spent-=v;this.save();
     const e=document.getElementById('cashTag');if(e){e.textContent=(v>0?'+':'−')+this.fmt(Math.abs(v))+(why?' · '+why:'');e.className=v>0?'pos':'neg';e.style.display='block';clearTimeout(this.toastT);this.toastT=setTimeout(()=>e.style.display='none',3200);}},
@@ -212,7 +212,7 @@ const JOB={cur:null,offers:[],pax:null,
   open(){if(!CAR.on){pl.navMsg='I lavori ci sono in modalità Carriera (menu)';pl.navMsgT=3;return;}if(pl.ended)return;const ov=document.getElementById('jobOv');if(!this.offers.length||!this.cur)this.make();
     let h=`<h2>Lavori disponibili</h2><p class="note">Saldo: <b>${CAR.fmt(CAR.s.money)}</b> · lavori fatti: ${CAR.s.jobs}</p>`;
     if(this.cur)h+=`<p>In corso: <b>${this.cur.t}</b> <button class="sm" id="jobDrop">Abbandona</button></p>`;
-    this.offers.forEach((o,i)=>{const lock=o.need&&selKey!==o.need,own=!o.need||CAR.s.own[o.need];h+=`<div class="job"><b>${o.t}</b><span>${o.k==='taxi'?'tariffa a km + mance per la guida dolce':(o.k==='crono'?'premio fino a '+CAR.fmt(o.pay*2):'paga '+CAR.fmt(o.pay))+(o.from?' · ritiro a '+o.from.p.n+', consegna a '+o.to.p.n:'')}</span>`+
+    this.offers.forEach((o,i)=>{const lock=false,own=true;h+=`<div class="job"><b>${o.t}</b><span>${o.k==='taxi'?'tariffa a km + mance per la guida dolce':(o.k==='crono'?'premio fino a '+CAR.fmt(o.pay*2):'paga '+CAR.fmt(o.pay))+(o.from?' · ritiro a '+o.from.p.n+', consegna a '+o.to.p.n:'')}</span>`+
       (lock?`<i>${own?'Serve '+PHYS[o.need].label+': prendilo dal garage':'Serve '+PHYS[o.need].label+' ('+CAR.fmt(CAR.price(o.need))+' nel garage di casa)'}</i>`:`<button class="sm" data-j="${i}">Accetta</button>`)+'</div>';});
     h+=`<button class="sm" id="jobNew">Altre offerte</button> <button id="jobClose">Chiudi</button>`;
     ov.firstElementChild.innerHTML=h;ov.style.display='flex';paused=true;
@@ -221,17 +221,17 @@ const JOB={cur:null,offers:[],pax:null,
     document.getElementById('jobNew').onclick=()=>{this.make();this.open();};document.getElementById('jobClose').onclick=()=>this.close();},
   close(){document.getElementById('jobOv').style.display='none';paused=false;},
   go(x,z,id){if(id!=null){const r=NWT.buildRoute('nwp_'+id);if(r){route=r;r.started=true;}}else route=null;destMark.position.set(x,TH(x,z)+30,z);destMark.visible=true;},
-  accept(o){this.drop(true);const J=Object.assign({},o,{st:0,t0:simT,hits:pl.hits,harsh:0});this.cur=J;
+  accept(o){this.drop(true);const J=Object.assign({},o,{st:0,t0:simT,hits:pl.hits,harsh:0});this.cur=J;if(o.need&&selKey!==o.need&&started&&MODE!=='taxi'){J.prevKey=selKey;try{switchCar(o.need);}catch(e){}if(pl.navMsg!=null){pl.navMsg='Per questo lavoro guidi: '+PHYS[o.need].label;pl.navMsgT=3;}}
     J.short=()=>J.k==='taxi'?(this.pax?'🚕 a '+this.pax.to.p.n:'🚕 cerca clienti'):J.k==='crono'?(J.st===2?'⏱ '+fmtT(simT-J.tc):'⏱ vai alla partenza'):(J.st===0?'📦 ritiro a '+J.from.p.n:'📦 a '+J.to.p.n);
     if(J.k==='cons'||J.k==='merci'){this.go(J.from.p.x,J.from.p.z,J.from.i);say((J.k==='merci'?'Carico da ritirare a ':'Ritira il pacco a ')+J.from.p.n);}
     if(J.k==='taxi'){say('Turno di taxi iniziato: cerca chi fa segno sul marciapiede in città');destMark.visible=false;route=null;}
     if(J.k==='crono'){const R=J.R,i=J.rev?R.N-1:0;J.sx=R.X[i];J.sz=R.Z[i];J.cp=[];const n=Math.max(3,Math.floor(R.cum[R.N-1]/500));for(let q=1;q<=n;q++){const s=R.cum[R.N-1]*q/n,s2=J.rev?R.cum[R.N-1]-s:s;let k=0;while(k<R.N-2&&R.cum[k+1]<s2)k++;J.cp.push([R.X[k],R.Z[k]]);}
       this.go(J.sx,J.sz,null);say('Vai alla partenza della cronoscalata (il segnale sulla mappa), poi fermati per il via');}},
-  drop(silent){if(this.pax){this.paxRemove();}if(this.cur&&!silent){pl.navMsg='Lavoro abbandonato';pl.navMsgT=2.5;}this.cur=null;route=null;destMark.visible=false;},
+  drop(silent){if(this.pax){this.paxRemove();}if(this.cur&&!silent){pl.navMsg='Lavoro abbandonato';pl.navMsgT=2.5;}if(this.cur&&this.cur.prevKey&&started){const k=this.cur.prevKey;this.cur.prevKey=null;try{switchCar(k);}catch(e){}}this.cur=null;route=null;destMark.visible=false;},
   pay(base){const J=this.cur,hits=pl.hits-J.hits,D=pl.dmg||{},dm=(D.front||0)+(D.rear||0)+(D.left||0)+(D.right||0);let p=base*Math.max(0.3,1-hits*0.08-dm*0.6);return Math.round(p);},
   arrive(){const J=this.cur;if(!J||!CAR.on)return false;
     if(J.k==='cons'||J.k==='merci'){if(J.st===0){J.st=1;J.hits=pl.hits;ding(1);this.go(J.to.p.x,J.to.p.z,J.to.i);say((J.k==='merci'?'Caricato! Ora vai a ':'Pacco ritirato. Consegna a ')+J.to.p.n);return true;}
-      const p=this.pay(J.pay);CAR.add(p,J.k==='merci'?'Merce consegnata':'Consegna');CAR.s.jobs++;CAR.save();ding(2);DJ.say('lavoro',true);this.cur=null;this.offers=[];route=null;destMark.visible=false;say('Lavoro completato: '+CAR.fmt(p));return true;}
+      const p=this.pay(J.pay);CAR.add(p,J.k==='merci'?'Merce consegnata':'Consegna');CAR.s.jobs++;CAR.save();ding(2);DJ.say('lavoro',true);if(this.cur&&this.cur.prevKey){const k=this.cur.prevKey;setTimeout(()=>{try{switchCar(k);}catch(e){}},2500);}this.cur=null;this.offers=[];route=null;destMark.visible=false;say('Lavoro completato: '+CAR.fmt(p));return true;}
     if(J.k==='taxi'&&this.pax&&this.pax.on){this.paxDrop();return true;}
     return false;},
   // ---- taxi ----
@@ -247,7 +247,7 @@ const JOB={cur:null,offers:[],pax:null,
     const g=X.g;g.position.set(pl.x+Math.sin(pl.h)*2.2,TH(pl.x,pl.z),pl.z+Math.cos(pl.h)*2.2);g.visible=true;scene.add(g);setTimeout(()=>scene.remove(g),9000);this.pax=null;route=null;destMark.visible=false;J.next=simT+4;},
   tick(dt){const J=this.cur;if(!J||!CAR.on||!started||pl.ended)return;
     if(J.need&&selKey!==J.need){pl.navMsg='Questo lavoro si fa con '+PHYS[J.need].label;pl.navMsgT=1;}
-    if(J.k==='taxi'&&selKey==='taxi'){const X=this.pax;
+    if(J.k==='taxi'&&selKey==='taxi'){const X=this.pax;{const tb=pl.mesh.userData.taxiB;if(tb)tb.emissiveIntensity=X&&X.on?0:1.8;}
       if(!X){if(simT>(J.next||0))this.paxSpawn();return;}
       if(!X.on){X.wait+=dt;if(X.P)PPL.wave(X.P,simT);const d=Math.hypot(pl.x-X.x,pl.z-X.z);
         if(d<9&&Math.abs(pl.vx)<0.6){X.on=true;X.hits=pl.hits;J.harsh=0;X.dist=Math.hypot(X.to.p.x-X.x,X.to.p.z-X.z)*1.25;scene.remove(X.g);ding(1);this.go(X.to.p.x,X.to.p.z,X.to.i);say('Buongiorno! Mi porti a '+X.to.p.n+', per favore.');}
@@ -299,7 +299,7 @@ function fmtT(x){return Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2
 // ================= PATTUGLIA: più punti persi, più è probabile che arrivi =================
 const POL={c:null,trail:[],tT:0,
   onInfr(kind){const mode=CFG.pol||'tutto';if(!NW||this.c||this.sc||!started||mode==='multe'||mode==='no')return;const lic=pl.lic??20,p=(kind==='pedone'?0.9:Math.min(0.9,0.22+(20-lic)*0.035))*(mode==='rara'?0.3:1);if(Math.random()<p)setTimeout(()=>this.spawn(kind),2500);},
-  spawn(kind){if(this.c||pl.ended||!started)return;const m=makeCar('berlina',0xf4f4f2,true,false);const bar=new THREE.Group();const T=TYPES.berlina;
+  spawn(kind){if(this.c||pl.ended||!started)return;const m=makeCar('cop',0xf4f4f2,true,false);const bar=new THREE.Group();const T=TYPES.cop;
     const bM=new THREE.MeshBasicMaterial({color:0x1a4dff}),rM=new THREE.MeshBasicMaterial({color:0x0a1030});const l1=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.5),bM),l2=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.5),rM);l1.position.z=-0.3;l2.position.z=0.3;bar.add(l1,l2);bar.position.set(-0.2,(T.roofY||T.H)+0.06,0);m.add(bar);
     {const s=new THREE.Mesh(new THREE.BoxGeometry(T.L*0.62,0.12,T.W+0.01),new THREE.MeshStandardMaterial({color:0x1f3f9a}));s.position.set(0,0.62,0);m.add(s);}
     scene.add(m);const tr=this.trail;let i=Math.max(0,tr.length-1);let back=0;while(i>0&&back<230){back+=Math.hypot(tr[i][0]-tr[i-1][0],tr[i][1]-tr[i-1][1]);i--;}
@@ -322,7 +322,7 @@ const POL={c:null,trail:[],tT:0,
     if(dPl>380||(c.age>100&&dPl>150)){c.lost+=dt;if(c.lost>7)this.end(false);}else c.lost=0;},
   // fermo: vista da fuori, l'agente scende, viene al finestrino, consegna il verbale, risale e la pattuglia riparte
   stop(){const c=this.c;if(!c||this.sc)return;if(this.siren)this.siren.stop();this.siren=null;
-    const T=TYPES[selKey]||TYPES.berlina,V=new THREE.Vector3(),win=pl.mesh.localToWorld(V.set(0.15,0,-(T.W/2+0.75))).clone(),door=c.m.localToWorld(new THREE.Vector3(0.35,0,-(TYPES.berlina.W/2+0.6))).clone();
+    const T=TYPES[selKey]||TYPES.volvo,V=new THREE.Vector3(),win=pl.mesh.localToWorld(V.set(0.15,0,-(T.W/2+0.75))).clone(),door=c.m.localToWorld(new THREE.Vector3(0.35,0,-(TYPES.berlina.W/2+0.6))).clone();
     const o=makePed();if(o.userData.hi){o.userData.hi.visible=true;o.userData.lo.visible=false;}o.traverse(q=>{if(q.isMesh&&q.material&&q.material.color){q.material=q.material.clone();q.material.color.lerp(new THREE.Color(0x1d2a4a),0.65);}});
     o.position.set(door.x,TH(door.x,door.z),door.z);scene.add(o);
     this.sc={t:0,ph:'out',o,win,door,view,cam:pl.mesh.localToWorld(new THREE.Vector3(4.2,1.8,-5.2)).clone()};document.body.classList.add('cine');if(view==='cockpit'){view='chase';applyView();}
@@ -362,9 +362,9 @@ const EVT={t:40,list:[],acc:null,
     const e={k:'mercato',x:R.X[a],z:R.Z[a],t0:simT,objs,dyn:NWT.addDyn(segs)};this.list.push(e);const c=NW.cityAt(R.X[a],R.Z[a]);
     DJ.say('',true,'Oggi c\'è il mercato in '+(R.n||'centro')+(c?' a '+c.n:'')+': strada chiusa, prendete un\'altra via.');if(!(window.RADIO_LBL||'').includes('Radio Guido')){pl.navMsg='🧺 Mercato in '+(R.n||'centro')+(c?' a '+c.n:'')+': strada chiusa';pl.navMsgT=4;}return true;},
   accident(){const S=this.findSeg((R,x,z)=>R.c<=5&&!NW.cityAt(x,z),500,1400);if(!S)return false;const R=S.R,i=S.i,x=R.X[i],z=R.Z[i],y=NW.H(x,z),ry=Math.atan2(-(R.Z[i+1]-R.Z[i]),R.X[i+1]-R.X[i]),nx=Math.sin(ry),nz=Math.cos(ry),fx=Math.cos(ry),fz=-Math.sin(ry);
-    const objs=[],side=R.o?1:(Math.random()<0.5?1:-1),lo=side*R.w*0.25;const K=['berlina','sw','suv','utilitaria'],C=[0x8a1f1f,0x1c2a44,0xbfc3c7,0x3e4a3b];
+    const objs=[],side=R.o?1:(Math.random()<0.5?1:-1),lo=side*R.w*0.25;const K=['volvo','wagoneer','miner','utilitaria'],C=[0x8a1f1f,0x1c2a44,0xbfc3c7,0x3e4a3b];
     for(let q=0;q<2;q++){const m=makeCar(K[(Math.random()*4)|0],C[(Math.random()*4)|0],true,false);const px=x+fx*(q*4.2)+nx*(lo+(q?0.6:-0.4)),pz=z+fz*(q*4.2)+nz*(lo+(q?0.6:-0.4));m.position.set(px,NW.H(px,pz),pz);m.rotation.y=ry+(q?0.55:-0.35);scene.add(m);objs.push(m);}
-    {const m=makeCar('berlina',0xf4f4f2,true,false);const px=x-fx*14+nx*lo,pz=z-fz*14+nz*lo;m.position.set(px,NW.H(px,pz),pz);m.rotation.y=ry;scene.add(m);objs.push(m);const T=TYPES.berlina;const l=this.box(0.22,0.1,1,0x1a4dff,0,0,0,0,0x1a4dff);l.position.set(-0.2,(T.roofY||T.H)+0.06,0);l.rotation.y=0;m.add(l);objs.push(l);}
+    {const m=makeCar('cop',0xf4f4f2,true,false);const px=x-fx*14+nx*lo,pz=z-fz*14+nz*lo;m.position.set(px,NW.H(px,pz),pz);m.rotation.y=ry;scene.add(m);objs.push(m);const T=TYPES.cop;const l=this.box(0.22,0.1,1,0x1a4dff,0,0,0,0,0x1a4dff);l.position.set(-0.2,(T.roofY||T.H)+0.06,0);l.rotation.y=0;m.add(l);objs.push(l);}
     for(let q=0;q<7;q++){const px=x-fx*(26-q*4)+nx*(lo-side*(1.2+q*0.28)),pz=z-fz*(26-q*4)+nz*(lo-side*(1.2+q*0.28));const c=new THREE.Mesh(new THREE.ConeGeometry(0.18,0.55,10),new THREE.MeshStandardMaterial({color:0xff5a00,emissive:0x331000}));c.position.set(px,NW.H(px,pz)+0.28,pz);scene.add(c);objs.push(c);}
     const segs=[];{const a0=-30,a1=8,o0=lo-side*R.w*0.25,o1=lo+side*R.w*0.25;[[a0,o0,a1,o0],[a0,o1,a1,o1],[a0,o0,a0,o1],[a1,o0,a1,o1]].forEach(([s0,q0,s1,q1])=>segs.push([x+fx*s0+nx*q0,z+fz*s0+nz*q0,x+fx*s1+nx*q1,z+fz*s1+nz*q1]));}
     const e={k:'incidente',x,z,t0:simT,objs,dyn:NWT.addDyn(segs)};this.list.push(e);this.acc=e;

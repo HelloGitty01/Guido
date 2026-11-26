@@ -62,14 +62,14 @@ function lanePos(ln,s,off){const q=ln.at(s);return{x:q.x-q.dz*off,z:q.z+q.dx*off
 const parked=[];
 lanes.forEach(ln=>{if(ln.ring)return;for(let s=-L+10;s<L-10;s+=6.5+Math.random()*10){
   if(RL.some(q=>Math.abs(s-q*(ln.axis==='X'?ln.d.x:ln.d.z))<16)) continue; if(Math.random()<0.45) continue;
-  const k=Math.random()<0.1?'furgone':randType();const T=TYPES[k];const c=makeCar(k,randColor(),false);const p=ln.pos(s,PARK_OFF);
+  const k=Math.random()<0.1?'daily':randType();const T=TYPES[k];const c=makeCar(k,randColor(),false);const p=ln.pos(s,PARK_OFF);
   c.position.set(p.x,0,p.z);c.rotation.y=ln.heading;scene.add(c);parked.push(c);
   const hx=Math.abs(ln.d.x)*T.L/2+Math.abs(ln.d.z)*T.W/2,hz=Math.abs(ln.d.z)*T.L/2+Math.abs(ln.d.x)*T.W/2;
   obstaclesBox.push({x0:p.x-hx,x1:p.x+hx,z0:p.z-hz,z1:p.z+hz,car:true});s+=T.L;}});
 const cars=[];
 function spawn(ln,s,forceK){const k=forceK||randTrafType(),T=TYPES[k],mesh=makeCar(k,randColor());scene.add(mesh);
-  const v0=12+Math.random()*2.2-(k==='furgone'?1.5:0);
-  const c={ln,s,v:v0*0.8,v0,T,mesh,honkCd:0,flashT:0,waitT:0,lo:0,loT:0,horn:{f:(k==='furgone'?260:300)+Math.random()*340,ratio:[1.12,1.19,1.26,1.33,1.5][(Math.random()*5)|0],wave:['square','sawtooth','square','triangle'][(Math.random()*4)|0],cut:900+Math.random()*2600,single:Math.random()<0.25,det:(Math.random()-0.5)*30},a:0,amax:1.2+Math.random()*0.6,b:2.2,Th:1.3+Math.random()*0.5,s0:2.2,hold:0};
+  const v0=12+Math.random()*2.2-(k==='daily'?1.5:0);
+  const c={ln,s,v:v0*0.8,v0,T,mesh,honkCd:0,flashT:0,waitT:0,lo:0,loT:0,horn:{f:(k==='daily'?260:300)+Math.random()*340,ratio:[1.12,1.19,1.26,1.33,1.5][(Math.random()*5)|0],wave:['square','sawtooth','square','triangle'][(Math.random()*4)|0],cut:900+Math.random()*2600,single:Math.random()<0.25,det:(Math.random()-0.5)*30},a:0,amax:1.2+Math.random()*0.6,b:2.2,Th:1.3+Math.random()*0.5,s0:2.2,hold:0};
   ln.cars.push(c);cars.push(c);}
 lanes.forEach(ln=>{if(ln.ring)return;for(let s=-L+5;s<L-20;s+=30+Math.random()*40)spawn(ln,s);});
 // mezzi di soccorso: polizia, ambulanza, vigili del fuoco (in città, sirene accese)
@@ -82,11 +82,11 @@ function emergencyKit(c,kind){const g=c.mesh,T=c.T,top=T.glb?T.roofY:T.truck?3.0
   [-1,1].forEach(sd=>{const st=new THREE.Mesh(new THREE.BoxGeometry(T.L*0.8,0.12,0.01),new THREE.MeshStandardMaterial({color:stripeC,roughness:0.4}));st.position.set(T.glb?(T.truck?-0.4:0):0,T.glb?(T.truck?1.5:T.beltY):T.truck?1.5:T.hb-0.18,sd*(T.W/2+(T.glb?0.01:0.015)));g.add(st);});
   c.em={kind,bM,bM2,ph:Math.random()*6};c.v0=c.v0b=kind==='fire'?14:16;c.amax=2;EMS.push(c);}
 {const pick=(ax,road,dx)=>lanes.find(l=>!l.ring&&l.axis===ax&&l.road===road&&(l.d.x||l.d.z)===dx);
- [['police','berlina',0xf4f4f4,pick('X',0,-1),-150],['police','berlina',0x14203f,pick('Z',RL[0],1),-60],['amb','furgone',0xf7f7f2,pick('Z',0,1),-200],['fire','camion',0xc41616,pick('X',RL[RL.length-1],1),-180]].forEach(([kind,k,col,ln,s0])=>{
+ [['police','cop',0xf4f4f4,pick('X',0,-1),-150],['police','cop',0x14203f,pick('Z',RL[0],1),-60],['amb','amb',0xf7f7f2,pick('Z',0,1),-200],['fire','fire',0xc41616,pick('X',RL[RL.length-1],1),-180]].forEach(([kind,k,col,ln,s0])=>{
    if(!ln)return;const T=TYPES[k],mesh=makeCar(k,col,true,false,{plain:kind==='amb'});scene.add(mesh);
    const c={ln,s:s0,v:8,v0:16,T,mesh,honkCd:0,flashT:0,waitT:0,lo:0,loT:0,horn:{f:380,ratio:1.26,wave:'square',cut:2200,single:false,det:0},a:0,amax:2,b:3,Th:1.1,s0:2.2,hold:0};
    ln.cars.push(c);cars.push(c);emergencyKit(c,kind);});}
-lanes.filter(l=>l.ring).forEach(ln=>{const n=12;for(let i=0;i<n;i++){spawn(ln,i*ln.len/n+Math.random()*30,ln.kind==='slow'&&Math.random()<0.3?'camion':null);const c=ln.cars[ln.cars.length-1];
+lanes.filter(l=>l.ring).forEach(ln=>{const n=12;for(let i=0;i<n;i++){spawn(ln,i*ln.len/n+Math.random()*30,ln.kind==='slow'&&Math.random()<0.3?'zil':null);const c=ln.cars[ln.cars.length-1];
   c.v0=ln.kind==='fast'?29+Math.random()*4:(c.T.truck?21+Math.random()*1.5:c.T===TYPES.furgone?22:24+Math.random()*3);c.v0b=c.v0;c.v=c.v0*0.9;c.amax=1.4;c.b=2.5;c.Th=1.4+Math.random()*0.4;}});
 function aiHonk(c,dur){if(!AC||c.honkCd>0)return;c.honkCd=3+Math.random()*2;
   const p=c.mesh.position,dist=Math.hypot(p.x-pl.x,p.z-pl.z);if(dist>70)return;

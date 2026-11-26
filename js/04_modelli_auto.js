@@ -1,7 +1,7 @@
 // Guido · 04 modelli auto — parte del codice del gioco (i file in js/ condividono lo stesso spazio globale e vengono eseguiti in ordine)
 // ================= MODELLI AUTO =================
 const TYPES={
-  utilitaria:{L:3.7,W:1.66,hb:0.95,H:1.52,gh:[[-1.75,0.95],[-1.6,1.5],[0.15,1.5],[0.75,0.95]]},
+  utilitaria:{fleet:true,L:3.1,W:1.47,hb:0.95,H:1.52,gh:[[-1.75,0.95],[-1.6,1.5],[0.15,1.5],[0.75,0.95]]},
   berlina:{L:4.45,W:1.8,hb:0.9,H:1.45,gh:[[-1.9,0.9],[-1.55,1.43],[0.5,1.43],[1.15,0.9]]},
   sw:{L:4.75,W:1.82,hb:0.92,H:1.5,gh:[[-2.3,0.92],[-2.2,1.48],[0.55,1.48],[1.25,0.92]]},
   suv:{L:4.35,W:1.82,hb:1.05,H:1.65,gh:[[-2.1,1.05],[-1.95,1.63],[0.55,1.63],[1.05,1.05]]},
@@ -10,9 +10,17 @@ const TYPES={
   volvo:{L:4.79,W:1.71,hb:0.92,H:1.43,fleet:true,gh:[[-1.9,0.92],[-1.6,1.42],[0.5,1.42],[1.1,0.92]]},
   wagoneer:{L:4.76,W:1.9,hb:1.05,H:1.8,fleet:true,gh:[[-2.2,1.05],[-2.1,1.75],[0.55,1.75],[1.0,1.05]]},
   hellcat:{L:4.9,W:2.03,hb:0.85,H:1.37,fleet:true,gh:[[-1.7,0.9],[-1.0,1.33],[0.3,1.33],[1.0,0.9]]},
-  zil:{L:8.76,W:2.2,hb:1.3,H:3.09,fleet:true,big:true,camL:12,camH:5.6,gh:[[2.4,1.6],[2.4,2.6],[3.0,2.6],[3.3,1.6]]},
-  daily:{L:5.6,W:2.0,hb:1.15,H:2.4,fleet:true,gh:[[-2.7,1.2],[-2.7,2.3],[1.5,2.3],[2.0,1.2]]},
+  zil:{L:5.86,W:2.2,hb:1.3,H:2.84,fleet:true,van:true,gh:[[-2.7,1.2],[-2.7,2.3],[1.5,2.3],[2.0,1.2]]},
+  daily:{L:6.0,W:2.2,hb:1.15,H:2.85,fleet:true,van:true,gh:[[-2.7,1.2],[-2.7,2.3],[1.5,2.3],[2.0,1.2]]},
   taxi:{L:5.35,W:2.0,hb:0.95,H:1.5,fleet:true,gh:[[-1.9,0.95],[-1.55,1.45],[0.55,1.45],[1.1,0.95]]},
+  // mezzi solo del traffico (modelli di Daniel Zhabotinsky, CC-BY 4.0): misure riprese dai modelli al caricamento
+  illinois:{L:5.2,W:2.0,hb:0.95,H:1.5,fleet:true,gh:[[-1.9,0.95],[-1.55,1.45],[0.55,1.45],[1.1,0.95]]},
+  miner:{L:3.5,W:1.5,hb:0.9,H:1.33,fleet:true,gh:[[-1.4,0.9],[-1.1,1.3],[0.3,1.3],[0.8,0.9]]},
+  shvan:{L:4.9,W:2.0,hb:1.1,H:1.93,fleet:true,gh:[[-2.3,1.1],[-2.2,1.9],[1.0,1.9],[1.6,1.1]]},
+  shvant:{L:5.2,W:2.0,hb:1.1,H:2.1,fleet:true,gh:[[-2.3,1.1],[-2.2,1.9],[1.0,1.9],[1.6,1.1]]},
+  amb:{L:5.0,W:2.0,hb:1.1,H:2.26,fleet:true,gh:[[-2.3,1.1],[-2.2,1.9],[1.0,1.9],[1.6,1.1]]},
+  cop:{L:5.07,W:1.83,hb:0.95,H:1.57,fleet:true,gh:[[-1.9,0.95],[-1.55,1.45],[0.55,1.45],[1.1,0.95]]},
+  fire:{L:5.07,W:1.83,hb:0.95,H:1.5,fleet:true,gh:[[-2.3,0.92],[-2.2,1.48],[0.55,1.48],[1.25,0.92]]},
   bus:{L:11.2,W:2.5,hb:1.1,H:3.05,bus:true,gh:[[-5,1.2],[-5,2.7],[5,2.7],[5.4,1.2]]},
   furgone:{L:5.0,W:2.0,hb:1.05,H:2.25,gh:[[0.95,1.2],[0.95,2.0],[1.42,2.0],[1.91,1.2]],van:true}
 };
@@ -109,9 +117,13 @@ function rbox(w,h,d,r){const b=Math.min(r,d/2-0.001,w/2-0.001,h/2-0.001);const g
 function rrGlass(w,h,r,u0,u1,v0,v1){const g=new THREE.ShapeGeometry(rrect(w,h,r),6),p=g.attributes.position,uv=g.attributes.uv;for(let i=0;i<p.count;i++){const u=(p.getX(i)+w/2)/w,v=(p.getY(i)+h/2)/h;uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}return g;}
 // ================= VEICOLI DA SKETCHFAB =================
 // forma: ogni veicolo diventa un gruppo "piatto": pezzi uniti per materiale, ruote su perni sterzanti, luci separate
-const GLB_CARS={utilitaria:{flip:true,len:3.38},berlina:{},sw:{},suv:{},furgone:{len:4.3,flip:true},camion:{}};
+const GLB_CARS={};   // i vecchi modelli con i marchi veri non si usano più
 // flotta: modelli già in metri e col muso verso +x; dove il modello non ha un volante separato se ne indica la posizione
-const GLB_FLEET={volvo:{},wagoneer:{},hellcat:{steer:[0.3,0.86,-0.38,0.19]},zil:{ws:3.0,rear:1.45},taxi:{steer:[0.42,0.97,-0.4,0.2]},daily:{}};
+// tutti i veicoli sono di Daniel Zhabotinsky (sketchfab.com/DanielZhabotinsky), licenza CC-BY 4.0, ridotti e ricompressi per Guido.
+// src: scena del file; livery: si tiene la livrea del modello (taxi, polizia...); plain: livrea tolta, si vernicia a piacere
+const GLB_FLEET={utilitaria:{src:'lasley'},volvo:{src:'carter'},wagoneer:{src:'fhsw',plain:true},hellcat:{src:'phoenix'},daily:{src:'lct95'},zil:{src:'lct07'},taxi:{src:'canyon',livery:true},
+  illinois:{src:'illinois',livery:true},miner:{src:'miner'},shvan:{src:'shvan'},shvant:{src:'shvant'},amb:{src:'amb',livery:true},cop:{src:'cop',livery:true},fire:{src:'fhsw',livery:true}};
+const CAR_LABEL={utilitaria:"Lasley '67",volvo:"Carter '98",wagoneer:"Fairheaven SW '80",hellcat:"Phoenix 455 '71",daily:"LCT 3000 '95",zil:"LCT 3000 '07",taxi:"Canyon '75 taxi",illinois:"Illinois '90 taxi",miner:"Miner W4 '70",shvan:"Shvan '92",shvant:"Shvan '92 Traveller",amb:'Ambulanza',cop:'Polizia',fire:'Vigili del fuoco'};
 const CARX={};
 function prepCarLevel(sc,k,cfg,flatTo){
   const root=new THREE.Group(),inner=new THREE.Group();inner.add(sc);root.add(inner);
@@ -120,14 +132,19 @@ function prepCarLevel(sc,k,cfg,flatTo){
   const wheels=[];sc.traverse(o=>{if(/wheel/i.test(o.name)&&!/steer/i.test(o.name)){let p=o.parent,inW=false;while(p){if(wheels.includes(p))inW=true;p=p.parent;}if(!inW)wheels.push(o);}});
   const groups=new Map(),out=new THREE.Group(),info={wheels:[],wsX:null,rearX:null,glass:new THREE.Box3(),paintMeshes:[]};
   const role=o=>{const n=o.name,mn=(o.material&&o.material.name)||'';
-    if(/brakelight/i.test(n))return'tail';if(/headlight/i.test(n)&&!/glass/i.test(n))return'head';if(/reverse/i.test(n))return'rev';if(/blinker/i.test(n))return'blink';
-    if(k==='utilitaria'&&mn==='LIGHTS1')return'plights';if(/bodymat/i.test(mn)||(k==='furgone'&&mn==='body')||(k==='utilitaria'&&mn==='Top_chassis1'))return'paint';if(k==='furgone'&&/362/.test(mn))return'decal';if(/transperent|glass/i.test(mn))return'glass';if(/rollcage/i.test(n))return'cage';return'other';};
+    if(cfg.plain&&/lightbar|bullbar/i.test(n))return'skip';if(/lightbar/i.test(n))return'beacon';if(/taxi_beacon/i.test(n))return'taxib';    if(/brakelight/i.test(n))return'tail';if(/headlight/i.test(n)&&!/glass/i.test(n))return'head';if(/reverse/i.test(n))return'rev';if(/blinker/i.test(n))return'blink';
+    if(k==='utilitaria'&&mn==='LIGHTS1')return'plights';if(/bodymat/i.test(mn)||/_body$/i.test(mn)||(k==='furgone'&&mn==='body')||(k==='utilitaria'&&mn==='Top_chassis1'))return'paint';if(k==='furgone'&&/362/.test(mn))return'decal';if(/transperent|glass/i.test(mn))return'glass';if(/rollcage/i.test(n))return'cage';return'other';};
   const add=(key,mat,r,b)=>{if(!groups.has(key))groups.set(key,{mat,r,list:[]});groups.get(key).list.push(b);};
   const wheelOf=o=>{let p=o;while(p){const i=wheels.indexOf(p);if(i>=0)return i;p=p.parent;}return -1;};
   const wParts=wheels.map(()=>[]);
-  sc.traverse(o=>{if(!o.isMesh)return;const r=role(o),b=gBake(o,o.matrixWorld);if(/steering_?wheel/i.test(o.name)){info.steer=gBox([b]);return;}const wi=wheelOf(o);
+  sc.traverse(o=>{if(!o.isMesh)return;const r=role(o),b=gBake(o,o.matrixWorld);if(/steering_?wheel/i.test(o.name)){info.steer=gBox([b]);(info.sw=info.sw||[]).push({mat:o.material,b});return;}const wi=wheelOf(o);
     if(wi>=0){wParts[wi].push({mat:o.material,b});return;}
     if(r==='glass'){const bb=gBox([b]);info.glass.union(bb);if(/windshield/i.test(o.name))info.wsX=bb.max.x;if(/rear_window|glass_rear|sw80_glass_rear/i.test(o.name))info.rearX=bb.min.x;}
+    if(r==='skip')return;
+    if(r==='beacon'){// lampeggianti: metà sinistra e metà destra si alternano
+      const L={pos:b.pos,nor:b.nor,uv:b.uv,n:b.n,hasN:b.hasN,idx:[]},R={pos:b.pos,nor:b.nor,uv:b.uv,n:b.n,hasN:b.hasN,idx:[]};
+      for(let t=0;t<b.idx.length;t+=3){const z=(b.pos[b.idx[t]*3+2]+b.pos[b.idx[t+1]*3+2]+b.pos[b.idx[t+2]*3+2])/3;(z<0?L:R).idx.push(b.idx[t],b.idx[t+1],b.idx[t+2]);}
+      if(L.idx.length)add('cL'+o.material.uuid,o.material,'beaconL',L);if(R.idx.length)add('cR'+o.material.uuid,o.material,'beaconR',R);return;}
     if(r==='blink'){// frecce: divise in sinistra (z<0) e destra (z>0) triangolo per triangolo
       const L={pos:b.pos,nor:b.nor,uv:b.uv,n:b.n,hasN:b.hasN,idx:[]},R={pos:b.pos,nor:b.nor,uv:b.uv,n:b.n,hasN:b.hasN,idx:[]};
       for(let t=0;t<b.idx.length;t+=3){const z=(b.pos[b.idx[t]*3+2]+b.pos[b.idx[t+1]*3+2]+b.pos[b.idx[t+2]*3+2])/3;(z<0?L:R).idx.push(b.idx[t],b.idx[t+1],b.idx[t+2]);}
@@ -149,14 +166,24 @@ function prepCarLevel(sc,k,cfg,flatTo){
   W.forEach((w,j)=>{const piv=new THREE.Group();piv.name='WPIV'+j;piv.position.copy(w.c);const spn=new THREE.Group();spn.name='WSPIN';piv.add(spn);const bym=new Map();
     wParts[w.i].forEach(p=>{gShift([p.b],-w.c.x,-w.c.y,-w.c.z);if(!bym.has(p.mat))bym.set(p.mat,[]);bym.get(p.mat).push(p.b);});
     bym.forEach((l,mt)=>{const m=new THREE.Mesh(gMerge(l),gFixMat(mt));m.userData.role='wheel';spn.add(m);});out.add(piv);info.wheels.push(w);});
+  // volante del modello: perno al centro, asse lungo il piantone (direzione di minore estensione), così gira davvero
+  if(info.sw&&info.sw.length){const bb=gBox(info.sw.map(p=>p.b)),c=bb.getCenter(new THREE.Vector3());let C=[[0,0,0],[0,0,0],[0,0,0]],n=0;
+    info.sw.forEach(p=>{for(let i=0;i<p.b.n;i++){const v=[p.b.pos[i*3]-c.x,p.b.pos[i*3+1]-c.y,p.b.pos[i*3+2]-c.z];for(let a=0;a<3;a++)for(let q=0;q<3;q++)C[a][q]+=v[a]*v[q];n++;}});
+    // asse: vettore che minimizza la varianza (iterazione inversa semplice)
+    let ax=new THREE.Vector3(1,-0.4,0).normalize();const M=new THREE.Matrix3().set(C[0][0],C[0][1],C[0][2],C[1][0],C[1][1],C[1][2],C[2][0],C[2][1],C[2][2]),Mi=M.clone().invert();for(let it=0;it<20;it++)ax.applyMatrix3(Mi).normalize();if(ax.x<0)ax.negate();
+    const piv=new THREE.Group();piv.name='STEERW';piv.position.copy(c);piv.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),ax);const spn=new THREE.Group();spn.name='STEERW_SPIN';piv.add(spn);
+    const qi=piv.quaternion.clone().invert(),v=new THREE.Vector3(),byM=new Map();
+    info.sw.forEach(p=>{for(let i=0;i<p.b.n;i++){v.set(p.b.pos[i*3]-c.x,p.b.pos[i*3+1]-c.y,p.b.pos[i*3+2]-c.z).applyQuaternion(qi);p.b.pos[i*3]=v.x;p.b.pos[i*3+1]=v.y;p.b.pos[i*3+2]=v.z;if(p.b.nor){v.set(p.b.nor[i*3],p.b.nor[i*3+1],p.b.nor[i*3+2]).applyQuaternion(qi);p.b.nor[i*3]=v.x;p.b.nor[i*3+1]=v.y;p.b.nor[i*3+2]=v.z;}}
+      if(!byM.has(p.mat))byM.set(p.mat,[]);byM.get(p.mat).push(p.b);});
+    byM.forEach((l,mt)=>{const m=new THREE.Mesh(gMerge(l),gFixMat(mt));m.userData.role='other';spn.add(m);});out.add(piv);info.swC=c;info.swAx=ax;}
   return{obj:out,info};}
 [[MODELS.cars,GLB_CARS],[MODELS.fleet,GLB_FLEET]].forEach(([G,SET])=>{if(!G)return;
-  Object.keys(SET).forEach(k=>{const C=SET[k],sF=G.scenes.find(s=>s.name==='car_'+k),sL=G.scenes.find(s=>s.name==='lod_'+k);if(!sF)return;
+  Object.keys(SET).forEach(k=>{const C=SET[k],nm=C.src||k,sF0=G.scenes.find(s=>s.name==='car_'+nm),sL0=G.scenes.find(s=>s.name==='lod_'+nm);if(!sF0)return;const sF=sF0.clone(true),sL=sL0&&sL0.clone(true);
     try{
     // scala, verso e centratura calcolati sul modello completo
     const tmp=new THREE.Group(),inn=new THREE.Group();inn.add(sF);tmp.add(inn);if(C.flip)inn.rotation.y=Math.PI;tmp.updateMatrixWorld(true);
     let bb=new THREE.Box3().setFromObject(tmp);const s=C.len?C.len/(bb.max.x-bb.min.x):1;inn.scale.setScalar(s);tmp.updateMatrixWorld(true);bb=new THREE.Box3().setFromObject(tmp);
-    const cfg={s,flip:!!C.flip,ox:-(bb.min.x+bb.max.x)/2,oy:-bb.min.y,oz:-(bb.min.z+bb.max.z)/2};inn.remove(sF);
+    const cfg={plain:!!C.plain,s,flip:!!C.flip,ox:-(bb.min.x+bb.max.x)/2,oy:-bb.min.y,oz:-(bb.min.z+bb.max.z)/2};inn.remove(sF);
     const F=prepCarLevel(sF,k,cfg),Lo=sL?prepCarLevel(sL,k,cfg):null;
     const T=TYPES[k],sz=bb.getSize(new THREE.Vector3()),I=F.info;
     if(C.steer&&!I.steer){const[a,b,c,r]=C.steer;I.steer=new THREE.Box3(new THREE.Vector3(a-0.06,b-r,c-r),new THREE.Vector3(a+0.06,b+r,c+r));}
@@ -169,34 +196,35 @@ function prepCarLevel(sc,k,cfg,flatTo){
     // abitacolo del modello, misurato dal suo volante
     // abitacolo disegnato dal gioco (plancia, volante, strumenti), messo dove il modello ha il volante; dell'auto vera restano cofano e coda
     const Wb=I.glass.isEmpty()?T.W-0.2:Math.min(T.W-0.1,(I.glass.max.z-I.glass.min.z)+0.1);
-    if(I.steer&&k!=='utilitaria'){const c=I.steer.getCenter(new THREE.Vector3()),z=I.steer.getSize(new THREE.Vector3()),R=Math.min(T.big?0.24:0.2,Math.max(0.17,Math.max(z.y,z.z)/2*0.95)),wt=Math.min(1.0,Math.max(0.3,Math.atan2(z.x,z.y)));
+    if(I.steer){const c=I.steer.getCenter(new THREE.Vector3()),z=I.steer.getSize(new THREE.Vector3()),R=Math.min(T.big?0.24:0.2,Math.max(0.17,Math.max(z.y,z.z)/2*0.95)),wt=Math.min(1.0,Math.max(0.3,Math.atan2(z.x,z.y)));
       const roof=T.roofY||sz.y,eyeX=c.x-0.55,eyeY=Math.min(c.y+0.36,roof-0.12);
       T.ck={model:false,W:Wb,wsx:T.wsX,dashTop:c.y+0.12,eyeX,eyeY,drvZ:c.z,wx:c.x-0.02,wy:c.y-0.04,R,wt,rm:[T.wsX-0.28,Math.min(roof-0.12,eyeY+0.17)],sm:[c.x+0.02,c.y+0.16,Wb/2+0.12]};}
-    if(k==='utilitaria')T.ck={model:true,clFixed:true,speedOnly:true,spd:[0.6,1.02,0.0],wsx:0.65,dashTop:1.0,eyeX:-0.07,eyeY:1.19,drvZ:-0.38,wx:0.442,wy:0.83,R:0.185,wt:0.42,cx:0.5,clY:1.045,clS:0.72,scr:[0.58,1.04,0.1],rm:[0.31,1.31],rmz:-0.2,sm:[0.43,1.0,0.86]};
+    if(I.swC){const c=I.swC,z=I.steer.getSize(new THREE.Vector3()),R=Math.max(z.y,z.z)/2,roof=T.roofY||sz.y,eyeY=Math.min(c.y+(T.van?0.42:0.36),roof-0.1),eyeX=c.x-(T.van?0.5:0.56);
+      T.ck={model:true,clFixed:true,speedOnly:true,ownWheel:true,spd:[c.x+0.15,c.y+R+0.03,c.z+0.3],wsx:T.wsX,dashTop:c.y+0.15,eyeX,eyeY,drvZ:c.z,wx:c.x,wy:c.y,R,wt:Math.atan2(-I.swAx.y,I.swAx.x),cx:c.x+0.1,clY:c.y+0.2,clS:0.7,scr:[c.x+0.2,c.y+0.2,0.1],rm:[T.wsX-0.22,Math.min(roof-0.1,eyeY+0.2)],rmz:0,sm:[c.x+0.05,c.y+0.12,Wb/2+0.1]};}
     const hasLights=F.obj.children.some(m=>m.userData.role==='tail');
-    CARX[k]={full:F.obj,lod:Lo&&Lo.obj,hasLights,wheels:F.info.wheels};
+    T.livery=!!C.livery;T.plain=!!C.plain;CARX[k]={full:F.obj,lod:Lo&&Lo.obj,hasLights,wheels:F.info.wheels};
     }catch(e){console.warn('veicolo '+k+' non preparato',e);}
   });});
 // istanza: materiali propri (vernice e luci), livello di dettaglio per il traffico
 function makeCarGLB(k,color,shadow,fine,opt={}){
   const X=CARX[k],T=TYPES[k],g=new THREE.Group();g.rotation.order='YZX';
   const paintCache=new Map(),litC={},allMats=[];
-  const lit=(src,kind)=>{const key=kind+src.uuid;if(litC[key])return litC[key];const m=src.clone();m.emissive=new THREE.Color({tail:0xff1a0a,head:0xfff2d6,rev:0xffffff,blinkL:0xff8a00,blinkR:0xff8a00}[kind]).multiplyScalar(kind==='tail'?0.75:2);if(kind==='tail')m.toneMapped=false;
+  const lit=(src,kind)=>{const key=kind+src.uuid;if(litC[key])return litC[key];const m=src.clone();m.emissive=new THREE.Color({tail:0xff1a0a,head:0xfff2d6,rev:0xffffff,blinkL:0xff8a00,blinkR:0xff8a00,beaconL:0x2050ff,beaconR:0x2050ff,taxib:0xffd060}[kind]).multiplyScalar(kind==='tail'?0.75:2);if(kind==='tail')m.toneMapped=false;
     // il colore del vetro segue la funzione, qualunque fosse nel modello: stop rossi, fari e retromarcia bianchi, frecce gialle
-    m.color=new THREE.Color({tail:0xb01008,head:0xf4f4ee,rev:0xf4f4f4,blinkL:0xff9a10,blinkR:0xff9a10}[kind]);if(kind==='tail'||kind==='blinkL'||kind==='blinkR'){m.map=null;}
+    m.color=new THREE.Color({tail:0xb01008,head:0xf4f4ee,rev:0xf4f4f4,blinkL:0xff9a10,blinkR:0xff9a10,beaconL:0x1a3cc8,beaconR:0x1a3cc8,taxib:0xf2e0a0}[kind]);if(kind==='tail'||kind==='blinkL'||kind==='blinkR'||kind==='beaconL'||kind==='beaconR'){m.map=null;}if(kind==='beaconL'||kind==='beaconR'||kind==='taxib'){m.toneMapped=false;m.transparent=false;m.opacity=1;}
     m.emissiveMap=null;m.emissiveIntensity=0;litC[key]=m;allMats.push(m);return m;};
   const anyC=new Map();const own=src=>{if(!fine)return src;if(!anyC.has(src)){const m=src.clone();anyC.set(src,m);allMats.push(m);}return anyC.get(src);};
-  const paintOf=src=>{if(!paintCache.has(src)){let m=src.clone();if(fine&&!QG.lo&&m.isMeshStandardMaterial&&!m.isMeshPhysicalMaterial){const p=new THREE.MeshPhysicalMaterial();THREE.MeshStandardMaterial.prototype.copy.call(p,m);p.clearcoat=1;p.clearcoatRoughness=0.05;p.envMapIntensity=Math.max(1.3,m.envMapIntensity||1);m=p;}if(T.fleet){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color);if(k==='utilitaria')m.color.multiplyScalar(1.7);if(opt.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.35;m.roughness=0.24;}m.envMapIntensity=1.25;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
+  const paintOf=src=>{if(!paintCache.has(src)){let m=src.clone();if(fine&&!QG.lo&&m.isMeshStandardMaterial&&!m.isMeshPhysicalMaterial){const p=new THREE.MeshPhysicalMaterial();THREE.MeshStandardMaterial.prototype.copy.call(p,m);p.clearcoat=1;p.clearcoatRoughness=0.05;p.envMapIntensity=Math.max(1.3,m.envMapIntensity||1);m=p;}if(T.livery){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color).convertSRGBToLinear();if(opt.plain||T.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.35;m.roughness=0.24;}m.envMapIntensity=1.25;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
   const dress=obj=>{obj.traverse(o=>{if(!o.isMesh)return;const r=o.userData.role;
     if(r==='paint'){o.material=paintOf(o.material);o.castShadow=shadow;}
-    else if(r==='tail'||r==='head'||r==='rev'||r==='blinkL'||r==='blinkR')o.material=lit(o.material,r);
+    else if(r==='tail'||r==='head'||r==='rev'||r==='blinkL'||r==='blinkR'||r==='beaconL'||r==='beaconR'||r==='taxib')o.material=lit(o.material,r);
     else o.material=own(o.material);
     if(r==='decal'&&opt.plain)o.visible=false;
     if(fine&&r==='glass'){o.material.userData.glass=o.material.userData.glass||{op:o.material.opacity,tr:o.material.transparent};}
     if(fine&&r==='cage')(g.userData.cage=g.userData.cage||[]).push(o);
     if(r==='wheel'||r==='other')o.castShadow=shadow&&fine;});};
   const full=X.full.clone(true);dress(full);const core=new THREE.Group();g.add(core);core.add(full);
-  const ud=g.userData;ud.glb=true;ud.body=full;ud.allMats=allMats;ud.wheels=[0,1,2,3,4,5,6,7].map(j=>full.getObjectByName('WPIV'+j)).filter(Boolean);
+  const ud=g.userData;ud.glb=true;ud.body=full;ud.allMats=allMats;ud.wheels=[0,1,2,3,4,5,6,7].map(j=>full.getObjectByName('WPIV'+j)).filter(Boolean);ud.steerW=full.getObjectByName('STEERW_SPIN');
   ud.paint=paintCache.size?[...paintCache.values()][0]:new THREE.MeshStandardMaterial({color});
   const find=r=>{let f=null;g.traverse(o=>{if(!f&&o.isMesh&&o.userData.role===r)f=o.material;});return f;};
   // luci di stop: sempre rosse, con un materiale tutto loro (in alcuni modelli il materiale era condiviso o bianco)
@@ -209,7 +237,7 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
       if(!front.length){o.material=tm;return;}if(!back.length)return;
       const sub=(list)=>{const g2=geo.clone();const ia=new Uint32Array(list.length*3);list.forEach((t,j)=>{for(let k=0;k<3;k++)ia[j*3+k]=idx?idx[t*3+k]:t*3+k;});g2.setIndex(new THREE.BufferAttribute(ia,1));g2.computeBoundingBox();g2.computeBoundingSphere();return g2;};
       const r=new THREE.Mesh(sub(back),tm);r.position.copy(o.position);r.quaternion.copy(o.quaternion);r.scale.copy(o.scale);r.userData.role='tail';o.parent.add(r);o.geometry=sub(front);o.userData.role='head2';});}
-  ud.tailM=find('tail');ud.headM=find('head');ud.revM=find('rev');ud.indL=find('blinkL');ud.indR=find('blinkR');
+  ud.beacL=find('beaconL');ud.beacR=find('beaconR');ud.taxiB=find('taxib');if(ud.taxiB)ud.taxiB.emissiveIntensity=1.2;ud.tailM=find('tail');ud.headM=find('head');ud.revM=find('rev');ud.indL=find('blinkL');ud.indR=find('blinkR');
   // il furgone non ha luci separate: si aggiungono piccole lampade
   const hl=T.L/2,hy=T.Hm*0.42;
   const gAdd=g.add.bind(g),gx=T.fleet?{add:()=>{}}:g;
@@ -322,9 +350,10 @@ function makeCar(k,color,shadow=true,fine=false,opt={}){
   const blob=new THREE.Mesh(new THREE.PlaneGeometry(T.L+0.7,T.W+0.6),blobM);blob.rotation.x=-Math.PI/2;blob.position.y=0.035;g.add(blob);
   g.userData.tailM=tM;g.userData.headM=hM;g.userData.revM=rvM;return g;
 }
-const typeKeys=Object.keys(TYPES).filter(k=>k!=='camion'&&!TYPES[k].fleet),typeW=CARX.utilitaria?[0.26,0.26,0.2,0.17,0.11]:CARX.berlina?[0,0.36,0.28,0.24,0.12]:[0.32,0.2,0.2,0.2,0.08];
+// auto del traffico: tutti modelli nuovi; taxi, ambulanze, polizia e pompieri hanno i loro giri
+const typeKeys=['utilitaria','volvo','wagoneer','hellcat','miner','shvan','daily'],typeW=[0.22,0.24,0.14,0.08,0.14,0.1,0.08];
 // auto della flotta del giocatore anche nel traffico (il camion più di rado)
-const FLEET_TRAF=[['volvo',1],['wagoneer',0.5],['hellcat',0.8],['taxi',1.2],['zil',0.5],['daily',0.8]];
+const FLEET_TRAF=[['illinois',1.2],['shvant',0.5],['zil',0.6],['taxi',0.4]];
 function randTrafType(){if(Math.random()<(window.__busP??0.08))return 'bus';if(Math.random()<(window.__fleetP??(MOBILE?0.1:0.15))){const ok=FLEET_TRAF.filter(([k])=>CARX[k]&&TYPES[k]);const tot=ok.reduce((a,[,w])=>a+w,0);let r=Math.random()*tot;for(const[k,w]of ok){if((r-=w)<=0)return k;}}return randType();}
 function randType(){let r=Math.random(),a=0;for(let i=0;i<5;i++){a+=typeW[i];if(r<a)return typeKeys[i];}return 'utilitaria';}
 const randColor=()=>COLORS[(Math.random()*COLORS.length)|0];
