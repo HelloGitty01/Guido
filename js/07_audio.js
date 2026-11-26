@@ -136,6 +136,10 @@ function updateTrafficVoices(t){updateSirens(t);if(!tVoices.length)return;tvT-=1
     const vr=((c.dx*c.v-pwx)*dx+(c.dz*c.v-pwz)*dz)/d;const dop=343/(343+vr);
     const rpm=900+(c.v||0)*95+Math.max(0,c.a||0)*400,fq=rpm/60*2*dop;if(!isFinite(fq)||!isFinite(d)){v.g.gain.setTargetAtTime(0,t,0.2);return;}v.o.frequency.setTargetAtTime(fq,t,0.08);
     v.lp.frequency.setTargetAtTime(300+c.v*25,t,0.1);v.g.gain.setTargetAtTime(Math.min(0.18,(0.05+c.v*0.008)*8/(8+d*d*0.15)),t,0.15);});}
+// avviso morbido "dong" (superamento del limite): due note calde e basse che sfumano, a volume contenuto
+function dong(){if(!AC)return;const t0=AC.currentTime,out=ACOUT();[[587,0],[440,0.36]].forEach(([f,dt])=>{const t=t0+dt;
+  [[1,0.085],[2.01,0.02],[2.98,0.008]].forEach(([k,a])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f*k;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a,t+0.012);g.gain.exponentialRampToValueAtTime(0.0008,t+(k===1?1.3:0.6));o.connect(g).connect(out);o.start(t);o.stop(t+1.4);});});}
 function ding(n=3){if(!AC)return;for(let i=0;i<n;i++){const t=AC.currentTime+i*0.32;const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=1480;
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.25,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+0.28);o.connect(g).connect(ACOUT());o.start(t);o.stop(t+0.3);}}
 let horn=null;

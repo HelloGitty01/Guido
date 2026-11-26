@@ -243,7 +243,7 @@ function loop(now){
       pl.vx=Math.min(pl.vx,0);}
     if(NWT)NWT.TRF.step(dt);else{updateTraffic(dt);updatePeds(dt);updateAnimals(dt);}looseUpdate(dt);updateNav(dt);updateOpp(dt);updateGhost();checkInfractions();pl.vmax=Math.max(pl.vmax||0,Math.abs(pl.vx));if(pl.navMsgT>0)pl.navMsgT-=dt;if(pl.infrT>0)pl.infrT-=dt;
     const kmh=Math.abs(pl.vx)*3.6,limit=limitAt(pl.x,pl.z),over=kmh>limit+0.5;if(limit!==pl.lastLimit){pl.lastLimit=limit;if(!over)pl.overArmed=true;}
-    if(over&&pl.overArmed){ding(3);pl.overArmed=false;pl.overN=(pl.overN||0)+1;} if(kmh<limit-3)pl.overArmed=true;
+    if(over&&pl.overArmed){dong();pl.overArmed=false;pl.overN=(pl.overN||0)+1;} if(kmh<limit-3)pl.overArmed=true;
     if(kmh>limit+25){pl.spT=(pl.spT||0)+dt;if(pl.spT>2&&pl.spArm!==false){pl.spArm=false;penalty('velocita');}}else{pl.spT=0;if(kmh<limit+5)pl.spArm=true;}
     if(pl.lic<20&&(pl.km||0)-(pl.cleanKm||0)>=3){pl.cleanKm=pl.km;pl.lic=Math.min(20,pl.lic+2);pl.navMsg='Guida corretta: +2 punti patente ('+pl.lic+'/20)';pl.navMsgT=3;}
     const gearTxt=pl.sel==='R'?'R':pl.sel==='N'?'N':(Math.abs(pl.vx)<0.3?'D':'D'+pl.gear);

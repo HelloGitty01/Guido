@@ -121,7 +121,8 @@ let lcTimer=1;
 
 // ================= CAMERA / VISTE =================
 let view='cockpit';
-let headSpot=null;
+// il faro esiste da subito (spento): aggiungerlo al primo uso faceva ricompilare tutti i materiali, con uno scatto
+let headSpot=new THREE.SpotLight(0xfff2d6,0,60,0.45,0.5,1.2);scene.add(headSpot);scene.add(headSpot.target);
 function toggleLights(){pl.lights=!pl.lights;
   if(!headSpot){headSpot=new THREE.SpotLight(0xfff2d6,0,60,0.45,0.5,1.2);scene.add(headSpot);scene.add(headSpot.target);}
   headSpot.intensity=pl.lights?2.2:0;}
