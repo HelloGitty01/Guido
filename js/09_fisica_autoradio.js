@@ -3,7 +3,7 @@
 function resetPlayer(){
   const P=PHYS[selKey],T=TYPES[selKey];
   if(pl.mesh)scene.remove(pl.mesh);
-  pl.P=P;pl.T=T;pl.t0=simT;pl.yb=null;pl.vb=0;pl.air=false;pl.nLoad=1;pl.mesh=makeCar(selKey,0x8a1f1f,true,true);pl.paint=pl.mesh.userData.paint;scene.add(pl.mesh);
+  pl.P=P;pl.T=T;pl.t0=simT;pl.yb=null;pl.vb=0;pl.air=false;pl.nLoad=1;pl.mesh=makeCar(selKey,PCOL(selKey),true,true);pl.paint=pl.mesh.userData.paint;scene.add(pl.mesh);
   pl.ck=buildCockpit(T,P);pl.mesh.add(pl.ck.g);pl.mesh.add(rearCam);
   const clipM=pl.paint.clone();pl.clipPlanes=[new THREE.Plane(),new THREE.Plane()];clipM.clippingPlanes=pl.clipPlanes;clipM.clipIntersection=true;clipM.side=THREE.DoubleSide;
   rearCam.near=pl.ck.model?Math.max(1.2,pl.ck.eye.x+T.L/2+0.25):0.3;rearCam.updateProjectionMatrix();

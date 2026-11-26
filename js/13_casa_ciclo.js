@@ -146,7 +146,7 @@ HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign
   G.traverse(o=>{if(o.isMesh){o.castShadow=o.castShadow!==false;o.receiveShadow=true;}});
   HOME.segS=NWT.addDyn(segs);
   // le auto in garage, una per posto, col muso verso l'uscita
-  HOME.carH=-(HOME.A+Math.PI/2);const GAR2=Object.keys(PHYS).filter(k=>!PHYS[k].mission);GAR2.forEach((k,i)=>{const u=-26+(i+0.5)*24/GAR2.length,v=-30.4,[x,z]=hW(u,v),m=makeCar(k,0x8a1f1f,true,true);m.position.set(x,HOME.y,z);m.rotation.set(0,HOME.carH,0);scene.add(m);
+  HOME.carH=-(HOME.A+Math.PI/2);const GAR2=Object.keys(PHYS).filter(k=>!PHYS[k].mission);GAR2.forEach((k,i)=>{const u=-26+(i+0.5)*24/GAR2.length,v=-30.4,[x,z]=hW(u,v),m=makeCar(k,PCOL(k),true,true);m.position.set(x,HOME.y,z);m.rotation.set(0,HOME.carH,0);scene.add(m);
     const T=TYPES[k],c=Math.cos(HOME.carH),s=-Math.sin(HOME.carH),hl=T.L/2,hw=T.W/2,P=[[-hl,-hw],[hl,-hw],[hl,hw],[-hl,hw]].map(([a,b])=>[x+a*c-b*s,z+a*s+b*c]),sg=[];for(let q=0;q<4;q++)sg.push([P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]]);
     HOME.cars[k]={m,x,z,u,v,segs:sg,dyn:NWT.addDyn(sg)};});
   // Guido e Gatto

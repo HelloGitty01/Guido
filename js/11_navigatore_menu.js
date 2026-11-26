@@ -176,7 +176,7 @@ const VP=(()=>{const cv=document.getElementById('vehCv');let R=null,S,C,car=null
     const fl=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(fc),transparent:true,depthWrite:false}));fl.rotation.x=-Math.PI/2;fl.name='floor';S.add(fl);}
   function fit(){if(!car)return;const b=new THREE.Box3().setFromObject(car),sz=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());car.position.x-=c.x;car.position.z-=c.z;car.position.y-=b.min.y;
     const L=Math.max(sz.x,sz.z),f=S.getObjectByName('floor');f.scale.set(L*1.5,L*1.5,1);C.userData.L=L;C.userData.h=sz.y*0.42;}
-  function show(k){if(!cv)return;try{if(!R)init();}catch(e){return;}if(k!==key){if(car){S.remove(car);}key=k;try{car=new THREE.Group();const m=makeCar(k,0x8a1f1f,false,true);car.add(m);S.add(car);fit();}catch(e){car=null;}
+  function show(k){if(!cv)return;try{if(!R)init();}catch(e){return;}if(k!==key){if(car){S.remove(car);}key=k;try{car=new THREE.Group();const m=makeCar(k,PCOL(k),false,true);car.add(m);S.add(car);fit();}catch(e){car=null;}
       const n=document.getElementById('vehName');if(n)n.textContent=PHYS[k]?PHYS[k].label:'';}if(!raf){last=performance.now();raf=requestAnimationFrame(loop);}}
   function loop(now){raf=0;const vis=menu.style.display!=='none'&&MTAB.cur==='auto'&&cv.offsetParent;if(!vis)return;const dt=Math.min(0.05,(now-last)/1000);last=now;ang+=dt*0.4;
     const w=cv.clientWidth,h=cv.clientHeight;if(w&&h&&(cv.width!==Math.round(w*R.getPixelRatio())||cv.height!==Math.round(h*R.getPixelRatio()))){R.setSize(w,h,false);C.aspect=w/h;C.updateProjectionMatrix();}
