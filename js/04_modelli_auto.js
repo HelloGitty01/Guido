@@ -124,7 +124,7 @@ const GLB_CARS={};   // i vecchi modelli con i marchi veri non si usano più
 const GLB_FLEET={utilitaria:{src:'lasley'},volvo:{src:'carter'},wagoneer:{src:'fhsw',plain:true},hellcat:{src:'phoenix'},daily:{src:'lct95'},zil:{src:'lct07'},taxi:{src:'canyon',livery:true},
   illinois:{src:'illinois',livery:true},miner:{src:'miner'},shvan:{src:'shvan'},shvant:{src:'shvant'},amb:{src:'amb',livery:true},cop:{src:'cop',livery:true},fire:{src:'fhsw',livery:true}};
 // colore di ciascuna auto guidabile (quello tipico del modello)
-const CARCOL={utilitaria:0x1e4630,volvo:0x8c9299,wagoneer:0xd8ccaa,hellcat:0x141414,daily:0x3d6690,zil:0xf0f0ec,taxi:0xffffff},PCOL=k=>CARCOL[k]??0x8a1f1f;
+const CARCOL={utilitaria:0x2f7356,volvo:0x8c9299,wagoneer:0xd8ccaa,hellcat:0x141414,daily:0x3d6690,zil:0xf0f0ec,taxi:0xffffff},PCOL=k=>CARCOL[k]??0x8a1f1f;
 const CAR_LABEL={utilitaria:"Lasley '67",volvo:"Carter '98",wagoneer:"Fairheaven SW '80",hellcat:"Phoenix 455 '71",daily:"LCT 3000 '95",zil:"LCT 3000 '07",taxi:"Canyon '75 taxi",illinois:"Illinois '90 taxi",miner:"Miner W4 '70",shvan:"Shvan '92",shvant:"Shvan '92 Traveller",amb:'Ambulanza',cop:'Polizia',fire:'Vigili del fuoco'};
 const CARX={};
 function prepCarLevel(sc,k,cfg,flatTo){

@@ -146,19 +146,23 @@ function applyView(){if(!pl.ck)return;ckRestore();pl.camInit=false;pl.ck.g.visib
 const tmpV=new THREE.Vector3(),camLook=new THREE.Vector3(),CAMS={y:0,vy:0,ax:0,ay:0};
 // abitacoli disegnati (immagini scelte da Giorgio): i vetri sono trasparenti e mostrano il mondo vero, gli specchi mostrano la vista dietro
 // schermo del navigatore negli abitacoli disegnati: centro e larghezza nell'immagine (sulla Challenger è lo schermo di bordo)
-const CKNAV={volvo:[712,328,170],utilitaria:[660,292,150],wagoneer:[700,352,140],taxi:[831,343,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
-// abitacoli fotografici tolti: ogni auto usa il proprio abitacolo 3D (modelli CC-BY)
-const CKIMG={};
+const CKNAV={volvo:[712,328,170],utilitaria:[1825,892,370],wagoneer:[700,352,140],taxi:[831,343,150],hellcat:[706,302,92],zil:[735,312,150],daily:[735,318,150]};
+// abitacoli fotografici (immagini scelte da Giorgio, ritoccate): vetri trasparenti sul mondo vero, lancette, spie, display e specchi veri.
+// g: [x,y,raggio,tipo (s velocità, r giri, f benzina, t temperatura),fondo scala,colore,angolo iniziale,angolo finale]
+const CKIMG={utilitaria:{g:[[1288,857,80,'s',140,'#f06030'],[1113,859,29,'f',1,'#f4f4ec',200,340],[1462,859,29,'t',1,'#f4f4ec',200,340]],man:true,
+    wheel:{src:'cockpit/lasley_w.webp',c:[760,1030],a:430,b:410,box:[310,600,1210,1460]},src:'cockpit/lasley.webp',size:[2576,1438],
+    glass:{C:[1150,210,1428,310],L:[72,522,228,678],R:[2352,534,2508,690]},round:{L:1,R:1},spd:[1288,900],fs:34,spdCol:'#f6f6f0',turnL:[1180,800],turnR:[1398,800],beam:[1288,958],ifs:20}};
 const CKO={on:false,cfg:null,s:1,l:0,t:0,hud:new THREE.Scene(),cam:new THREE.OrthographicCamera(0,1,1,0,-1,1),q:{}};
-function ckQuad(k,u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}const m=new THREE.Mesh(g,mirrorM);CKO.hud.add(m);CKO.q[k]=m;return m;}
+function ckGeo(u0,u1,v0,v1){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u1-(u1-u0)*u,v0+(v1-v0)*v);}return g;}
+function ckQuad(k,u0,u1,v0,v1){const m=new THREE.Mesh(ckGeo(u0,u1,v0,v1),mirrorM);m.userData.uv=[u0,u1,v0,v1];CKO.hud.add(m);CKO.q[k]=m;return m;}
 ckQuad('C',0.32,0.68,0.12,0.92);ckQuad('L',0.66,1.0,0.08,0.92);ckQuad('R',0.0,0.34,0.08,0.92);
 // lancette vere sui quadranti dell'abitacolo (tachimetro e contagiri), sopra la foto e sotto il volante
 function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,dk=CKO.dark||0,key=Math.round(kmh*2)+'|'+Math.round(rpm/25)+'|'+Math.round(dk*20);if(key===CKO.nv)return;CKO.nv=key;
   const c=document.getElementById('ckNdl'),g=c.getContext('2d'),k=CKO.nk||1;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.setTransform(k,0,0,k,0,0);g.lineCap='round';
   if(dk>0.05)for(const[x,y,r]of C.g){const gr=g.createRadialGradient(x,y,0,x,y,r*1.15);gr.addColorStop(0,`rgba(255,236,200,${0.5*dk})`);gr.addColorStop(0.8,`rgba(255,220,170,${0.32*dk})`);gr.addColorStop(1,'rgba(255,220,170,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r*1.15,0,7);g.fill();}   // quadranti retroilluminati al buio
-  for(const[x,y,r,t,max,col]of C.g){const f=t==='s'?Math.min(1.04,kmh/max):Math.min(1.04,rpm/(pl.P.red*1.2)),a=(135+270*f)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
-    g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=1.9;g.beginPath();g.moveTo(x-ca*r*0.22+0.5,y-sa*r*0.22+0.6);g.lineTo(x+ca*r*0.92+0.5,y+sa*r*0.92+0.6);g.stroke();
-    g.strokeStyle=col;g.lineWidth=1.3;g.beginPath();g.moveTo(x-ca*r*0.22,y-sa*r*0.22);g.lineTo(x+ca*r*0.92,y+sa*r*0.92);g.stroke();
+  for(const[x,y,r,t,max,col,a0,a1]of C.g){const f=t==='s'?Math.min(1.04,kmh/max):t==='f'?Math.max(0,Math.min(1,(pl.fuel??tankOf(pl.P))/tankOf(pl.P))):t==='t'?Math.min(1,(simT-(pl.t0||0))/90)*0.5:Math.min(1.04,rpm/(pl.P.red*1.2)),a=((a0??135)+((a1??405)-(a0??135))*f)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),lw=Math.max(1.3,r*0.04);
+    g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=lw*1.5;g.beginPath();g.moveTo(x-ca*r*0.22+0.5,y-sa*r*0.22+0.6);g.lineTo(x+ca*r*0.92+0.5,y+sa*r*0.92+0.6);g.stroke();
+    g.strokeStyle=col;g.lineWidth=lw;g.beginPath();g.moveTo(x-ca*r*0.22,y-sa*r*0.22);g.lineTo(x+ca*r*0.92,y+sa*r*0.92);g.stroke();
     g.fillStyle='#1a1a1c';g.beginPath();g.arc(x,y,Math.max(1.4,r*0.12),0,7);g.fill();}}
 function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();return;}
   const W=innerWidth,H=innerHeight,[iw,ih]=C.size,s0=Math.max(W/iw,H/ih),w0=iw*s0,h0=ih*s0,l0=(W-w0)/2,t0=H-h0;
@@ -168,7 +172,9 @@ function ckLayout(){const C=CKO.cfg;if(!C){camera.clearViewOffset();camera.aspec
   const at=(id,p,fs)=>{const e=document.getElementById(id);e.style.left=(l+p[0]*s)+'px';e.style.top=(t+p[1]*s)+'px';if(fs)e.style.fontSize=(fs*s)+'px';};
   if(C.wheel){const B=C.wheel.box,wi=document.getElementById('ckWheel');wi.style.left=(l+B[0]*s)+'px';wi.style.top=(t+B[1]*s)+'px';wi.style.width=((B[2]-B[0])*s)+'px';wi.style.height=((B[3]-B[1])*s)+'px';wi.style.transformOrigin=((C.wheel.c[0]-B[0])*s)+'px '+((C.wheel.c[1]-B[1])*s)+'px';}
   {const N=CKNAV[selKey];if(N&&pl.ck){const e=pl.ck.scv;e.style.left=(l+N[0]*s)+'px';e.style.top=(t+N[1]*s)+'px';e.style.width=(N[2]*s)+'px';e.style.height=(N[2]*s/2)+'px';}}
-  at('ckSpd',C.spd,C.fs);at('ckGear',C.gear||[C.spd[0],C.spd[1]+C.fs*1.05],C.fs*0.7);at('ckTL',C.turnL,7);at('ckTR',C.turnR,7);at('ckBeam',C.beam,6);
+  at('ckSpd',C.spd,C.fs);at('ckGear',C.gear||[C.spd[0],C.spd[1]+C.fs*1.05],C.fs*0.7);at('ckTL',C.turnL,C.ifs||7);at('ckTR',C.turnR,C.ifs||7);at('ckBeam',C.beam,(C.ifs||7)*0.85);
+  ['ckSpd','ckGear'].forEach(id=>{const e=document.getElementById(id);e.style.color=C.spdCol||'';e.style.textShadow=C.spdCol?'0 1px 3px rgba(0,0,0,.85)':'';});
+  ['L','R'].forEach(k=>{const q=CKO.q[k],rd=!!(C.round&&C.round[k]);if(q.userData.rd!==rd){q.userData.rd=rd;const u=q.userData.uv;let g;if(rd){g=new THREE.CircleGeometry(0.5,40);const P=g.attributes.position,U=g.attributes.uv;for(let i=0;i<P.count;i++){const x=P.getX(i)+0.5,y=P.getY(i)+0.5;U.setXY(i,u[1]-(u[1]-u[0])*x,u[2]+(u[3]-u[2])*y);}}else g=ckGeo(...u);q.geometry.dispose();q.geometry=g;}});
   // la telecamera inquadra come nella foto: stesso campo visivo riferito all'immagine intera, poi ritagliato come lo schermo
   camera.aspect=w0/h0;camera.setViewOffset(w0,h0,-l0,-t0,W,H);camera.updateProjectionMatrix();
   CKO.cam.left=0;CKO.cam.right=W;CKO.cam.top=H;CKO.cam.bottom=0;CKO.cam.updateProjectionMatrix();
