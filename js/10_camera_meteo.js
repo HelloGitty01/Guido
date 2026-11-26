@@ -204,11 +204,27 @@ function ckOverlay(){CKO.th=null;const C=(view==='cockpit'&&pl.P&&!PHOTO.on&&!HO
 addEventListener('resize',()=>setTimeout(ckLayout,0));
 // qualità automatica: se i fotogrammi scendono sotto i ~45 al secondo si abbassa la risoluzione di disegno (fino al 60%),
 // e se non basta si accorcia la distanza degli alberi 3D; quando torna fluido si risale piano piano
-const AUTOQ={n:0,acc:0,sc:1,lvl:0,base:QG.pr,cool:0,
-  tick(dt){if(CFG.autoQ===false||paused||!started)return;this.acc+=dt;this.n++;if(this.acc<2)return;const fps=this.n/this.acc;this.acc=0;this.n=0;if(this.cool>0){this.cool--;return;}
-    let sc=this.sc;if(fps<44&&sc>0.6)sc=Math.max(0.6,sc-0.1);else if(fps>57&&sc<1)sc=Math.min(1,sc+0.05);
-    if(sc!==this.sc){this.sc=sc;renderer.setPixelRatio(this.base*sc);renderer.setSize(innerWidth,innerHeight);this.cool=1;}
-    if(fps<38&&this.sc<=0.6&&this.lvl<2&&window.HDTQ){this.lvl++;HDTQ(this.lvl);this.cool=2;}else if(fps>58&&this.sc>=1&&this.lvl>0&&window.HDTQ){this.lvl--;HDTQ(this.lvl);this.cool=3;}}};
+// qualità automatica: una scala di gradini, dal meno visibile al più visibile. Decide sulla mediana dei tempi (un picco isolato non conta),
+// scende sotto ~45 fps, risale solo sopra ~57 fps e dopo un'attesa: niente avanti e indietro. Durante la sigla misura in fretta e sceglie da sé il punto di partenza.
+const AUTOQ={base:QG.pr,lvl:0,sc:1,t:[],acc:0,cool:0,good:0,last:0,mir:QG.mir,shBase:sun.shadow.mapSize.x,
+  STEPS:[{pr:1},{pr:0.92},{pr:0.86,mir:2},{pr:0.8,sh:1024},{pr:0.76,tr:1},{pr:0.72,sh:768,shR:50},{pr:0.68,tr:2,mir:4},{pr:0.64,sh:512,shR:40},{pr:0.6}],
+  apply(){const S=this.STEPS,L=this.lvl;let pr=1,mir=1,sh=this.shBase,shR=70,tr=0;for(let k=0;k<=L;k++){const s=S[k];if(s.pr)pr=s.pr;if(s.mir)mir=s.mir;if(s.sh)sh=Math.min(this.shBase,s.sh);if(s.shR)shR=s.shR;if(s.tr)tr=s.tr;}
+    if(pr!==this.sc){this.sc=pr;renderer.setPixelRatio(this.base*pr);renderer.setSize(innerWidth,innerHeight);if(typeof ckLayout==='function'&&CKO.on)ckLayout();}
+    QG.mir=Math.max(this.mir,mir);
+    if(sun.shadow.mapSize.x!==sh){sun.shadow.mapSize.set(sh,sh);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
+    const c=sun.shadow.camera;if(c.right!==shR){c.left=-shR;c.right=shR;c.top=shR;c.bottom=-shR;c.updateProjectionMatrix();}
+    if(window.HDTQ&&this.tr!==tr){this.tr=tr;HDTQ(tr);}
+    try{localStorage.setItem('sim_aq',String(this.lvl));}catch(e){}},
+  init(){if(CFG.autoQ===false)return;let l=0;try{l=parseInt(localStorage.getItem('sim_aq')||'0',10)||0;}catch(e){}this.lvl=Math.max(0,Math.min(this.STEPS.length-1,l-1));this.apply();},
+  frame(now){if(CFG.autoQ===false||(paused&&started)||document.hidden){this.last=0;return;}const d=this.last?now-this.last:0;this.last=now;if(!d||d>250)return;
+    this.t.push(d);this.acc+=d;const probe=!started,win=probe?1200:3000;if(this.acc<win)return;
+    const T=this.t.slice().sort((a,b)=>a-b),med=T[T.length>>1],fps=1000/med;this.t.length=0;this.acc=0;this.fps=fps;if(this.tr===undefined&&window.HDTQ)this.apply();
+    if(this.cool>0){this.cool--;return;}
+    if(fps<45&&this.lvl<this.STEPS.length-1){this.lvl+=fps<30?2:1;this.lvl=Math.min(this.lvl,this.STEPS.length-1);this.good=0;this.apply();this.cool=probe?0:1;}
+    else if(fps>57&&this.lvl>0){if(++this.good>=(probe?1:2)){this.lvl--;this.good=0;this.apply();this.cool=probe?0:2;}}
+    else this.good=0;},
+  tick(){}};
+AUTOQ.init();
 // pioggia sul parabrezza (abitacoli fotografici): gocce che si posano, scorrono col vento della corsa e il tergicristallo che le spazza.
 // Il disegno sta sotto la foto dell'abitacolo, quindi si vede solo attraverso i vetri
 const RAINW={cv:null,g:null,spr:null,d:[],a:-1.3,dir:1,

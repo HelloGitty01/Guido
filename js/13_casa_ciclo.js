@@ -266,10 +266,10 @@ function loop(now){
   if(PHOTO.on)photoUpdate(dt);envTick(dt);chTick(dt);recTick();SMOKE.update(dt);CAR.tick(dt);JOB.tick(dt);POL.tick(dt);POL.scTick(dt);EVT.tick(dt);
   sky.position.copy(camera.position);skyMat.uniforms.uT.value=simT;clouds.forEach(c=>{c.position.x+=dt*3;if(NWT){const cx=camera.position.x,cz=camera.position.z;if(c.position.x-cx>2800)c.position.x-=5600;if(c.position.x-cx<-2800)c.position.x+=5600;if(c.position.z-cz>2800)c.position.z-=5600;if(c.position.z-cz<-2800)c.position.z+=5600;}else if(c.position.x>3400)c.position.x-=5600;});
   if(pl.ck&&pl.ck.mirrors)pl.ck.mirrors.forEach(m=>m.visible=CFG.mir!==false);
-  if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir===1?2:QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
+  if(started&&!paused&&view==='cockpit'&&pl.ck&&CFG.mir!==false&&(frameN%(QG.mir*2)===0)){pl.ck.g.visible=false;renderer.shadowMap.autoUpdate=false;sky.position.setFromMatrixPosition(rearCam.matrixWorld);
     scene.autoUpdate=false;renderer.setRenderTarget(MIRROR_RT);renderer.render(scene,rearCam);scene.autoUpdate=true;renderer.setRenderTarget(null);pl.ck.g.visible=!CKO.on;renderer.shadowMap.autoUpdate=true;sky.position.copy(camera.position);}
   frameN++;updateMaples();updateCarLOD();if(NWT){NWT.update(dt);if(NWT.NEON)NWT.NEON.tick(dt,NWT.nightLv());if(NWT.BUSPAX)NWT.BUSPAX.tick(dt);}
-  renderer.render(scene,camera);PERF.frame(now);if(PCARD.want)PCARD.snap();if(SHOT.want)SHOT.snap();
+  renderer.render(scene,camera);PERF.frame(now);AUTOQ.frame(now);if(PCARD.want)PCARD.snap();if(SHOT.want)SHOT.snap();
   if(CKO.on){renderer.autoClear=false;renderer.clearDepth();renderer.render(CKO.hud,CKO.cam);renderer.autoClear=true;}
   requestAnimationFrame(loop);
 }
