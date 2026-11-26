@@ -15,13 +15,17 @@ const RNG=(a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.
 const _rnd=Math.random;Math.random=RNG;
 const rr=(a,b)=>a+Math.random()*(b-a);
 // ================= RENDERER / SCENA =================
-const renderer = new THREE.WebGLRenderer({antialias:true,logarithmicDepthBuffer:true});
 // qualità grafica scelta nel menu (bassa/media/alta): risoluzione, ombre, distanza di visibilità, dettagli
 const QG=(()=>{const mob=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<900,q=CFG.q||'media';return{q,lo:q==='bassa',mid:q==='media',hi:q==='alta',pr:q==='bassa'?Math.min(devicePixelRatio,1)*0.8:q==='media'?Math.min(devicePixelRatio,mob?1.1:2):Math.min(devicePixelRatio,mob?1.25:2),fog:q==='bassa'?0.6:q==='media'?0.82:1,mir:q==='bassa'?4:q==='media'?2:1};})();
+// scheda video: le integrate (Intel, ecc.) soffrono la profondità logaritmica e l'alta risoluzione, quindi lì si alleggerisce
+const GPUI=(()=>{try{const c=document.createElement('canvas').getContext('webgl'),x=c&&c.getExtension('WEBGL_debug_renderer_info'),n=x?c.getParameter(x.UNMASKED_RENDERER_WEBGL):'';const r={name:n,igpu:/intel|iris|uhd|mali|adreno|powervr/i.test(n)&&!/nvidia|geforce|radeon rx/i.test(n)};const l=c&&c.getExtension('WEBGL_lose_context');if(l)l.loseContext();return r;}catch(e){return{name:'',igpu:false};}})();
+if(GPUI.igpu&&!QG.lo)QG.pr=Math.min(QG.pr,QG.hi?1.1:1);
+const LOGZ=QG.hi&&!GPUI.igpu;
+const renderer = new THREE.WebGLRenderer({antialias:true,logarithmicDepthBuffer:LOGZ});
 renderer.setPixelRatio(QG.pr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = !QG.lo;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = GPUI.igpu?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.88;renderer.localClippingEnabled=true;
 document.body.appendChild(renderer.domElement);
@@ -41,7 +45,7 @@ float fT=clamp((fogDepth-fogNear)/(fogFar-fogNear),0.0,1.0);float fogFactor=(1.0
 #endif
 gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,clamp(fogFactor,0.0,1.0));
 #endif`;
-const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.08, 6000);
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, LOGZ?0.08:0.4, 6000);
 // volta celeste a gradiente
 const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,fog:false,
   uniforms:{top:{value:new THREE.Color(0x3f73c4)},mid:{value:new THREE.Color(0x8db6e3)},bot:{value:new THREE.Color(HORIZON)},uT:{value:0},uCov:{value:0.56},uDay:{value:1},uSun:{value:new THREE.Vector3(-0.5,0.7,0.4).normalize()},uSunC:{value:new THREE.Color(0xfff2dc)}},
