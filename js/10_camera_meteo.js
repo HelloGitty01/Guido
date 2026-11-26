@@ -351,7 +351,7 @@ const ENVK={night:{top:0x03060f,mid:0x0a1428,bot:0x141d30,sunI:0.16,sunC:0x8fa6d
   day:{top:0x5b8acb,mid:0xa6c4e2,bot:HORIZON,sunI:1.6,sunC:0xfff0d6,hemiI:0.62,fogC:HORIZON,fogF:1500,cl:0xffffff,exp:0.88,day:1},
   sunset:{top:0x2b4a86,mid:0xd9906a,bot:0xf3b47e,sunI:1.25,sunC:0xffa566,hemiI:0.35,fogC:0xe9b48a,fogF:1500,cl:0xffc9a0,exp:0.95,day:0.75}};
 const ENVSEQ=[[0,'night'],[5.1,'night'],[6.4,'dawn'],[8.3,'day'],[17.2,'day'],[19,'sunset'],[20.4,'night'],[24,'night']];
-let CLOCK=7,NIGHT=false,DUSK=false,envAcc=0,lastNight=null;const SUNOFF=new THREE.Vector3(-60,90,40);
+let DAYLV=1,CLOCK=7,NIGHT=false,DUSK=false,envAcc=0,lastNight=null;const SUNOFF=new THREE.Vector3(-60,90,40);
 function envAt(h){h=((h%24)+24)%24;let i=0;while(i<ENVSEQ.length-2&&ENVSEQ[i+1][0]<=h)i++;const[a0,ka]=ENVSEQ[i],[a1,kb]=ENVSEQ[i+1],A=ENVK[ka],B=ENVK[kb];let t=(h-a0)/(a1-a0);t=t*t*(3-2*t);
   const o={};for(const k in A){o[k]=(k==='top'||k==='mid'||k==='bot'||k==='sunC'||k==='fogC'||k==='cl')?new THREE.Color(A[k]).lerp(new THREE.Color(B[k]),t):A[k]+(B[k]-A[k])*t;}return o;}
 function sunFor(h){const ang=Math.PI*(h-5.8)/14.2;if(ang<0.05||ang>Math.PI-0.05){SUNOFF.set(-40,85,-50);return;}SUNOFF.set(115*Math.cos(ang),Math.max(26,8+92*Math.sin(ang)),45);}
@@ -368,7 +368,7 @@ function applyEnv(tick){
   const H=TIME==='cycle'?CLOCK:TIME==='night'?0:TIME==='sunset'?19:12,K=envAt(H);
   NIGHT=TIME==='night'||(TIME==='cycle'&&(CLOCK<5.8||CLOCK>19.95));DUSK=TIME==='sunset'||(TIME==='cycle'&&((CLOCK>18.4&&CLOCK<20.4)||(CLOCK>5&&CLOCK<6.6)));
   if(TIME==='cycle')sunFor(CLOCK);else if(TIME==='sunset')SUNOFF.set(-110,30,30);else SUNOFF.set(-60,90,40);
-  skyMat.uniforms.uCov.value=WX==='rain'?0.3:WX==='fog'?0.35:0.56;skyMat.uniforms.uDay.value=K.day;const chg=!tick||lastNight!==NIGHT;if(NWT&&NWT.setNight){const lv=TIME==='night'?1:TIME==='cycle'?Math.max(0,Math.min(1,(0.45-(K.day||0))/0.35)):0;NWT.setNight(NIGHT,lv);}
+  skyMat.uniforms.uCov.value=WX==='rain'?0.3:WX==='fog'?0.35:0.56;skyMat.uniforms.uDay.value=K.day;DAYLV=K.day;const chg=!tick||lastNight!==NIGHT;if(NWT&&NWT.setNight){const lv=TIME==='night'?1:TIME==='cycle'?Math.max(0,Math.min(1,(0.45-(K.day||0))/0.35)):0;NWT.setNight(NIGHT,lv);}
   const U=skyMat.uniforms,fog=scene.fog;let sunI=K.sunI,sunC=K.sunC,hemiI=K.hemiI,fogC=K.fogC,fogN=260,fogF=K.fogF,exp=K.exp,clouds_c=K.cl;
   U.top.value.copy(K.top);U.mid.value.copy(K.mid);U.bot.value.copy(K.bot);if(NIGHT||!ENVGEN){const en=NIGHT?nightEnv:dayEnv;if(scene.environment!==en)scene.environment=en;}
   if(WX==='rain'){U.top.value.multiplyScalar(0.55).add(new THREE.Color(0x30353c));U.mid.value.lerp(new THREE.Color(0x6f7782),0.7);U.bot.value.lerp(new THREE.Color(0x8a9199),0.7);sunI*=0.4;hemiI*=1.1;fogC=new THREE.Color(0x0c1016).lerp(new THREE.Color(0x8a9199),Math.min(1,K.day*1.15));fogN=60;fogF=650;clouds_c=new THREE.Color(0x222831).lerp(new THREE.Color(0x8f969e),Math.min(1,K.day*1.15));}

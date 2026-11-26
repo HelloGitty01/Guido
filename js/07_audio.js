@@ -147,28 +147,61 @@ function setHorn(on){if(on&&!horn)hornPush();if(!AC)return;const t=AC.currentTim
     const os=(HORNF[selKey]||[420,520]).map((f,k)=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=k?4:-3;o.connect(mix);o.start();return o;});horn={os,g};}
   else if(!on&&horn){const h=horn;horn=null;h.g.gain.cancelScheduledValues(t);h.g.gain.setTargetAtTime(0,t,0.025);setTimeout(()=>h.os.forEach(o=>{try{o.stop();}catch(e){}}),200);}}
 
-// ================= SUONI D'AMBIENTE: città, campagna (uccelli di giorno, grilli di notte), acqua, vento in quota =================
-// strati leggeri dosati in base a dove si trova l'auto; si abbassano con la velocità (copre il vento) e in abitacolo
+// ================= SUONI D'AMBIENTE =================
+// città (brusio, clacson, motorini, sirene lontane), zone industriali (rombo, colpi metallici, sfiati, cicalini di retromarcia),
+// campagna e montagna (uccelli di giorno, cicale col sole d'estate, grilli la notte), vento in quota, onde al mare e risacca al lago.
+// Tutto sintetizzato, dosato secondo luogo e ora: di notte il mondo si abbassa. Si attenua con la velocità e in abitacolo.
 const AMB={on:false,t:0,g:null,
   init(){if(!AC||this.g)return;const out=AC.createGain();out.gain.value=0;out.connect(ACOUT());this.g=out;
-    const nb=AC.createBuffer(1,AC.sampleRate*3,AC.sampleRate),d=nb.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;b=0.985*b+0.015*w;d[i]=w*0.35+b*4;}
-    const src=()=>{const s=AC.createBufferSource();s.buffer=nb;s.loop=true;s.loopStart=Math.random()*2;s.start(0,Math.random()*2.5);return s;};
-    const layer=(type,f,q)=>{const s=src(),fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q||0.7;const g=AC.createGain();g.gain.value=0;s.connect(fl).connect(g).connect(out);return{g,fl};};
-    this.city=layer('lowpass',380);this.water=layer('lowpass',900);this.wind=layer('bandpass',520,0.6);
-    const lfo=AC.createOscillator();lfo.frequency.value=0.11;const lg=AC.createGain();lg.gain.value=0.5;lfo.connect(lg);this.wm=AC.createGain();this.wm.gain.value=0.5;lg.connect(this.wm.gain);lfo.start();
-    this.water.g.disconnect();this.water.g.connect(this.wm).connect(out);
-    const lfo2=AC.createOscillator();lfo2.frequency.value=0.07;const lg2=AC.createGain();lg2.gain.value=180;lfo2.connect(lg2).connect(this.wind.fl.frequency);lfo2.start();
-    this.lv={city:0,water:0,wind:0,birds:0,crick:0};this.nb=0;this.nc=0;},
-  chirp(v){const t=AC.currentTime,n=2+(Math.random()*4|0),f0=2400+Math.random()*1800,sp=0.07+Math.random()*0.06;for(let i=0;i<n;i++){const o=AC.createOscillator(),g=AC.createGain(),t0=t+i*(sp+0.03);o.type='sine';o.frequency.setValueAtTime(f0*(1+Math.random()*0.15),t0);o.frequency.exponentialRampToValueAtTime(f0*(1.3+Math.random()*0.4),t0+sp*0.7);
-      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+0.01);g.gain.exponentialRampToValueAtTime(0.0005,t0+sp);o.connect(g).connect(this.g);o.start(t0);o.stop(t0+sp+0.02);}},
+    const nb=AC.createBuffer(1,AC.sampleRate*4,AC.sampleRate),d=nb.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;b=0.985*b+0.015*w;d[i]=w*0.35+b*4;}
+    const wb=AC.createBuffer(1,AC.sampleRate*3,AC.sampleRate),wd=wb.getChannelData(0);for(let i=0;i<wd.length;i++)wd[i]=Math.random()*2-1;this.wb=wb;
+    const src=(buf)=>{const s=AC.createBufferSource();s.buffer=buf||nb;s.loop=true;s.start(0,Math.random()*2.5);return s;};
+    const layer=(type,f,q,buf)=>{const s=src(buf),fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q||0.7;const g=AC.createGain();g.gain.value=0;s.connect(fl).connect(g).connect(out);return{g,fl};};
+    const lfo=(f,depth,target,off)=>{const o=AC.createOscillator();o.frequency.value=f;const g=AC.createGain();g.gain.value=depth;o.connect(g).connect(target);o.start();if(off!=null)target.value=off;return o;};
+    // brusio di città: traffico lontano (grave) + un velo più chiaro
+    this.city=layer('lowpass',380);this.city2=layer('bandpass',1100,0.5,wb);
+    // zona industriale: rombo cupo e ronzio di macchinari
+    this.ind=layer('lowpass',140,1.2);{const o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.value=98;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=260;g.gain.value=0;o.connect(f).connect(g).connect(out);o.start();this.hum={g};}
+    // acqua: onde lunghe al mare (risacca lenta), sciabordio corto al lago
+    this.sea=layer('lowpass',700);this.seaM=AC.createGain();this.sea.g.disconnect();this.sea.g.connect(this.seaM).connect(out);lfo(0.085,0.9,this.seaM.gain,0.55);
+    this.lake=layer('bandpass',900,0.8,wb);this.lakeM=AC.createGain();this.lake.g.disconnect();this.lake.g.connect(this.lakeM).connect(out);lfo(0.42,0.6,this.lakeM.gain,0.6);
+    // vento: fruscio che cambia tono, più forte e a raffiche in quota
+    this.wind=layer('bandpass',520,0.6);lfo(0.07,180,this.wind.fl.frequency);this.windM=AC.createGain();this.wind.g.disconnect();this.wind.g.connect(this.windM).connect(out);lfo(0.045,0.7,this.windM.gain,0.75);
+    // cicale: rumore stretto sui 5 kHz, pulsato e con il crescendo tipico
+    this.cic=layer('bandpass',5200,7,wb);this.cicM=AC.createGain();this.cic.g.disconnect();this.cic.g.connect(this.cicM).connect(out);{const o=AC.createOscillator();o.type='square';o.frequency.value=42;const g=AC.createGain();g.gain.value=0.45;o.connect(g).connect(this.cicM.gain);o.start();this.cicM.gain.value=0.55;}lfo(0.12,0.25,this.cic.fl.Q);
+    this.lv={};this.nb=0;this.nc=0;this.ne=0;},
+  chirp(v,kind){const t=AC.currentTime,mt=kind==='m',n=mt?1+(Math.random()*2|0):2+(Math.random()*5|0),f0=mt?1800+Math.random()*900:2400+Math.random()*2200,sp=0.05+Math.random()*0.08,dn=Math.random()<0.4;
+    for(let i=0;i<n;i++){const o=AC.createOscillator(),g=AC.createGain(),t0=t+i*(sp+0.025+Math.random()*0.03);o.type='sine';o.frequency.setValueAtTime(f0*(1+Math.random()*0.12)*(dn?1.3:1),t0);o.frequency.exponentialRampToValueAtTime(f0*(dn?0.85:1.35+Math.random()*0.4),t0+sp*0.8);
+      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+0.008);g.gain.exponentialRampToValueAtTime(0.0005,t0+sp);o.connect(g).connect(this.g);o.start(t0);o.stop(t0+sp+0.02);}
+    if(mt&&Math.random()<0.25)this.call(v*1.2);},
+  call(v){const t=AC.currentTime+0.3;[0,0.42].forEach((d2,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(i?1250:1560,t+d2);g.gain.setValueAtTime(0,t+d2);g.gain.linearRampToValueAtTime(v,t+d2+0.03);g.gain.exponentialRampToValueAtTime(0.0005,t+d2+0.35);o.connect(g).connect(this.g);o.start(t+d2);o.stop(t+d2+0.4);});},   /* il cuculo o la cincia lontana */
   cricket(v){const t=AC.currentTime,o=AC.createOscillator(),am=AC.createGain(),g=AC.createGain(),p=AC.createOscillator(),pg=AC.createGain();o.frequency.value=4200+Math.random()*600;p.type='square';p.frequency.value=28+Math.random()*8;pg.gain.value=0.5;am.gain.value=0.5;p.connect(pg).connect(am.gain);
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+0.05);g.gain.setValueAtTime(v,t+0.35);g.gain.linearRampToValueAtTime(0,t+0.45);o.connect(am).connect(g).connect(this.g);o.start(t);p.start(t);o.stop(t+0.5);p.stop(t+0.5);},
   horn(v){const t=AC.currentTime,o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';o.frequency.value=330+Math.random()*120;f.type='lowpass';f.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+0.02);g.gain.setValueAtTime(v,t+0.25+Math.random()*0.3);g.gain.linearRampToValueAtTime(0,t+0.65);o.connect(f).connect(g).connect(this.g);o.start(t);o.stop(t+0.7);},
+  noiseHit(v,f,q,dur,att){const t=AC.currentTime,s=AC.createBufferSource();s.buffer=this.wb;const fl=AC.createBiquadFilter();fl.type='bandpass';fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+(att||0.004));g.gain.exponentialRampToValueAtTime(0.0003,t+dur);s.connect(fl).connect(g).connect(this.g);s.start(t,Math.random()*2);s.stop(t+dur+0.05);},
+  clank(v){this.noiseHit(v,600+Math.random()*1800,9,0.5+Math.random()*0.6);const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=180+Math.random()*500;g.gain.setValueAtTime(v*0.6,t);g.gain.exponentialRampToValueAtTime(0.0003,t+0.9);o.connect(g).connect(this.g);o.start(t);o.stop(t+1);},
+  beep(v){const t=AC.currentTime;for(let i=0;i<6;i++){const o=AC.createOscillator(),g=AC.createGain(),t0=t+i*0.9;o.type='square';o.frequency.value=1150;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+0.01);g.gain.setValueAtTime(v,t0+0.42);g.gain.linearRampToValueAtTime(0,t0+0.45);const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1800;o.connect(f).connect(g).connect(this.g);o.start(t0);o.stop(t0+0.5);}},
+  siren(v){const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();o.type='triangle';f.type='lowpass';f.frequency.value=1400;for(let i=0;i<8;i++){o.frequency.setValueAtTime(660,t+i*0.65);o.frequency.setValueAtTime(880,t+i*0.65+0.32);}
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+1.5);g.gain.linearRampToValueAtTime(v,t+3.5);g.gain.linearRampToValueAtTime(0,t+5.2);o.connect(f).connect(g).connect(this.g);o.start(t);o.stop(t+5.3);},
+  scooter(v){const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();o.type='sawtooth';f.type='bandpass';f.frequency.value=900;f.Q.value=2;o.frequency.setValueAtTime(70,t);o.frequency.linearRampToValueAtTime(140,t+1.6);o.frequency.linearRampToValueAtTime(95,t+3);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+1);g.gain.linearRampToValueAtTime(0,t+3.2);o.connect(f).connect(g).connect(this.g);o.start(t);o.stop(t+3.3);},
+  dog(v){const t=AC.currentTime,n=1+(Math.random()*3|0);for(let i=0;i<n;i++){const t0=t+i*(0.35+Math.random()*0.2),o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(420,t0);o.frequency.exponentialRampToValueAtTime(260,t0+0.14);f.type='bandpass';f.frequency.value=800;f.Q.value=1.5;
+    g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+0.01);g.gain.exponentialRampToValueAtTime(0.0003,t0+0.18);o.connect(f).connect(g).connect(this.g);o.start(t0);o.stop(t0+0.2);}},
   tick(dt){if(!AC||!started||!NW)return;const on=CFG.amb!==false&&!paused&&!pl.ended&&AC.state==='running';if(!this.g){if(!on)return;this.init();}
     const t=AC.currentTime;this.g.gain.setTargetAtTime(on?(view==='cockpit'?0.55:1)*Math.max(0.25,1-Math.abs(pl.vx)/38):0,t,0.4);if(!on)return;
-    this.t-=dt;if(this.t<=0){this.t=0.5;const x=pl.x,z=pl.z,city=!!NW.cityAt(x,z),h=pl.terrH||0;let wat=0;for(const[a,b]of[[60,0],[-60,0],[0,60],[0,-60],[0,0]])if(waterLv(x+a,z+b))wat++;
-      const night=NIGHT,L=this.lv;L.city=city?0.05:0;L.water=wat?0.03+wat*0.012:0;L.wind=(!city&&h>260)?Math.min(0.05,0.015+(h-260)/4000):0.006;L.birds=(!city&&!night&&WX!=='rain')?1:city&&!night?0.3:0;L.crick=(!city&&night&&WX!=='rain')?1:0;
-      this.city.g.gain.setTargetAtTime(L.city,t,1.2);this.water.g.gain.setTargetAtTime(L.water,t,1.5);this.wind.g.gain.setTargetAtTime(L.wind,t,1.5);}
-    const L=this.lv;this.nb-=dt;if(L.birds&&this.nb<=0){this.nb=0.8+Math.random()*3.5/L.birds;this.chirp(0.012+Math.random()*0.012);}
-    this.nc-=dt;if(L.crick&&this.nc<=0){this.nc=0.5+Math.random()*1.2;this.cricket(0.006+Math.random()*0.005);}
-    if(L.city&&!NIGHT&&Math.random()<dt/14)this.horn(0.008+Math.random()*0.008);}};
+    const day=Math.max(0,Math.min(1,DAYLV)),act=0.35+0.65*day,L=this.lv;   // di notte tutto più quieto
+    this.t-=dt;if(this.t<=0){this.t=0.5;const x=pl.x,z=pl.z,C=NW.cityAt(x,z),ind=NWT&&NWT.indAt&&NWT.indAt(x,z),city=!!C&&!ind,h=pl.terrH||0,rain=WX==='rain';
+      let sea=0,lake=0;for(const[a,b]of[[90,0],[-90,0],[0,90],[0,-90],[0,0],[60,60],[-60,-60]]){const w=waterLv(x+a,z+b);if(w){if(w.lv<1)sea++;else lake++;}}
+      const big=C&&C.r1>800;L.city=city?(big?0.06:0.035)*act:0;L.city2=city?(big?0.018:0.01)*act*act:0;L.ind=ind?0.07*(0.55+0.45*day):0;L.hum=ind?0.012*(0.5+0.5*day):0;
+      L.sea=sea?Math.min(0.09,0.025+sea*0.012):0;L.lake=lake?Math.min(0.03,0.008+lake*0.004):0;
+      const mt=h>650;L.mt=mt;L.wind=!C&&h>260?Math.min(0.075,0.012+(h-260)/3600)*(rain?1.4:1):(rain?0.012:0.005);
+      L.birds=(!C||!big)&&!rain&&day>0.25?(C?0.25:mt?0.6:1)*day:0;L.crick=!C&&day<0.2&&!rain&&h<1100?1:0;
+      const warm=WX==='clear'&&day>0.7&&!C&&h<550&&!sea;L.cic=warm?0.016*(day-0.7)/0.3:0;
+      this.city.g.gain.setTargetAtTime(L.city,t,1.5);this.city2.g.gain.setTargetAtTime(L.city2,t,1.5);this.ind.g.gain.setTargetAtTime(L.ind,t,1.5);this.hum.g.gain.setTargetAtTime(L.hum,t,2);
+      this.sea.g.gain.setTargetAtTime(L.sea,t,2);this.lake.g.gain.setTargetAtTime(L.lake,t,2);this.wind.g.gain.setTargetAtTime(L.wind,t,2);this.cic.g.gain.setTargetAtTime(L.cic,t,3);this.ind_=ind;this.city_=city;this.big_=big;}
+    this.nb-=dt;if(L.birds&&this.nb<=0){this.nb=0.6+Math.random()*3.2/L.birds;this.chirp((0.01+Math.random()*0.014)*(0.5+0.5*day),L.mt?'m':'');}
+    this.nc-=dt;if(L.crick&&this.nc<=0){this.nc=0.35+Math.random()*1.0;this.cricket(0.006+Math.random()*0.006);}
+    this.ne-=dt;if(this.ne<=0){this.ne=1+Math.random()*3;const r=Math.random();
+      if(this.city_){if(r<0.3*act)this.horn(0.006+Math.random()*0.008);else if(r<0.45*act)this.scooter(0.006+Math.random()*0.005);else if(this.big_&&r<0.5)this.siren(0.004+Math.random()*0.004);else if(day<0.3&&r<0.6)this.dog(0.006);}
+      else if(this.ind_){if(r<0.45*(0.4+0.6*day))this.clank(0.012+Math.random()*0.02);else if(r<0.6*(0.4+0.6*day))this.noiseHit(0.02,3000,0.8,1.6,0.3);else if(r<0.68*day)this.beep(0.006);}
+      else if(day<0.3&&r<0.12)this.dog(0.004);}}};

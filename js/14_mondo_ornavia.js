@@ -21,7 +21,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform vec4 nearBox;').replace('void main() {','void main() {\nif(vWP.x>nearBox.x&&vWP.x<nearBox.z&&vWP.z>nearBox.y&&vWP.z<nearBox.w)discard;').replace('#include <map_fragment>','diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333)),0.3);').replace('uniform vec4 nearBox;','uniform vec4 nearBox;uniform vec3 gAvg;');sh.uniforms.gAvg={value:GAVG};};
   farM.customProgramCacheKey=()=>'nwfar4';
   // erba a più scale: niente ripetizione visibile, chiazze più chiare e più scure
-  const grassFrag=sh=>{sh.uniforms.gAvg={value:GAVG};sh.fragmentShader='uniform vec3 gAvg;\n'+sh.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
+  const grassFrag=sh=>{sh.uniforms.gAvg={value:GAVG};if(sh.fragmentShader.indexOf('uniform vec3 gAvg')>=0)return;   /* mai due volte sullo stesso shader */sh.fragmentShader='uniform vec3 gAvg;\n'+sh.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
     vec4 texelColor=mapTexelToLinear(texture2D(map,vUv));vec4 t2=mapTexelToLinear(texture2D(map,vUv*0.173+vec2(0.31,0.57)));
     float fdT=1.0-smoothstep(8.0,70.0,length(vViewPosition));float lmT=dot(texelColor.rgb/gAvg,vec3(0.3333))*0.6+dot(t2.rgb/gAvg,vec3(0.3333))*0.4;
     float mcT=dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333));
@@ -37,7 +37,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         vec3 vc=vec3(0.62);
         #endif
         diffuseColor.rgb=mix(diffuseColor.rgb,rc*vc*1.55,smoothstep(0.2,0.9,vRk));}`);}};
-  {const gf0=grassFrag;var grassFrag2=sh=>{gf0(sh);sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n#ifdef USE_COLOR\nfloat snW=smoothstep(1.25,1.9,(vColor.r+vColor.g+vColor.b)/3.0);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.86,0.89,0.93),snW);\n#endif');};}
+  {const gf0=grassFrag;var grassFrag2=sh=>{const twice=sh.fragmentShader.indexOf('snW')>=0;gf0(sh);if(!twice)sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n#ifdef USE_COLOR\nfloat snW=smoothstep(1.25,1.9,(vColor.r+vColor.g+vColor.b)/3.0);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.86,0.89,0.93),snW);\n#endif');};}
   terrM.onBeforeCompile=grassFrag2;terrM.customProgramCacheKey=()=>ROCK?'grass4r':'grass4';
   {const fb=farM.onBeforeCompile;farM.onBeforeCompile=sh=>{fb(sh);grassFrag2(sh);};}
   const ASF=window.HDON&&window.HDIMG&&HDIMG.asfalto;
@@ -920,7 +920,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
               const TT=TYPES[k],ex=tx*TT.L/2,ez=tz*TT.L/2;addSeg(T,x-ex,z-ez,x+ex,z+ez);}}
           {const s=a+L/2,x=R.X[i]+tx*(s-a)+nx*sd*(R.w/2+0.5),z=R.Z[i]+tz*(s-a)+nz*sd*(R.w/2+0.5),hb=R.Hh[i]+NW.SWH,r=Math.atan2(-tz,tx);pb.add(GB,0x8a8d90,x,hb+1.2,z,r,0.07,2.4,0.07);pb.add(GB,0x1f5fd0,x,hb+2.3,z,r,0.05,0.6,0.6);pb.add(GB,0xffffff,x+nx*sd*0.03,hb+2.3,z+nz*sd*0.03,r,0.04,0.36,0.08);}}
         // motorini parcheggiati e fioriere
-        if(hsh(l[q],i)<0.08){const s=a+L*0.5,x=R.X[i]+tx*(s-a),z=R.Z[i]+tz*(s-a),h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*0.5+NW.SWH,sd=hsh(i,l[q])<0.5?1:-1,off=R.w/2+0.9;if(!NW.nearJ(x,z,12))
+        if(false){const s=a+L*0.5,x=R.X[i]+tx*(s-a),z=R.Z[i]+tz*(s-a),h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*0.5+NW.SWH,sd=hsh(i,l[q])<0.5?1:-1,off=R.w/2+0.9;if(!NW.nearJ(x,z,12))
           for(let k=0;k<2+((hsh(i,3)*3)|0);k++){const vx=x+nx*sd*off+tx*(k*0.9),vz=z+nz*sd*off+tz*(k*0.9),c=VESPA[(i+k)%5],r2=ry+Math.PI/2+0.3;
             pb.add(GB,c,vx,h+0.55,vz,r2,1.2,0.35,0.42);pb.add(GB,c,vx+Math.cos(r2)*0.45,h+0.75,vz-Math.sin(r2)*0.45,r2,0.18,0.7,0.5);pb.add(GB,0x222222,vx-Math.cos(r2)*0.2,h+0.8,vz+Math.sin(r2)*0.2,r2,0.6,0.1,0.3);
             [0.48,-0.45].forEach(o=>pb.add(GC,0x151515,vx+Math.cos(r2)*o,h+0.24,vz-Math.sin(r2)*o,r2,0.46,0.12,0.46,Math.PI/2));}}
@@ -949,9 +949,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       let nf=0;for(let k=0;k<120;k++){const x=x0+rx(T,k*5+1)*TS,z=z0+rx(T,k*5+2)*TS;if(!inZ(x,z)||inB(x,z)||inB(x+3,z)||inB(x-3,z)||inB(x,z+3)||inB(x,z-3))continue;let ok=true;for(const q of NW.near(x,z,5))if(q.R.c<10){ok=false;break;}if(!ok)continue;
         if(segQ(x,z).some(s=>{const dx=s[2]-s[0],dz=s[3]-s[1],L2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-s[0])*dx+(z-s[1])*dz)/L2));return Math.hypot(x-s[0]-dx*t,z-s[1]-dz*t)<3;}))continue;
         const g=NW.Hground(x,z),r=rx(T,k*5+3),ry=rx(T,k*5+4)*6.28;
-        if(r<0.16){// auto bruciata
-          pb.add(GB,0x2a2522,x,g+0.75,z,ry,4.0,0.7,1.7);pb.add(GB,0x1a1715,x-Math.cos(ry)*0.3,g+1.3,z+Math.sin(ry)*0.3,ry,2.0,0.55,1.5);pb.add(GB,0x6a3a1a,x+Math.cos(ry)*1.2,g+1.12,z-Math.sin(ry)*1.2,ry,1.2,0.05,1.6);
-          [[-1.3,-1],[1.3,-1],[-1.3,1],[1.3,1]].forEach(([a,b])=>pb.add(GC,0x3a3634,x+Math.cos(ry)*a+Math.sin(ry)*b*0.8,g+0.3,z-Math.sin(ry)*a+Math.cos(ry)*b*0.8,ry,0.35,0.12,0.35,Math.PI/2));
+        if(r<0.16&&(T.__wr=(T.__wr||0))<4){// carcassa d'auto abbandonata: un modello vero, arrugginito, sporco, gomme a terra
+          T.__wr++;const kt=randType(),m=makeCar(/bus|camion/.test(kt)?'utilitaria':kt,0x777777,false),burnt=hsh(k,77)<0.4,rust=new THREE.Color([0x6a3a22,0x5a4a3a,0x3a3430,0x7a5a3a][(k*3)%4]);
+          m.traverse(o=>{if(!o.isMesh||!o.material)return;const M=(Array.isArray(o.material)?o.material:[o.material]).map(mt=>{const c=mt.clone();if(c.color){if(c.transparent||c.opacity<1){c.color.setHex(burnt?0x0a0a0a:0x2a2e30);c.opacity=burnt?1:0.85;}else c.color.lerp(burnt?new THREE.Color(0x141210):rust,burnt?0.85:0.55).multiplyScalar(0.8);}
+            if('metalness' in c){c.metalness=0.1;c.roughness=1;}if(c.emissive)c.emissive.setHex(0);c.envMapIntensity=0.2;return c;});o.material=Array.isArray(o.material)?M:M[0];});
+          const gm=(()=>{const S=10,ax=Math.floor(x/S)*S,az=Math.floor(z/S)*S,u=(x-ax)/S,v=(z-az)/S,h=(a,b)=>NW.Hground(a,b);return (h(ax,az)*(1-u)+h(ax+S,az)*u)*(1-v)+(h(ax,az+S)*(1-u)+h(ax+S,az+S)*u)*v;})();m.position.set(x,Math.min(g,gm)-0.35,z);m.rotation.set((hsh(k,5)-0.5)*0.06,ry,(hsh(k,6)-0.5)*0.08,'YXZ');scene.add(m);T.dobj.push(m);
           const c=Math.cos(ry),s=Math.sin(ry),P=[[-2,-0.85],[2,-0.85],[2,0.85],[-2,0.85]].map(([a,b])=>[x+a*c+b*s,z-a*s+b*c]);for(let q=0;q<4;q++)addSeg(T,P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]);}
         else if(r<0.3&&nf<1){// bidone con falò e figure intorno
           nf++;pb.add(GC,0x5a3a26,x,g+0.45,z,0,0.6,0.9,0.6);pb.add(GT,0x4a2a16,x,g+0.6,z,0,0.82,0.8,0.82,Math.PI/2);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:fireTex,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));sp.position.set(x,g+1.2,z);sp.scale.set(1,1.4,1);scene.add(sp);T.dobj.push(sp);FIRE.push({sp,T,y:g+1.2,ph:k});
@@ -1177,7 +1179,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const bl=bldT.get(T.key)||[];for(const bi of bl){const b=NW.J.blds[bi];if(b[8]!==3)continue;const r=b[3];if(hsh(bi,77)>0.6)continue;const ax=r[0],az=r[1],bx=r[2],bz=r[3],L=Math.hypot(bx-ax,bz-az),tx=(bx-ax)/L,tz=(bz-az)/L;let nx=-tz,nz=tx;const cx=(r[0]+r[4])/2,cz=(r[1]+r[5])/2;if(((ax+bx)/2-cx)*nx+((az+bz)/2-cz)*nz<0){nx=-nx;nz=-nz;}
         const mx=(ax+bx)/2+nx*0.7,mz=(az+bz)/2+nz*0.7,g=NW.Hground(mx,mz),ry=Math.atan2(-tz,tx);for(let k=0;k<4;k++)for(let q=0;q<7;q++)pb.add(GC,[0x8a6440,0x9a7450,0x7a5838][(k+q)%3],mx+tx*(q-3)*0.36,g+0.2+k*0.34,mz+tz*(q-3)*0.36,ry+Math.PI/2,0.34,1.3,0.34,Math.PI/2);
         pb.add(GB,0x6b4527,mx,g+1.5,mz,ry,2.8,0.08,1.2);pb.add(GB,0xf2f4f8,mx,g+1.56,mz,ry,2.7,0.1,1.1);}}}
-    function build(T){const n0=T.dobj.length,pb=PB(T.i*TS,T.j*TS);try{buildSigns(T,pb);city(T,pb);grim(T,pb);fringe(T,pb);industry(T,pb);alpine(T,pb);country(T,pb);}catch(e){console.warn('varietà',e);}const m=pb.mesh();if(m){scene.add(m);T.dobj.push(m);}
+    function build(T){const n0=T.dobj.length,pb=PB(T.i*TS,T.j*TS);T.__wr=0;try{buildSigns(T,pb);city(T,pb);grim(T,pb);fringe(T,pb);industry(T,pb);alpine(T,pb);country(T,pb);}catch(e){console.warn('varietà',e);}const m=pb.mesh();if(m){scene.add(m);T.dobj.push(m);}
       // tutto ciò che non si muove: niente ricalcolo delle matrici a ogni fotogramma
       for(let q=n0;q<T.dobj.length;q++){const o=T.dobj[q];if(o.isSprite||!o.matrixAutoUpdate||o.userData.mixer)continue;o.updateMatrixWorld(true);o.traverse(c=>{c.matrixAutoUpdate=false;});}}
     function drop(T){const qi=Q.indexOf(T);if(qi>=0)Q.splice(qi,1);for(let q=FA.length-1;q>=0;q--)if(FA[q].T===T)FA.splice(q,1);for(let q=FIRE.length-1;q>=0;q--)if(FIRE[q].T===T)FIRE.splice(q,1);for(let q=SMK.length-1;q>=0;q--)if(SMK[q].T===T)SMK.splice(q,1);}
@@ -1695,7 +1697,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const pa=D.ln.geometry.attributes.position;if(m.userData.hand){m.userData.hand.getWorldPosition(_hp);}else{_hp.set(q.x,q.y+0.85,q.z);}pa.setXYZ(0,_hp.x,_hp.y,_hp.z);D.m.userData.collar.getWorldPosition(_hp);pa.setXYZ(1,_hp.x,_hp.y,_hp.z);pa.needsUpdate=true;D.ln.geometry.computeBoundingSphere();}}}
     function p0(c){return c.mesh.position;}
     return {step,list,peds:peds2,made:()=>made,spawnNear,crash:tryCrash,dbl:tryDbl,wrecks:WRECKS,cw:CWL,ZB};})();
-  return {malls:()=>VX.malls(),rough,BUSPAX,NEON,nightLv:()=>Math.max(0,nightLv),VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
+  return {indAt:(x,z)=>smogK(x,z)<0.985||(NW.cityAt(x,z)||{}).st==='industria',malls:()=>VX.malls(),rough,BUSPAX,NEON,nightLv:()=>Math.max(0,nightLv),VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
 })();
 
 
