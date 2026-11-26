@@ -186,7 +186,7 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
     m.color=new THREE.Color({tail:0xb01008,head:0xf4f4ee,rev:0xf4f4f4,blinkL:0xff9a10,blinkR:0xff9a10}[kind]);if(kind==='tail'||kind==='blinkL'||kind==='blinkR'){m.map=null;}
     m.emissiveMap=null;m.emissiveIntensity=0;litC[key]=m;allMats.push(m);return m;};
   const anyC=new Map();const own=src=>{if(!fine)return src;if(!anyC.has(src)){const m=src.clone();anyC.set(src,m);allMats.push(m);}return anyC.get(src);};
-  const paintOf=src=>{if(!paintCache.has(src)){let m=src.clone();if(fine&&!QG.lo&&m.isMeshStandardMaterial&&!m.isMeshPhysicalMaterial){const p=new THREE.MeshPhysicalMaterial();THREE.MeshStandardMaterial.prototype.copy.call(p,m);p.clearcoat=0.85;p.clearcoatRoughness=0.07;p.envMapIntensity=Math.max(1,m.envMapIntensity||1);m=p;}if(T.fleet){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color);if(k==='utilitaria')m.color.multiplyScalar(1.7);if(opt.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.3;m.roughness=0.32;}m.envMapIntensity=0.9;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
+  const paintOf=src=>{if(!paintCache.has(src)){let m=src.clone();if(fine&&!QG.lo&&m.isMeshStandardMaterial&&!m.isMeshPhysicalMaterial){const p=new THREE.MeshPhysicalMaterial();THREE.MeshStandardMaterial.prototype.copy.call(p,m);p.clearcoat=1;p.clearcoatRoughness=0.05;p.envMapIntensity=Math.max(1.3,m.envMapIntensity||1);m=p;}if(T.fleet){paintCache.set(src,m);allMats.push(m);return m;}m.color=new THREE.Color(color);if(k==='utilitaria')m.color.multiplyScalar(1.7);if(opt.plain){m.map=null;}if(!m.metalnessMap){m.metalness=0.35;m.roughness=0.24;}m.envMapIntensity=1.25;paintCache.set(src,m);allMats.push(m);}return paintCache.get(src);};
   const dress=obj=>{obj.traverse(o=>{if(!o.isMesh)return;const r=o.userData.role;
     if(r==='paint'){o.material=paintOf(o.material);o.castShadow=shadow;}
     else if(r==='tail'||r==='head'||r==='rev'||r==='blinkL'||r==='blinkR')o.material=lit(o.material,r);
@@ -244,7 +244,7 @@ function buildCarLOD(){if(CARLOD.inst)return;CARLOD.inst={};const cnt={};CARLOD.
       if(G.r==='tail'||G.r==='head'){mt.emissive=new THREE.Color(G.r==='tail'?0xff1a0a:0xfff2d6);mt.emissiveMap=null;mt.emissiveIntensity=0.1;}
       const im=new THREE.InstancedMesh(gMerge(G.list),mt,n);im.frustumCulled=false;im.receiveShadow=true;im.userData.role=G.r;im.userData.cap=n;
       for(let i=0;i<n;i++)im.setColorAt(i,new THREE.Color(1,1,1));im.count=0;scene.add(im);return im;});});}
-function updateCarLOD(){if(!CARLOD.inst)buildCarLOD();const cx=camera.position.x,cz=camera.position.z,R2=(MOBILE?32:48)**2,n={},night=NIGHT||WX!=='clear';
+function updateCarLOD(){if(!CARLOD.inst)buildCarLOD();const cx=camera.position.x,cz=camera.position.z,R2=(MOBILE?40:QG.hi?130:90)**2,n={},night=NIGHT||WX!=='clear';
   for(const k in CARLOD.inst)n[k]=0;
   for(let i=0;i<CARLOD.list.length;i++){const e=CARLOD.list[i],g=e.g;if(!g.parent||!g.visible)continue;const d2=(g.position.x-cx)**2+(g.position.z-cz)**2,near=d2<R2;e.core.visible=near;if(near)continue;
     const L=CARLOD.inst[e.k];if(!L)continue;const j=n[e.k]++;if(j>=L[0].userData.cap){n[e.k]--;e.core.visible=true;continue;}g.updateMatrix();

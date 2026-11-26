@@ -226,7 +226,7 @@ function updateCamera(dt){
   const m=pl.mesh,S=pl.susp;if(pl.wat){const W=pl.wat;m.position.set(pl.x,W.y,pl.z);m.rotation.set(W.roll,pl.h,W.pitch);m.updateMatrixWorld();}else if(pl.flip){const F=pl.flip;m.position.set(pl.x,pl.terrH+Math.abs(Math.sin(F.phi))*pl.T.W*0.45+(Math.abs(F.phi)>2?pl.T.H*0.85:0)*Math.min(1,(Math.abs(F.phi)-2)/1.1),pl.z);m.rotation.set(F.phi,pl.h,0);}else{m.position.set(pl.x,(pl.yb??pl.terrH)+S.h,pl.z);m.rotation.set(S.r+pl.slopeR,pl.h,S.p+pl.slopeP+(pl.air?Math.max(-0.12,Math.min(0.12,-(pl.vb||0)*0.012)):0));}m.updateMatrixWorld();
   pl.ck.spin.rotation.x=pl.delta*pl.P.ratio;
   // con l'abitacolo fotografico si vede solo la foto: niente cofano 3D dal parabrezza (le luci restano accese)
-  if(pl.mesh&&pl.mesh.userData.ckHid!==CKO.on){pl.mesh.userData.ckHid=CKO.on;pl.mesh.traverse(o=>{if(o.isMesh||o.isSprite||o.isPoints||o.isLine){if(CKO.on){o.userData.vis0=o.visible;o.visible=false;}else if(o.userData.vis0!==undefined){o.visible=o.userData.vis0;delete o.userData.vis0;}}});}
+  if(pl.mesh&&pl.mesh.userData.ckHid!==CKO.on){pl.mesh.userData.ckHid=CKO.on;pl.mesh.traverse(o=>{if(o.isMesh||o.isSprite||o.isPoints||o.isLine)o.layers.set(CKO.on?1:0);});}
   if(CKO.on&&CKO.cfg.g)ckNeedles();
   if(CKO.on&&CKO.cfg.wheel){const Wh=CKO.cfg.wheel,th=pl.delta*pl.P.ratio,c=Math.cos(th),sn=Math.sin(th),k=Wh.a/Wh.b;if(Math.abs(th-(CKO.th??99))>0.002){CKO.th=th;document.getElementById('ckWheel').style.transform='matrix('+c+','+sn/k+','+(-sn*k)+','+c+',0,0)';}}
   if(pl.ck.wipers.length){const on=WX==='rain';pl.wipT=(pl.wipT||0)+(on?dt:0);const th=on?(1-Math.cos(pl.wipT*Math.PI*1.25))/2*1.35:0;
