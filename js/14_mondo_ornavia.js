@@ -212,6 +212,13 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       tick(dt){for(let i=M.length-1;i>=0;i--){const q=M[i];if(q.t>0){q.t-=dt;continue;}q.m.visible=true;
         if(q.ph==='in'){if(walk(q.m,q.door.x,q.door.z,1.3,dt)){q.m.visible=false;const m=q.m;M.splice(i,1);setTimeout(()=>{if(m.parent)m.visible=true;},45000);}}
         else if(walk(q.m,q.to.x,q.to.z,1.25,dt)){scene.remove(q.m);M.splice(i,1);}}}};})();
+  // manifesti pubblicitari (inventati) incollati ai muri
+  const POSTER=(()=>{const A=[['CONCERTO','in Piazza Grande','sabato ore 21','#1b2a6b','#ffd23f'],['BIRRA ORSA','fresca come la montagna','','#0f5132','#f4e9c8'],['CIRCO STELLATO','dal 12 al 20','Porto Calvino','#7a0f2e','#ffe08a'],['SALDI','fino al -50%','Ipermercato Orna','#e8222b','#ffffff'],
+      ['VALCOM 5G','la rete di Valdonia','','#0a4fa8','#ffffff'],['MOSTRA','Pittori di Valdonia','Museo Civico','#f2ead8','#2b2b2b'],['IL RITORNO','al Cinema Odeon','','#101010','#ff6a3d'],['SAGRA','della castagna','Pievalta','#7a4a1e','#ffe9b0']];
+    const t=canvasTex(1024,(g,n)=>{const W=n/4,H=n/2;A.forEach(([a,b,c,bg,fg],i)=>{const x=(i%4)*W,y=((i/4)|0)*H;g.fillStyle='#e6e0d2';g.fillRect(x,y,W,H);g.fillStyle=bg;g.fillRect(x+10,y+10,W-20,H-20);g.fillStyle=fg;g.textAlign='center';
+      g.font="bold 54px 'Bebas Neue',Impact,Arial";let sz=54;while(g.measureText(a).width>W-40&&sz>20){sz-=2;g.font=`bold ${sz}px 'Bebas Neue',Impact,Arial`;}g.fillText(a,x+W/2,y+H*0.3);
+      g.font="28px 'Oswald',Arial";g.fillText(b,x+W/2,y+H*0.55);g.font="bold 24px 'Oswald',Arial";g.fillText(c,x+W/2,y+H*0.8);g.globalAlpha=0.25;g.fillStyle='#fff';g.fillRect(x+10,y+H*0.6+((i*37)%60),W-20,3);g.globalAlpha=1;});});
+    return new THREE.MeshStandardMaterial({map:t,roughness:0.9,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});})();
   // località turistiche: negozietti, souvenir, gelaterie, dehors
   const TOURIST=new Set(['Lido Serena','Porto Calvino','Castellago','Montecastro','San Rocco Terme','Pievalta']);
   // insegne al neon: stesso atlante, solo la fascia alta, che lampeggia (di sera molto evidente)
@@ -845,6 +852,13 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const sg=new THREE.Mesh(new THREE.CircleGeometry(0.32,16),tm('bus',(g,w,h)=>{g.fillStyle='#f2c400';g.beginPath();g.arc(w/2,h/2,w/2-2,0,7);g.fill();g.fillStyle='#103a7a';g.font='bold 80px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('BUS',w/2,h/2+4);}));
           sg.position.set(bx+tx*2.3+nx*sd*0.6,h+2.75,bz+tz*2.3+nz*sd*0.6);sg.rotation.y=Math.atan2(nx*sd,nz*sd);scene.add(sg);T.dobj.push(sg);
           addSeg(T,bx-tx*1.8,bz-tz*1.8,bx+tx*1.8,bz+tz*1.8);}
+        // parcheggi a pagamento (strisce blu) lungo i viali larghi di città, con auto in sosta
+        if(R.c>=4&&R.c<=7&&R.w>=9&&L>=40&&!R.t&&!R.b&&NW.cityAt(R.X[i],R.Z[i])&&hsh(l[q],i+501)<0.4){const sd=hsh(l[q],i+502)<0.5?1:-1,off=R.w/2-1.15,hh0=R.Hh[i];
+          for(let s=a+14;s<b-14;s+=5.6){const t=(s-a)/L,x=R.X[i]+tx*(s-a)+nx*sd*off,z=R.Z[i]+tz*(s-a)+nz*sd*off,h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t;if(NW.nearJ(x,z,16))continue;
+            {const r=Math.atan2(-tz,tx),hx=nx*sd*1.05,hz=nz*sd*1.05;pb.add(GB,0x1f5fd0,x+hx,h+0.03,z+hz,r,5.4,0.012,0.12);pb.add(GB,0x1f5fd0,x-hx,h+0.03,z-hz,r,5.4,0.012,0.12);pb.add(GB,0x1f5fd0,x+tx*2.7,h+0.03,z+tz*2.7,r,0.12,0.012,2.1);}
+            if(hsh((s*3)|0,l[q])<0.6){const k=hsh((s*5)|0,l[q]+1)<0.12?'furgone':randType(),c=makeCar(k,randColor(),false);c.position.set(x,h,z);c.rotation.y=Math.atan2(-tz,tx)+(hsh((s*7)|0,3)<0.5?0:Math.PI);scene.add(c);T.dobj.push(c);
+              const TT=TYPES[k],ex=tx*TT.L/2,ez=tz*TT.L/2;addSeg(T,x-ex,z-ez,x+ex,z+ez);}}
+          {const s=a+L/2,x=R.X[i]+tx*(s-a)+nx*sd*(R.w/2+0.5),z=R.Z[i]+tz*(s-a)+nz*sd*(R.w/2+0.5),hb=R.Hh[i]+NW.SWH,r=Math.atan2(-tz,tx);pb.add(GB,0x8a8d90,x,hb+1.2,z,r,0.07,2.4,0.07);pb.add(GB,0x1f5fd0,x,hb+2.3,z,r,0.05,0.6,0.6);pb.add(GB,0xffffff,x+nx*sd*0.03,hb+2.3,z+nz*sd*0.03,r,0.04,0.36,0.08);}}
         // motorini parcheggiati e fioriere
         if(hsh(l[q],i)<0.08){const s=a+L*0.5,x=R.X[i]+tx*(s-a),z=R.Z[i]+tz*(s-a),h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*0.5+NW.SWH,sd=hsh(i,l[q])<0.5?1:-1,off=R.w/2+0.9;if(!NW.nearJ(x,z,12))
           for(let k=0;k<2+((hsh(i,3)*3)|0);k++){const vx=x+nx*sd*off+tx*(k*0.9),vz=z+nz*sd*off+tz*(k*0.9),c=VESPA[(i+k)%5],r2=ry+Math.PI/2+0.3;
@@ -951,12 +965,16 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function detail(T){if(T.det)return;T.det=true;T.dobj=[];T.segs=[];furniture(T);VX.tile(T);const x0=T.i*TS,z0=T.j*TS,rnd=a=>hsh(T.i*131+a,T.j*977+a*7);
     if(HIDE){(bldT.get(T.key)||[]).forEach(bi=>{const b=NW.J.blds[bi],rg=b[3],n=rg.length/2;if(b[6]>2)return;for(let q=0;q<n;q++)addSeg(T,rg[q*2],rg[q*2+1],rg[(q+1)%n*2],rg[(q+1)%n*2+1]);});return;}
     // edifici: facciate per tipo, negozi al piano terra sul lato della strada, tetti a falde o piani
-    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],CRP=[],SPI=[],col=new THREE.Color();
+    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],CRP=[],SPI=[],PSP=[],PSU=[],PSI=[],col=new THREE.Color();
       const quad=(G,ax,az,bx,bz,ya,yb,u0,u1,va,vb)=>{const s=G.P.length/3;G.P.push(ax-x0,ya,az-z0,bx-x0,ya,bz-z0,ax-x0,yb,az-z0,bx-x0,yb,bz-z0);G.U.push(u0,va,u1,va,u0,vb,u1,vb);for(let t=0;t<4;t++)G.C.push(col.r,col.g,col.b);G.I.push(s,s+1,s+2,s+1,s+3,s+2);};
       const tri=(A,Uv,I,pts,uvs)=>{const s=A.length/3;pts.forEach(p=>A.push(p[0]-x0,p[1],p[2]-z0));uvs.forEach(u=>Uv.push(u[0],u[1]));I.push(s,s+1,s+2);};
       bl.forEach(bi=>{const b=NW.J.blds[bi],h=b[0],cc=b[1],gnd=b[2],ring=b[3],church=b[4],holes=b[5],mh=b[6]||0,kd=b[7]==null?0:b[7],roof=b[8]||0;const n=ring.length/2;if(n<3)return;
-        const k0=(kd&15)%FAC_N,kind=FAC_HD?hdKind(k0,(NW.cityAt(ring[0],ring[1])||{}).st,h,bi):k0,shopF=(kd&16)&&mh<0.5&&h>6,[FM,su,sv]=FAC[kind],G=GG[kind];
-        col.setHex(church===1?0xe4ddd0:cc).convertSRGBToLinear();if(kind===11||kind===12||kind===13||kind===17||kind===18||kind===14||kind===19||kind===16||kind===20)col.setRGB(0.92+0.08*hsh(bi,3),0.92+0.08*hsh(bi,3),0.9+0.08*hsh(bi,4));const y0=mh>0.5?gnd:gnd-1.5,y1=gnd+h;
+        const blk=hsh(Math.floor(ring[0]/115)+911,Math.floor(ring[1]/115)+373),bseed=hsh(bi,77)<0.75?((blk*99991)|0):bi;   /* isolati con uno stile comune: moderno, storico, mattoni... */
+        const k0=(kd&15)%FAC_N,kind=FAC_HD?hdKind(k0,(NW.cityAt(ring[0],ring[1])||{}).st,h,bseed):k0,shopF=(kd&16)&&mh<0.5&&h>6,[FM,su,sv]=FAC[kind],G=GG[kind];
+        col.setHex(church===1?0xe4ddd0:cc).convertSRGBToLinear();if(kind===11||kind===12||kind===13||kind===17||kind===18||kind===14||kind===19||kind===16||kind===20||kind===15||kind===21||kind===22){
+          // tinte realistiche (ocra, terracotta, salmone, crema, giallino, verde salvia, grigi, azzurrino), simili nello stesso isolato
+          const PAL=[0xe3c590,0xd59a78,0xe8b49a,0xefe3c8,0xf0dc9c,0xc9d3b0,0xcfcac2,0xbfcad0,0xc98a6a,0xf2efe8,0xdcc8a8,0xb9a48a],pi=hsh(bi,3)<0.6?((blk*PAL.length)|0):((hsh(bi,5)*PAL.length)|0);
+          col.setHex(PAL[pi%PAL.length]).convertSRGBToLinear();const w=kind===13||kind===16||kind===20||kind===14||kind===19?0.35:0.75;col.setRGB(1-w+w*col.r*(0.94+0.12*hsh(bi,4)),1-w+w*col.g*(0.94+0.12*hsh(bi,4)),1-w+w*col.b*(0.94+0.12*hsh(bi,4)));}const y0=mh>0.5?gnd:gnd-1.5,y1=gnd+h;
         let cx=0,cz=0;for(let q=0;q<n;q++){cx+=ring[q*2];cz+=ring[q*2+1];}cx/=n;cz/=n;
         // grattacieli tutti diversi: vetri colorati, gradoni, guglie e corone
         const tower=kind===2&&n===4&&h>45&&!church,tv=hsh(bi,61);let yTop=y1;
@@ -983,6 +1001,14 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             if(['bar','food','gel','pub'].includes(SHOPS[cell][3])&&(zone==='t'||zone==='c')&&hsh(bi,q+31)<0.7){const mc=(c0+c1)/2;for(let j=0;j<2;j++){const off=(j-0.5)*2.2;DH.push(ox+rx*(mc+off)+nx*2.3,gy,oz+rz*(mc+off)+nz*2.3,hsh(bi,q+j+40));}}
             if(['bar','food','sweet','moda','shop','pub'].includes(SHOPS[cell][3])&&hsh(bi,q+50)<0.55){const ac=new THREE.Color([0xb8312f,0x2e6e3e,0xc9a227,0x1f4f8a,0x7a3b6b,0xd8d2c4][(hsh(bi,q+9)*6)|0]).convertSRGBToLinear(),s1=AP.length/3,ex=nx*1.4,ez=nz*1.4,y=gnd+3.25;
               AP.push(Lx-x0,y+0.6,Lz-z0,Rx-x0,y+0.6,Rz-z0,Lx+ex-x0,y,Lz+ez-z0,Rx+ex-x0,y,Rz+ez-z0);for(let t=0;t<4;t++)AC.push(ac.r,ac.g,ac.b);AI.push(s1,s1+2,s1+1,s1+1,s1+2,s1+3);}}}
+        // manifesti sui muri e portoni carrai verso il cortile
+        if(n===4&&h>6&&!church&&NW.cityAt(cx,cz)){
+          const side=(q,fn)=>{const ax=ring[q*2],az=ring[q*2+1],bx=ring[(q*2+2)%8],bz=ring[(q*2+3)%8],L=Math.hypot(bx-ax,bz-az);if(L<6)return;let nx=-(bz-az)/L,nz=(bx-ax)/L;const mx=(ax+bx)/2,mz=(az+bz)/2;if((mx-cx)*nx+(mz-cz)*nz<0){nx=-nx;nz=-nz;}
+            const tx=(bx-ax)/L,tz=(bz-az)/L,sg=((tx*nz-tz*nx)>0?1:-1);fn(mx,mz,nx,nz,tx*sg,tz*sg,L);};
+          if(hsh(bi,201)<0.2)side(hsh(bi,203)<0.5?1:3,(mx,mz,nx,nz,rx,rz,L)=>{const pi=(hsh(bi,204)*8)|0,u0=(pi%4)/4,u1=u0+0.25,v1=1-((pi/4)|0)/2,v0=v1-0.5,w=2.2,hh=3.0,o=(hsh(bi,205)-0.5)*(L-3),ox=mx+nx*0.05+rx*o,oz=mz+nz*0.05+rz*o,b=PSP.length/3,y=gnd+0.9;
+            PSP.push(ox-rx*w/2-x0,y,oz-rz*w/2-z0,ox+rx*w/2-x0,y,oz+rz*w/2-z0,ox-rx*w/2-x0,y+hh,oz-rz*w/2-z0,ox+rx*w/2-x0,y+hh,oz+rz*w/2-z0);PSU.push(u0,v0,u1,v0,u0,v1,u1,v1);PSI.push(b,b+1,b+2,b+1,b+3,b+2);});
+          if(!shopF&&hsh(bi,202)<0.3)side(0,(mx,mz,nx,nz,rx,rz,L)=>{const[u0,v0,u1,v1]=shopUV(SHOPS.length-1),w=3.2,ox=mx+nx*0.05,oz=mz+nz*0.05,b=SP.length/3,y=gnd+0.02;
+            SP.push(ox-rx*w/2-x0,y,oz-rz*w/2-z0,ox+rx*w/2-x0,y,oz+rz*w/2-z0,ox-rx*w/2-x0,y+3.8,oz-rz*w/2-z0,ox+rx*w/2-x0,y+3.8,oz+rz*w/2-z0);SU.push(u0,v0,u1,v0,u0,v1,u1,v1);SI.push(b,b+1,b+2,b+1,b+3,b+2);});}
         // grattacieli brandizzati: logo di una grande azienda (inventata) in cima a due facce opposte, illuminato di sera
         if(n===4&&y1-gnd>50&&hsh(bi,91)<0.65){const li=(hsh(bi,92)*8)|0,[lu0,lv0,lu1,lv1]=[(li%2)/2,1-(((li/2)|0)+1)/4,(li%2)/2+0.5,1-((li/2)|0)/4];
           for(const f of [0,2]){const ax=ring[f*2],az=ring[f*2+1],bx=ring[(f*2+2)%8],bz=ring[(f*2+3)%8],L=Math.hypot(bx-ax,bz-az);if(L<14)continue;let nx=-(bz-az)/L,nz=(bx-ax)/L;const mx=(ax+bx)/2,mz=(az+bz)/2;if((mx-cx)*nx+(mz-cz)*nz<0){nx=-nx;nz=-nz;}
@@ -1007,7 +1033,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             quad(G,ax+ox,az+oz,bx+ox,bz+oz,y1-0.5,y1+0.6,0.02,0.04,0.02,0.04);}}}});
       const put=(A,Uv,I,M,Cc)=>{if(!I.length)return;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(A,3));if(Uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(Uv,2));if(Cc)g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));g.setIndex(I);g.computeVertexNormals();
         const m=new THREE.Mesh(g,M);m.position.set(x0,0,z0);m.castShadow=true;m.receiveShadow=true;scene.add(m);T.dobj.push(m);};
-      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);DEHORS(T,DH,x0,z0);TOWERX(T,CRP,SPI,x0,z0);}
+      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);put(PSP,PSU,PSI,POSTER);DEHORS(T,DH,x0,z0);TOWERX(T,CRP,SPI,x0,z0);}
     // alberi veri (censimento e filari)
     const tl=treeT.get(T.key);if(tl&&tl.length){const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),co=new THREE.Color(),UPV=new THREE.Vector3(0,1,0);
       const by=[[],[],[],[],[],[]];tl.forEach(ti=>{const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;

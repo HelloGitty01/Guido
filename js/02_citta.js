@@ -135,6 +135,9 @@ const shopPick=(zone,r)=>{const L=SHOPZ[zone]||SHOPZ.s;return L[Math.min(L.lengt
 const SHOPFONTS=["bold {s}px 'Oswald',Arial Narrow,Arial","{s}px 'Playfair Display',Georgia,serif","{s}px 'Pacifico','Brush Script MT',cursive","{s}px 'Bebas Neue',Impact,Arial Narrow","{s}px 'Righteous','Arial Rounded MT Bold',Arial","{s}px 'Monoton','Righteous',Impact"];
 const shopTex=(()=>{const c=document.createElement('canvas');c.width=256*SHOP_COLS;c.height=256*SHOP_ROWS;const g=c.getContext('2d');
   const draw=()=>{g.clearRect(0,0,c.width,c.height);SHOPS.forEach(([name,bg,fg,cat,zone,st,neon],k)=>{const x0=(k%SHOP_COLS)*256,y0=((k/SHOP_COLS)|0)*256;g.fillStyle='#8f8676';g.fillRect(x0,y0,256,256);
+    if(!name&&k===SHOPS.length-1){g.fillStyle='#6f6a60';g.fillRect(x0,y0,256,256);g.fillStyle='#d8d0c0';g.beginPath();g.moveTo(x0+18,y0+256);g.lineTo(x0+18,y0+96);g.arc(x0+128,y0+96,110,Math.PI,0);g.lineTo(x0+238,y0+256);g.fill();
+      g.fillStyle='#4a2f1c';g.beginPath();g.moveTo(x0+30,y0+256);g.lineTo(x0+30,y0+100);g.arc(x0+128,y0+100,98,Math.PI,0);g.lineTo(x0+226,y0+256);g.fill();g.strokeStyle='#2e1d10';g.lineWidth=3;for(let xx=x0+44;xx<x0+226;xx+=14){g.beginPath();g.moveTo(xx,y0+256);g.lineTo(xx,y0+60);g.stroke();}
+      g.fillStyle='#2e1d10';g.fillRect(x0+126,y0+20,4,236);g.fillStyle='#b89a5a';g.fillRect(x0+112,y0+170,6,10);g.fillRect(x0+138,y0+170,6,10);return;}
     if(!name){g.fillStyle='#5a3e28';g.fillRect(x0+80,y0+70,96,186);g.fillStyle='#3a2818';g.fillRect(x0+127,y0+70,2,186);g.fillStyle='#b89a5a';g.fillRect(x0+112,y0+160,6,6);g.fillRect(x0+138,y0+160,6,6);g.fillStyle='#d8d0c0';g.fillRect(x0+70,y0+60,116,10);return;}
     // fascia dell'insegna: piena, con cornice, o lettere su fondo scuro per il neon
     const nb=st===5;g.fillStyle=nb?'#101014':bg;g.fillRect(x0+8,y0+22,240,58);if(st===1||st===4){g.strokeStyle=fg;g.globalAlpha=0.6;g.lineWidth=2;g.strokeRect(x0+13,y0+27,230,48);g.globalAlpha=1;}
