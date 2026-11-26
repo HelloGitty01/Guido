@@ -322,8 +322,7 @@ const LOCINFO={
   'Ferrandina':['Città industriale','≈ 65.000 abitanti · 2,2 km','Capannoni, fabbriche e magazzini attorno a un centro operaio. Officine, carrozzerie, discount e tanto traffico di camion.'],
   'Collebruna':['Città di collina','≈ 45.000 abitanti · 1,8 km','Città di collina con un bel centro storico, la cattedrale e quartieri residenziali verdi.'],
   'Pradalto':['Borgo di montagna','poche baite · 1235 m','Un pugno di baite di legno sotto la neve, la fontana in piazzetta e le cataste di legna. Si scende a valle per una strada stretta con sei tornanti.'],
-  'Vallombra':['Borgo di montagna','poche baite · 1207 m','Borgo innevato in fondo a una lunga strada di tornanti nel bosco. Silenzio, vento e vista sulle valli.'],
-  'Casa di Guido':['Casa di Guido','Garage con tutte le auto','Si parte dal garage di casa con l\'auto scelta. Fermandoti accanto a un\'altra auto del garage puoi cambiarla.']};
+  'Vallombra':['Borgo di montagna','poche baite · 1207 m','Borgo innevato in fondo a una lunga strada di tornanti nel bosco. Silenzio, vento e vista sulle valli.']};
 // arrivo: le mete come pulsanti; attive solo dove servono (Da A a B e Gara)
 function destCards(){const sd=document.getElementById('selDest'),box=document.getElementById('destList'),card=document.getElementById('destCard');if(!sd||!box)return;const m=document.getElementById('selMode').value,on=m==='nav'||m==='race';
   card.style.opacity=on?'':'0.45';document.getElementById('destNote').textContent=on?'Scegli dove arrivare.':'L\'arrivo serve solo nelle modalità "Da A a B" e "Gara".';

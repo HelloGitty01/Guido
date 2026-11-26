@@ -75,7 +75,7 @@ function hW(u,v){return[HOME.x+u*HOME.ca-v*HOME.sa,HOME.z+u*HOME.sa+v*HOME.ca];}
 function hL(x,z){const dx=x-HOME.x,dz=z-HOME.z;return[dx*HOME.ca+dz*HOME.sa,-dx*HOME.sa+dz*HOME.ca];}
 function inGarage(x,z){const[u,v]=hL(x,z);return u>-26&&u<-2&&v>-36&&v<-24.6;}
 window.HOMEZ2=(x,z)=>{if(!HOME.ok||Math.abs(x-HOME.x)+Math.abs(z-HOME.z)>160)return false;const[u,v]=hL(x,z);return u>-68&&u<37&&Math.abs(v)<45;};window.HOMEZ=HOMEZ;function HOMEZ(x,z){if(!HOME.ok)return false;if(Math.abs(x-HOME.x)+Math.abs(z-HOME.z)>120)return false;const[u,v]=hL(x,z);return(u>-28.5&&u<0.5&&v>-24.8&&v<4.5)||(u>-26&&u<-2&&v>=-36&&v<=-24.8)||(u>-61&&u<-33&&v>4&&v<14);}
-HOME.init=function(){const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign(HOME,{ok:true,x:m.x,z:m.z,A:m.a,ca:Math.cos(m.a),sa:Math.sin(m.a),y:m.h});
+HOME.init=function(){return;/* la casa di Guido è stata tolta */const m=NW&&NW.J.meta.home;if(!m||!NWT)return;Object.assign(HOME,{ok:true,x:m.x,z:m.z,A:m.a,ca:Math.cos(m.a),sa:Math.sin(m.a),y:m.h});
   NW.roads.forEach(R=>{if(R.n==='Vialetto di Casa Guido')R.priv=1;});
   {const[x,z]=hW(-11,0);HOME.pi=NW.places.length;NW.places.push({n:'Casa di Guido',t:5,x,z,R:30,home:1});}
   HOME.y=NW.Hg(HOME.x,HOME.z);
