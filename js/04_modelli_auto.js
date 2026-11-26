@@ -258,27 +258,40 @@ function makeCarGLB(k,color,shadow,fine,opt={}){
     [[ud.indL,-1],[ud.indR,1]].forEach(([mm,sd])=>{[hl-0.03,-hl+0.03].forEach(x=>{const f=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.05,0.07),mm);f.position.set(x,k==='utilitaria'?(x>0?0.66:0.78):hy+0.16,sd*(T.W/2-(k==='utilitaria'?0.12:0.16)));gx.add(f);});});}
   const blob=new THREE.Mesh(new THREE.PlaneGeometry(T.L+0.7,T.W+0.6),blobM);blob.rotation.x=-Math.PI/2;blob.position.y=0.035;g.add(blob);
   [...g.children].forEach(c=>{if(c!==core)core.add(c);});
-  if(!fine&&X.lod)CARLOD.list.push({g,core,k,col:new THREE.Color(color)});
+  if(!fine&&X.lod)CARLOD.list.push({g,core,k,col:T.livery?new THREE.Color(1,1,1):new THREE.Color(color).convertSRGBToLinear(),stat:!shadow});
   return g;}
-// livello lontano: tutte le auto lontane di un tipo disegnate insieme (poche chiamate grafiche)
-const CARLOD={list:[],inst:null},CARLOD_TYRE=new THREE.MeshStandardMaterial({color:0x1c1c1e,roughness:0.9});
-function buildCarLOD(){if(CARLOD.inst)return;CARLOD.inst={};const cnt={};CARLOD.list.forEach(e=>cnt[e.k]=(cnt[e.k]||0)+1);
-  Object.keys(CARX).forEach(k=>{const X=CARX[k];if(!X.lod)return;const n=(cnt[k]||0)+6,o=X.lod;o.updateMatrixWorld(true);const by=new Map();
-    {const tg=new THREE.CylinderGeometry(1,1,0.2,10).rotateX(Math.PI/2),tm=new THREE.Mesh(tg),tl=[];X.wheels.forEach(w=>{const M=new THREE.Matrix4().compose(w.c,new THREE.Quaternion(),new THREE.Vector3(w.r,w.r,1));tl.push(gBake(tm,M));});
-     if(tl.length)by.set('tyre',{mat:CARLOD_TYRE,r:'wheel',list:tl});}
-    o.traverse(m=>{if(!m.isMesh||m.userData.role==='wheel')return;const r=m.userData.role,key=m.material.uuid+'|'+r;if(!by.has(key))by.set(key,{mat:m.material,r,list:[]});by.get(key).list.push(gBake(m,m.matrixWorld));});
-    CARLOD.inst[k]=[...by.values()].map(G=>{let mt=G.mat.clone();
-      if(G.r==='paint'){mt.color.set(0xffffff);if(k==='utilitaria')mt.color.setScalar(1.7);if(!mt.metalnessMap){mt.metalness=0.3;mt.roughness=0.32;}}
-      if(G.r==='tail'||G.r==='head'){mt.emissive=new THREE.Color(G.r==='tail'?0xff1a0a:0xfff2d6);mt.emissiveMap=null;mt.emissiveIntensity=0.1;}
-      const im=new THREE.InstancedMesh(gMerge(G.list),mt,n);im.frustumCulled=false;im.receiveShadow=true;im.userData.role=G.r;im.userData.cap=n;
-      for(let i=0;i<n;i++)im.setColorAt(i,new THREE.Color(1,1,1));im.count=0;scene.add(im);return im;});});}
-function updateCarLOD(){if(!CARLOD.inst)buildCarLOD();const cx=camera.position.x,cz=camera.position.z,R2=(MOBILE?40:QG.hi?130:90)**2,n={},night=NIGHT||WX!=='clear';
-  for(const k in CARLOD.inst)n[k]=0;
-  for(let i=0;i<CARLOD.list.length;i++){const e=CARLOD.list[i],g=e.g;if(!g.parent||!g.visible)continue;const d2=(g.position.x-cx)**2+(g.position.z-cz)**2,near=d2<R2;e.core.visible=near;if(near)continue;
-    const L=CARLOD.inst[e.k];if(!L)continue;const j=n[e.k]++;if(j>=L[0].userData.cap){n[e.k]--;e.core.visible=true;continue;}g.updateMatrix();
-    for(let q=0;q<L.length;q++){const im=L[q];im.instanceMatrix.array.set(g.matrix.elements,j*16);if(im.userData.role==='paint')im.instanceColor.setXYZ(j,e.col.r,e.col.g,e.col.b);}}
-  for(const k in CARLOD.inst)CARLOD.inst[k].forEach(im=>{im.count=n[k];im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
-    if(im.userData.role==='tail')im.material.emissiveIntensity=night?0.9:0.1;else if(im.userData.role==='head')im.material.emissiveIntensity=night?2.4:0.1;});}
+// auto disegnate in gruppo (poche chiamate grafiche):
+//  'mid' = modello completo, per le auto ferme vicine e per il traffico a media distanza; 'lod' = modello semplificato da lontano.
+//  Restano auto singole solo quelle molto vicine (e il traffico entro qualche decina di metri, che ha stop e frecce).
+const CARLOD={list:[],inst:null,tiers:{}},CARLOD_TYRE=new THREE.MeshStandardMaterial({color:0x1c1c1e,roughness:0.9});
+function carTierParts(k,which){const X=CARX[k],T=TYPES[k],o=which==='mid'?X.full:X.lod;if(!o)return null;o.updateMatrixWorld(true);const by=new Map();
+  if(which==='lod'){const tg=new THREE.CylinderGeometry(1,1,0.2,10).rotateX(Math.PI/2),tm=new THREE.Mesh(tg),tl=[];X.wheels.forEach(w=>{const M=new THREE.Matrix4().compose(w.c,new THREE.Quaternion(),new THREE.Vector3(w.r,w.r,1));tl.push(gBake(tm,M));});if(tl.length)by.set('tyre',{mat:CARLOD_TYRE,r:'wheel',list:tl});}
+  o.traverse(m=>{if(!m.isMesh||!m.visible)return;const r=m.userData.role;if(which==='lod'&&r==='wheel')return;if(r==='cage'||r==='beaconL'||r==='beaconR'||r==='taxib'&&which==='lod')return;const key=m.material.uuid+'|'+r;if(!by.has(key))by.set(key,{mat:m.material,r,list:[]});by.get(key).list.push(gBake(m,m.matrixWorld));});
+  {const bg=new THREE.PlaneGeometry(T.L+0.7,T.W+0.6).rotateX(-Math.PI/2).translate(0,0.035,0);by.set('blob',{mat:blobM,r:'blob',list:[gBake(new THREE.Mesh(bg),new THREE.Matrix4())]});}
+  return[...by.values()].map(G=>{const mt=G.r==='blob'||G.mat===CARLOD_TYRE?G.mat:G.mat.clone();
+    if(G.r==='paint'){mt.color.set(0xffffff);if(T.plain)mt.map=null;if(!mt.metalnessMap){mt.metalness=0.35;mt.roughness=which==='mid'?0.24:0.32;}mt.envMapIntensity=1.25;}
+    if(G.r==='tail'||G.r==='head'){mt.color=new THREE.Color(G.r==='tail'?0xb01008:0xf4f4ee);if(G.r==='tail')mt.map=null;mt.emissive=new THREE.Color(G.r==='tail'?0xff1a0a:0xfff2d6);mt.emissiveMap=null;mt.emissiveIntensity=0.1;}
+    if(G.r==='blinkL'||G.r==='blinkR'){mt.color=new THREE.Color(0xff9a10);mt.map=null;}
+    return{geo:gMerge(G.list),mat:mt,r:G.r};});}
+function carTier(k,which,need){const key=k+'|'+which;let t=CARLOD.tiers[key];if(t===undefined){const parts=carTierParts(k,which);t=CARLOD.tiers[key]=parts?{parts,ims:null,cap:0}:null;}if(!t)return null;
+  if(need>t.cap){const cap=Math.max(8,Math.ceil(need*1.5));if(t.ims)t.ims.forEach(im=>{scene.remove(im);im.dispose();});
+    t.ims=t.parts.map(P=>{const im=new THREE.InstancedMesh(P.geo,P.mat,cap);im.frustumCulled=false;im.receiveShadow=P.r!=='blob';im.castShadow=which==='mid'&&P.r!=='blob'&&P.r!=='glass';im.userData.role=P.r;
+      if(P.r==='paint'){im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(cap*3).fill(1),3);im.instanceColor.setUsage(THREE.DynamicDrawUsage);}im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.count=0;if(P.r==='blob')im.renderOrder=-1;scene.add(im);return im;});t.cap=cap;}
+  return t;}
+function buildCarLOD(){CARLOD.inst=true;}CARLOD.tier=(k,w,n)=>carTier(k,w,n);
+function updateCarLOD(){const cx=camera.position.x,cz=camera.position.z,R2=(MOBILE?40:QG.hi?130:90)**2,RS2=(MOBILE?10:14)**2,RT2=(MOBILE?25:45)**2,night=NIGHT||WX!=='clear',L=CARLOD.list;
+  // via le auto non più in scena (zone smontate)
+  if((CARLOD.prT=(CARLOD.prT||0)+1)>120){CARLOD.prT=0;CARLOD.list=L.filter(e=>e.g.parent);}
+  const want={},pick=[];
+  for(let i=0;i<L.length;i++){const e=L[i],g=e.g;if(!g.parent||!g.visible){continue;}const ud=g.userData;if(ud.nolod){e.core.visible=true;continue;}
+    const d2=(g.position.x-cx)**2+(g.position.z-cz)**2,st=e.stat&&!ud.mov,tier=d2<(st?RS2:RT2)?null:d2<R2?'mid':'lod';
+    if(!tier){e.core.visible=true;continue;}const key=e.k+'|'+tier;(want[key]||(want[key]=[])).push(e);}
+  const used=new Set();
+  for(const key in want){const[k,which]=key.split('|'),E=want[key],t=carTier(k,which,E.length);if(!t){E.forEach(e=>e.core.visible=true);continue;}used.add(t);
+    for(let j=0;j<E.length;j++){const e=E[j],g=e.g;e.core.visible=false;g.updateMatrix();for(let q=0;q<t.ims.length;q++){const im=t.ims[q];im.instanceMatrix.array.set(g.matrix.elements,j*16);if(im.instanceColor)im.instanceColor.setXYZ(j,e.col.r,e.col.g,e.col.b);}}
+    t.ims.forEach(im=>{im.count=E.length;im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
+      if(im.userData.role==='tail')im.material.emissiveIntensity=night?0.9:0.1;else if(im.userData.role==='head')im.material.emissiveIntensity=night?2.4:0.1;});}
+  for(const key in CARLOD.tiers){const t=CARLOD.tiers[key];if(t&&t.ims&&!used.has(t))t.ims.forEach(im=>{if(im.count){im.count=0;}});}}
 
 function makeCar(k,color,shadow=true,fine=false,opt={}){
   if(CARX[k])return makeCarGLB(k,color,shadow,fine,opt);

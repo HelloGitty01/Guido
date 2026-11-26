@@ -119,6 +119,19 @@ function gMerge(list){let nv=0,ni=0;list.forEach(b=>{nv+=b.n;ni+=b.idx.length;})
   let ov=0,oi=0,anyN=true;list.forEach(b=>{pos.set(b.pos,ov*3);nor.set(b.nor,ov*3);uv.set(b.uv,ov*2);for(let i=0;i<b.idx.length;i++)idx[oi+i]=b.idx[i]+ov;ov+=b.n;oi+=b.idx.length;if(!b.hasN)anyN=false;});
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('normal',new THREE.BufferAttribute(nor,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(idx,1));
   if(!anyN)g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();return g;}
+// unisce le mesh ferme di un gruppo per materiale e per riquadro di 400 m: molte meno chiamate grafiche, stesso aspetto
+const matSig=m=>{if(m.map||m.normalMap||m.alphaMap||m.emissiveMap||m.roughnessMap||m.onBeforeCompile.toString().length>40||m.userData&&Object.keys(m.userData).length)return m.uuid;
+  return [m.type,m.color&&m.color.getHex(),m.emissive&&m.emissive.getHex(),m.emissiveIntensity,m.roughness,m.metalness,m.side,m.transparent,m.opacity,m.alphaTest,m.depthWrite,m.polygonOffset,m.polygonOffsetFactor,m.flatShading,m.toneMapped,m.fog,m.envMapIntensity,m.blending].join(',');};
+function mergeStatic(root,skip,addFn,byUuid){if(root.updateMatrixWorld)root.updateMatrixWorld(true);const B=new Map(),rm=[],keyOf=o=>{const e=o.matrixWorld.elements;return (byUuid?o.material.uuid:o.userData.msig||(o.userData.msig=matSig(o.material)))+'|'+Math.floor(e[12]/400)+'|'+Math.floor(e[14]/400)+'|'+(o.castShadow?1:0)+(o.receiveShadow?1:0)+'|'+o.renderOrder;};
+  const walk=o=>{if(skip&&skip.has(o)||o.userData.glb||o.userData.mixer||o.userData.mov||o.userData.nomerge)return;if(o.isMesh&&!o.isInstancedMesh&&!o.isSkinnedMesh&&o.visible&&!o.userData.mov&&!Array.isArray(o.material)&&!o.material.vertexColors&&!o.morphTargetInfluences&&o.geometry.attributes.position&&!o.geometry.attributes.color&&!o.onBeforeRender.length){
+      const key=keyOf(o);
+      let b=B.get(key);if(!b)B.set(key,b={mat:o.material,cs:o.castShadow,rs:o.receiveShadow,ro:o.renderOrder,list:[],n:0});b.list.push(gBake(o,o.matrixWorld));b.n++;rm.push(o);}
+    for(const c of [...o.children])walk(c);};
+  root.children.slice().forEach(walk);
+  let saved=0;B.forEach(b=>{if(b.n<2){b.skip=true;return;}saved+=b.n-1;});
+  rm.forEach(o=>{if(!B.get(keyOf(o)).skip&&o.parent)o.parent.remove(o);});
+  B.forEach(b=>{if(b.skip)return;const m=new THREE.Mesh(gMerge(b.list),b.mat);m.castShadow=b.cs;m.receiveShadow=b.rs;m.renderOrder=b.ro;m.updateMatrix();m.matrixAutoUpdate=false;(addFn||(x=>root.add(x)))(m);});
+  return saved;}
 function gBox(list){const b=new THREE.Box3();list.forEach(x=>{for(let i=0;i<x.n;i++)b.expandByPoint(_gv.set(x.pos[i*3],x.pos[i*3+1],x.pos[i*3+2]));});return b;}
 function gShift(list,dx,dy,dz,s=1){list.forEach(x=>{for(let i=0;i<x.n;i++){x.pos[i*3]=(x.pos[i*3]+dx)*s;x.pos[i*3+1]=(x.pos[i*3+1]+dy)*s;x.pos[i*3+2]=(x.pos[i*3+2]+dz)*s;}});}
 // fa sì che i materiali dei modelli ricevano il cielo come riflesso e non siano troppo lucidi in assenza di mappe
