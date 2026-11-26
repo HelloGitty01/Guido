@@ -230,7 +230,7 @@ window.__x={setView:v=>{view=v;applyView();},switchCar,JOB,AMB,HZN,pedHit,penalt
 const hud=document.getElementById('hud'),navBox=document.getElementById('navBox'),endBtn=document.getElementById('endBtn');endBtn.onclick=()=>endRun('fine');
 let lastDraw=0;
 function loop(now){
-  if(paused&&started&&!PHOTO.on&&now-lastDraw<45){requestAnimationFrame(loop);return;}lastDraw=now;
+  if(paused&&started&&!PHOTO.on&&menu.style.display==='none'&&now-lastDraw<45){requestAnimationFrame(loop);return;}lastDraw=now;
   const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(!paused&&started&&HOME.mode){simT+=dt;updateLights(simT);HOME.tick(dt);HOME.camera(dt);if(NWT)NWT.TRF.step(dt);drawMini(dt);if(pl.navMsgT>0)pl.navMsgT-=dt;
     if(HOME.mode==='return'&&eng&&AC)eng.master.gain.setTargetAtTime(0,AC.currentTime,0.05);

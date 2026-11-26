@@ -115,11 +115,12 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   const WX=[a,a,-b,-b],WY=[-tw,tw,-tw,tw];
   const hw=[0,1,2,3].map(i=>TH(pl.x+c0*WX[i]+s0*WY[i],pl.z-s0*WX[i]+c0*WY[i]));
   const hF=(hw[0]+hw[1])/2,hR=(hw[2]+hw[3])/2,hL=(hw[0]+hw[2])/2,hRt=(hw[1]+hw[3])/2;
-  pl.slopeP=Math.atan2(hF-hR,wb);pl.slopeR=-Math.atan2(hRt-hL,2*tw);pl.terrH=(hF+hR)/2;
+  {// beccheggio e rollio seguono il terreno con la morbidezza di gomme e molle (prima scattavano sul cordolo)
+   const tP=Math.atan2(hF-hR,wb),tR=-Math.atan2(hRt-hL,2*tw),kS=Math.min(1,dt/0.09);pl.slopeP=pl.slopeP==null?tP:pl.slopeP+(tP-pl.slopeP)*kS;pl.slopeR=pl.slopeR==null?tR:pl.slopeR+(tR-pl.slopeR)*kS;}pl.terrH=(hF+hR)/2;
   // scocca libera in verticale: sulle creste prese forte le ruote si staccano, poi si riatterra
   {const g0=pl.terrH;if(pl.yb==null||!isFinite(pl.yb)||Math.abs(pl.yb-g0)>6){pl.yb=g0;pl.vb=0;pl.gy0=g0;pl.gyS=g0;}
    // profilo "sentito" dalla scocca: gomme e sospensioni assorbono gradini, cordoli e piccole buche (non lanciano la macchina)
-   pl.gyS+=(g0-pl.gyS)*Math.min(1,dt/0.11);const gy=pl.gyS,sp=Math.hypot(pl.vx,pl.vy);
+   const sp=Math.hypot(pl.vx,pl.vy),tauG=Math.max(0.09,Math.min(0.3,0.42/Math.max(1.2,sp)));pl.gyS+=(g0-pl.gyS)*Math.min(1,dt/tauG);const gy=pl.gyS;
    const vg=Math.max(-9,Math.min(9,(gy-pl.gy0)/dt));pl.gy0=gy;const droop=P.truck?0.2:0.14,rel=pl.yb-gy;
    const wz=2*Math.PI*(P.fq||1.3)*1.05,kz=wz*wz,cz=2*Math.min(0.9,(P.zeta||0.3)*1.6)*wz;let acc,N;
    // staccarsi da terra richiede che la strada "scappi" sotto più in fretta della gravità: solo in velocità, su creste vere
@@ -128,10 +129,11 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
    if(pl.air&&(rel<droop||!canFly)){const vi=vg-pl.vb;if(vi>1.5)landing(Math.min(1,vi/6),pl.airT||0);pl.air=false;}
    if(canFly&&!pl.air&&N<0.02&&rel>0.04){pl.air=true;pl.airT=0;}if(pl.air)pl.airT=(pl.airT||0)+dt;
    pl.vb+=acc*dt;pl.yb+=pl.vb*dt;
-   if(pl.yb<gy-0.11){if(pl.vb<vg-3)landing(Math.min(1,(vg-pl.vb)/8),1);pl.yb=gy-0.11;pl.vb=Math.max(pl.vb,vg);}  // finecorsa
+   if(pl.yb<gy-0.08){const pen=gy-0.08-pl.yb;pl.vb+=pen*kz*1.6*dt+Math.max(0,vg-pl.vb)*Math.min(1,dt*18);if(pl.yb<gy-0.16){if(pl.vb<vg-3)landing(Math.min(1,(vg-pl.vb)/8),1);pl.yb=gy-0.16;pl.vb=Math.max(pl.vb,vg);}}  // tampone e finecorsa morbidi
    pl.nLoad=Math.max(0,Math.min(2.6,N));}
   // velocità verticale della strada sotto ogni ruota (dossi, cordoli, buche)
   if(!pl.wh||pl.wh.length!==4)pl.wh=hw.slice();const vroad=hw.map((h,i)=>Math.max(-3,Math.min(3,(h-pl.wh[i])/dt)));pl.wh=hw;
+  {let mx=0,wi=0;vroad.forEach((v,i)=>{if(Math.abs(v)>Math.abs(mx)){mx=v;wi=i;}});pl.suspCd=(pl.suspCd||0)-dt;if(Math.abs(mx)>0.55&&pl.suspCd<=0&&!pl.air&&Math.hypot(pl.vx,pl.vy)>0.8){pl.suspCd=0.14;suspNoise(Math.min(1,(Math.abs(mx)-0.4)/1.6),mx>0,wi<2);}}
   const sfF=surfaceAt(pl.x+c0*a,pl.z-s0*a),sfR=surfaceAt(pl.x-c0*b,pl.z+s0*b);pl.surfR=sfR;
   const wf=s0=>WET<1?(s0==='asphalt'?WET:s0==='dirt'?0.82:0.9):1;
   const ofr=sf=>sf==='asphalt'?1:(P.offroad||1);
@@ -293,6 +295,13 @@ function noiseHit(vol,f,len,t){if(!AC)return;t=t||AC.currentTime;const b=AC.crea
   const n=AC.createBufferSource();n.buffer=b;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f;bp.Q.value=1.2;const g=AC.createGain();g.gain.value=vol;n.connect(bp).connect(g).connect(ACOUT());n.start(t);}
 // atterraggio dopo un salto: tonfo della scocca, gomme che schiacciano e stridono un attimo, finecorsa che batte
 let landCd=0;
+// sospensioni: tonfo della gomma che prende il gradino + colpo secco dell'ammortizzatore e un tintinnio metallico della carrozzeria
+function suspNoise(v,up,front){if(!AC||!v)return;const t=AC.currentTime,P=pl.P||{m:1300},hv=Math.pow(1300/P.m,0.25),out=ACOUT(),pan=AC.createStereoPanner?AC.createStereoPanner():null;
+  const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime((up?95:75)*hv,t);o.frequency.exponentialRampToValueAtTime(38*hv,t+0.16);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.55*v,t+0.008);g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  o.connect(g);if(pan){pan.pan.value=0;g.connect(pan).connect(out);}else g.connect(out);o.start(t);o.stop(t+0.25);
+  noiseHit(0.28*v,(front?520:430)*hv,0.07,t+0.01);if(v>0.35)noiseHit(0.12*v,2400,0.035,t+0.03);
+  if(v>0.25){const c=AC.createOscillator(),cg=AC.createGain(),bp=AC.createBiquadFilter();c.type='square';c.frequency.value=180+Math.random()*60;bp.type='bandpass';bp.frequency.value=1400+Math.random()*500;bp.Q.value=6;
+    cg.gain.setValueAtTime(0.03*v,t+0.05);cg.gain.exponentialRampToValueAtTime(0.0005,t+0.16);c.connect(bp).connect(cg).connect(out);c.start(t+0.05);c.stop(t+0.18);}}
 function landing(vol,air){if(!AC||performance.now()<landCd)return;landCd=performance.now()+300;const P=pl.P||{m:1300},t=AC.currentTime,hv=Math.pow(1300/P.m,0.22);
   const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(70*hv,t);o.frequency.exponentialRampToValueAtTime(28*hv,t+0.3/hv);g.gain.setValueAtTime(0.9*vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.38/hv);o.connect(g).connect(ACOUT());o.start(t);o.stop(t+0.42/hv);
   noiseHit(0.6*vol,420*hv,0.12,t);if(vol>0.45)noiseHit(0.5*(vol-0.3),1900,0.06,t+0.02);   // il metallo del finecorsa
