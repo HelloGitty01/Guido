@@ -75,9 +75,9 @@ function buildCockpit(T,P){
   let clY=O.clY??cy,clS=O.clS;
   let clX=cx+0.01;
   if(O.model&&!O.clFixed){clX=wx+0.24;const proj=(px,py)=>eyeY+(py-eyeY)*(clX-eyeX)/(px-eyeX),yT=proj(wx+(R+0.03)*Math.sin(wt),wy+(R+0.03)*Math.cos(wt));
-    clS=0.82;clY=yT+cH*clS/2+0.006;}
+    if(O.ownWheel){const yH=proj(wx,wy+0.05);clS=Math.min(0.82,Math.max(0.5,(yT-yH)*0.85/cH));clY=(yT+yH)/2+0.01;}else{clS=0.82;clY=yT+cH*clS/2+0.006;}}
   const cl=new THREE.Mesh(new THREE.PlaneGeometry(cW,cH),new THREE.MeshBasicMaterial({map:tex,toneMapped:false,depthTest:!O.model||!!O.clFixed}));cl.renderOrder=O.model&&!O.clFixed?5:0;cl.position.set(clX,clY,drvZ);if(clS)cl.scale.setScalar(clS);cl.rotation.y=-Math.PI/2;cl.rotateX(-0.12);g.add(cl);
-  let pod=null;if(O.model&&!O.clFixed){pod=new THREE.Mesh(rbox(0.07,cH*clS+0.03,cW*clS+0.035,0.014),new THREE.MeshStandardMaterial({color:0x111213,roughness:0.85,metalness:0,envMapIntensity:0.15}));pod.position.set(clX+0.04,clY,drvZ);g.add(pod);}
+  let pod=null;if(O.model&&!O.clFixed&&!O.ownWheel){pod=new THREE.Mesh(rbox(0.07,cH*clS+0.03,cW*clS+0.035,0.014),new THREE.MeshStandardMaterial({color:0x111213,roughness:0.85,metalness:0,envMapIntensity:0.15}));pod.position.set(clX+0.04,clY,drvZ);g.add(pod);}
   const hood=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.16,20,1,true,0,Math.PI),dm);hood.material=dm.clone();hood.material.side=THREE.DoubleSide;
   hood.rotation.set(0,0,Math.PI/2);hood.rotation.y=Math.PI/2;hood.scale.set(1,1,0.45);hood.position.set(cx+0.06,cy+0.02,drvZ);
   const bTop=cy+cH/2+0.02,bBot=Math.min(dashTop-0.05,cy-cH/2-0.01);const binn=new THREE.Mesh(rbox(0.16,bTop-bBot,cW+0.06,0.03),dm);binn.position.set(cx+0.115,(bTop+bBot)/2,drvZ);g.add(binn);
@@ -133,7 +133,7 @@ function buildCockpit(T,P){
   let spd=null;if(O.speedOnly){const c2=document.createElement('canvas');c2.width=256;c2.height=112;const t2=new THREE.CanvasTexture(c2);t2.encoding=THREE.sRGBEncoding;
     spd=new THREE.Mesh(new THREE.PlaneGeometry(0.13,0.057),new THREE.MeshBasicMaterial({map:t2,toneMapped:false}));spd.position.set(...O.spd);spd.rotation.y=-Math.PI/2;spd.rotateX(-0.35);spd.userData={cv:c2,tex:t2};g.add(spd);
     const bz=new THREE.Mesh(rbox(0.03,0.072,0.15,0.012),new THREE.MeshStandardMaterial({color:0x151517,roughness:0.6}));bz.position.set(O.spd[0]+0.016,O.spd[1],O.spd[2]);bz.rotation.z=-0.35;g.add(bz);spd.userData.bz=bz;}
-  if(O.model){const keep=O.speedOnly?[O.ownWheel?null:pivot,rm,...sms,spd,spd&&spd.userData.bz]:[pivot,cl,scr,scrF,rm,...sms,pod];g.children.forEach(c=>{if(!keep.includes(c))c.visible=false;});wipers.length=0;}
+  if(O.model){const keep=O.speedOnly?[O.ownWheel?null:pivot,rm,...sms,spd,spd&&spd.userData.bz]:[O.ownWheel?null:pivot,cl,scr,scrF,rm,...sms,pod];g.children.forEach(c=>{if(!keep.includes(c))c.visible=false;});wipers.length=0;}
   // occhi più in alto rispetto all'abitacolo (come alzare il sedile): plancia e volante scendono nell'inquadratura, più strada davanti
   const lift=(O.model||CKIMG[selKey])?0:(O.lift??(T.big||van?0.26:0.22));
   [rm,...sms].forEach(o=>o.position.y+=lift*0.8);g.children.forEach(o=>{if(o.material===frM)o.position.y+=lift*0.8;});

@@ -201,8 +201,11 @@ function prepCarLevel(sc,k,cfg,flatTo){
     if(I.steer){const c=I.steer.getCenter(new THREE.Vector3()),z=I.steer.getSize(new THREE.Vector3()),R=Math.min(T.big?0.24:0.2,Math.max(0.17,Math.max(z.y,z.z)/2*0.95)),wt=Math.min(1.0,Math.max(0.3,Math.atan2(z.x,z.y)));
       const roof=T.roofY||sz.y,eyeX=c.x-0.55,eyeY=Math.min(c.y+0.36,roof-0.12);
       T.ck={model:false,W:Wb,wsx:T.wsX,dashTop:c.y+0.12,eyeX,eyeY,drvZ:c.z,wx:c.x-0.02,wy:c.y-0.04,R,wt,rm:[T.wsX-0.28,Math.min(roof-0.12,eyeY+0.17)],sm:[c.x+0.02,c.y+0.16,Wb/2+0.12]};}
-    if(I.swC){const c=I.swC,z=I.steer.getSize(new THREE.Vector3()),R=Math.max(z.y,z.z)/2,roof=T.roofY||sz.y,eyeY=Math.min(c.y+(T.van?0.42:0.36),roof-0.1),eyeX=c.x-(T.van?0.5:0.56);
-      T.ck={model:true,clFixed:true,speedOnly:true,ownWheel:true,spd:[c.x+0.15,c.y+R+0.03,c.z+0.3],wsx:T.wsX,dashTop:c.y+0.15,eyeX,eyeY,drvZ:c.z,wx:c.x,wy:c.y,R,wt:Math.atan2(-I.swAx.y,I.swAx.x),cx:c.x+0.1,clY:c.y+0.2,clS:0.7,scr:[c.x+0.2,c.y+0.2,0.1],rm:[T.wsX-0.22,Math.min(roof-0.1,eyeY+0.2)],rmz:0,sm:[c.x+0.05,c.y+0.12,Wb/2+0.1]};}
+    if(I.swC){const c=I.swC,z=I.steer.getSize(new THREE.Vector3()),R=Math.max(z.y,z.z)/2,roof=T.roofY||sz.y,eyeY=Math.min(c.y+(T.van?0.44:0.4),roof-0.08),eyeX=c.x-(T.van?0.44:0.48);
+      // piano della plancia al centro: si cerca con un raggio dall'alto sul modello vero, per appoggiarci lo schermo dell'infotainment
+      let dashY=c.y+0.14,dashX=c.x+0.25;{const RC=new THREE.Raycaster(),ms=[];F.obj.updateMatrixWorld(true);F.obj.traverse(o=>{if(o.isMesh&&o.userData.role!=='glass'&&o.userData.role!=='wheel')ms.push(o);});
+        for(const dx of [0.18,0.26,0.34]){RC.set(new THREE.Vector3(c.x+dx,roof-0.05,0.02),new THREE.Vector3(0,-1,0));RC.far=roof-c.y+0.3;const h=RC.intersectObjects(ms,false).find(h=>h.point.y<c.y+0.45&&h.point.y>c.y-0.1);if(h){dashY=h.point.y;dashX=c.x+dx;break;}}}
+      T.ck={model:true,ownWheel:true,wsx:T.wsX,dashTop:dashY,eyeX,eyeY,drvZ:c.z,wx:c.x,wy:c.y,R,wt:Math.atan2(-I.swAx.y,I.swAx.x),cx:c.x+0.1,scr:[dashX-0.02,dashY+0.075,0.04],rm:[T.wsX-0.22,Math.min(roof-0.1,eyeY+0.18)],rmz:0,sm:[c.x+0.05,c.y+0.12,Wb/2+0.1]};}
     const hasLights=F.obj.children.some(m=>m.userData.role==='tail');
     T.livery=!!C.livery;T.plain=!!C.plain;CARX[k]={full:F.obj,lod:Lo&&Lo.obj,hasLights,wheels:F.info.wheels};
     }catch(e){console.warn('veicolo '+k+' non preparato',e);}

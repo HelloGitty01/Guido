@@ -83,6 +83,11 @@ addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPU
   }
   if(A||['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(actOf(e.code)==='horn')setHorn(false);});
+// cambiando scheda il browser perde i "tasto rilasciato" e, al ritorno, il volante può riportare assi fermi a 0 (pedali letti come premuti a metà):
+// si azzerano i tasti e si ignorano i pedali finché non si muove davvero qualcosa
+let PADSTALE=null;const clrKeys=()=>{for(const k in keys)keys[k]=false;try{setHorn(false);}catch(e){}};
+addEventListener('blur',clrKeys);
+document.addEventListener('visibilitychange',()=>{clrKeys();if(!document.hidden){const gp=(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g);PADSTALE=gp?{ax:[...gp.axes],t:performance.now()}:{ax:null,t:performance.now()};}});
 // ---- comandi touch: trascinamento a partire dal punto in cui si appoggia il dito ----
 const touch={on:false,id:null,x0:0,y0:0,steer:0,thr:0,brk:0};
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
@@ -171,7 +176,8 @@ function readInput(dt){
   const v=Math.abs(pl.vx||0);
   const gps=navigator.getGamepads?navigator.getGamepads():[];
   // gamepad: stick sinistro = sterzo, stick destro su/giù = gas/freno, grilletto destro = marcia (D→N→R→N→D), grilletto sinistro = clacson
-  for(const gp of gps){if(!gp||ctrlWait)continue;const CP=CTRL.pad,BT=CP.btn,ax=(gp.axes[CP.steer.a]||0)*CP.steer.s;
+  if(PADSTALE){const gp0=[...gps].find(g=>g);if(gp0&&PADSTALE.ax==null)PADSTALE.ax=[...gp0.axes];if(gp0&&PADSTALE.ax&&gp0.axes.some((v,i)=>Math.abs(v-(PADSTALE.ax[i]||0))>0.03))PADSTALE=null;}
+  for(const gp of gps){if(!gp||ctrlWait||PADSTALE)continue;const CP=CTRL.pad,BT=CP.btn,ax=(gp.axes[CP.steer.a]||0)*CP.steer.s;
     const PB=CP.cal&&CP.cal.ok?[CP.cal.thr,CP.cal.brk].filter(q=>q&&q.t==='b').map(q=>q.i):[],B=i=>i>=0&&!PB.includes(i)&&gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>0.5),prev=pl.gpPrev||{};if(B(BT.hb))pl.hb=true;if(B(BT.flash))pl.flash=true;const now={};Object.keys(BT).forEach(k=>now[k]=B(BT[k]));
     const ed=k=>now[k]&&!prev[k];
     if(ed('gear')){selectGear(pl.sel==='R'?'D':'R');}
