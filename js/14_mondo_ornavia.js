@@ -194,6 +194,12 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const tunSign=(kind,name,len)=>canvasTex(512,(g,n)=>{g.fillStyle=kind==='hw'?'#0f6e3b':'#1f4f9c';g.fillRect(0,n*0.2,n,n*0.6);g.strokeStyle='#fff';g.lineWidth=8;g.strokeRect(10,n*0.2+10,n-20,n*0.6-20);g.fillStyle='#fff';g.textAlign='left';g.textBaseline='middle';
     g.font="bold 46px Arial";g.fillText(kind==='br'?'VIADOTTO':'GALLERIA',40,n*0.36);let s=52;g.font=`bold ${s}px Arial`;while(g.measureText(name).width>n-80&&s>24){s-=2;g.font=`bold ${s}px Arial`;}g.fillText(name,40,n*0.5);g.font="bold 50px Arial";g.textAlign='right';g.fillText('m '+len,n-40,n*0.66);
     if(kind!=='br'){g.fillStyle='#fff';g.beginPath();g.arc(n-120,n*0.38,34,Math.PI,0);g.lineTo(n-86,n*0.44);g.lineTo(n-154,n*0.44);g.fill();g.fillStyle=kind==='hw'?'#0f6e3b':'#1f4f9c';g.beginPath();g.arc(n-120,n*0.42,20,Math.PI,0);g.fill();}});
+  // corone luminose e guglie dei grattacieli
+  const TOWERX=(()=>{const crM=new THREE.MeshStandardMaterial({color:0xdfe6ee,emissive:0xbfe0ff,emissiveIntensity:0,roughness:0.4,side:THREE.DoubleSide}),spM=new THREE.MeshStandardMaterial({color:0xb8bec6,metalness:0.8,roughness:0.3}),tipM=new THREE.MeshBasicMaterial({color:0xff2a1a});
+    const cyl=new THREE.CylinderGeometry(0.25,0.9,1,8).translate(0,0.5,0),cone=new THREE.ConeGeometry(3.2,1,4).translate(0,0.5,0),tip=new THREE.SphereGeometry(0.45,8,6);
+    return Object.assign((T,CR,SP,x0,z0)=>{if(CR.length){const P=[],I=[];CR.forEach(([ax,az,bx,bz,ya,yb])=>{const s=P.length/3;P.push(ax-x0,ya,az-z0,bx-x0,ya,bz-z0,ax-x0,yb,az-z0,bx-x0,yb,bz-z0);I.push(s,s+1,s+2,s+1,s+3,s+2);});
+        const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setIndex(I);g.computeVertexNormals();const m=new THREE.Mesh(g,crM);m.position.set(x0,0,z0);scene.add(m);T.objs.push(m);}
+      SP.forEach(([x,z,y,hh,pyr])=>{const G=new THREE.Group();G.position.set(x,y,z);if(pyr){const c=new THREE.Mesh(cone,spM);c.scale.set(1,hh*0.35,1);G.add(c);}const s=new THREE.Mesh(cyl,spM);s.scale.set(1,hh,1);s.position.y=pyr?hh*0.3:0;G.add(s);const t=new THREE.Mesh(tip,tipM);t.position.y=(pyr?hh*0.3:0)+hh;G.add(t);scene.add(G);T.objs.push(G);});},{crM});})();
   // località turistiche: negozietti, souvenir, gelaterie, dehors
   const TOURIST=new Set(['Lido Serena','Porto Calvino','Castellago','Montecastro','San Rocco Terme','Pievalta']);
   // insegne al neon: stesso atlante, solo la fascia alta, che lampeggia (di sera molto evidente)
@@ -335,7 +341,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
      const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:stoneTex,color:0xf3e9dd,roughness:0.7,side:THREE.DoubleSide}));m.position.set(x,g0+Hw,z);m.rotation.y=-Math.atan2(az,ax);grp.add(m);}
   }catch(e){console.warn('Duomo',e);}});
   // ---------- Valdonia: chiese, torri, monumenti, ciminiere, porto, spiaggia, barche, mucche ----------
-  const nightMats=[[LOGO,1.1]],lampPoleMX=new THREE.MeshStandardMaterial({color:0x6a6f75,metalness:0.6,roughness:0.45});
+  const nightMats=[[LOGO,1.1],[TOWERX.crM,1.4]],lampPoleMX=new THREE.MeshStandardMaterial({color:0x6a6f75,metalness:0.6,roughness:0.45});
   function signTex(kind,lines){return canvasTex(512,(g,n)=>{const hw=kind!=='st',bg=hw?'#1f6e3d':'#1d4f9c';const H2=kind==='hwd'?272:kind.startsWith('hw')?240:280;g.canvas.height=H2;
     g.fillStyle=bg;g.fillRect(0,0,512,H2);g.strokeStyle='#fff';g.lineWidth=8;g.strokeRect(10,10,492,H2-20);g.fillStyle='#fff';g.textAlign='left';
     if(kind==='hw1'||kind==='hw2'){g.font='bold 38px Arial';g.fillText(lines[0],40,70);g.font='bold 60px Arial';g.fillText(lines[1],40,145);g.font='bold 40px Arial';if(lines[2])g.fillText(lines[2],40,205);
@@ -932,18 +938,28 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function detail(T){if(T.det)return;T.det=true;T.dobj=[];T.segs=[];furniture(T);VX.tile(T);const x0=T.i*TS,z0=T.j*TS,rnd=a=>hsh(T.i*131+a,T.j*977+a*7);
     if(HIDE){(bldT.get(T.key)||[]).forEach(bi=>{const b=NW.J.blds[bi],rg=b[3],n=rg.length/2;if(b[6]>2)return;for(let q=0;q<n;q++)addSeg(T,rg[q*2],rg[q*2+1],rg[(q+1)%n*2],rg[(q+1)%n*2+1]);});return;}
     // edifici: facciate per tipo, negozi al piano terra sul lato della strada, tetti a falde o piani
-    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],col=new THREE.Color();
+    const bl=bldT.get(T.key);if(bl){const GG=FAC.map(()=>({P:[],C:[],U:[],I:[]})),G1={P:[],C:[],U:[],I:[]},RP=[],RC=[],RI=[],TP=[],TU=[],TI=[],DP=[],DU=[],DI=[],SP=[],SU=[],SI=[],AP=[],AC=[],AI=[],NP=[],NU=[],NI=[],DH=[],LGP=[],LGU=[],LGI=[],CRP=[],SPI=[],col=new THREE.Color();
       const quad=(G,ax,az,bx,bz,ya,yb,u0,u1,va,vb)=>{const s=G.P.length/3;G.P.push(ax-x0,ya,az-z0,bx-x0,ya,bz-z0,ax-x0,yb,az-z0,bx-x0,yb,bz-z0);G.U.push(u0,va,u1,va,u0,vb,u1,vb);for(let t=0;t<4;t++)G.C.push(col.r,col.g,col.b);G.I.push(s,s+1,s+2,s+1,s+3,s+2);};
       const tri=(A,Uv,I,pts,uvs)=>{const s=A.length/3;pts.forEach(p=>A.push(p[0]-x0,p[1],p[2]-z0));uvs.forEach(u=>Uv.push(u[0],u[1]));I.push(s,s+1,s+2);};
       bl.forEach(bi=>{const b=NW.J.blds[bi],h=b[0],cc=b[1],gnd=b[2],ring=b[3],church=b[4],holes=b[5],mh=b[6]||0,kd=b[7]==null?0:b[7],roof=b[8]||0;const n=ring.length/2;if(n<3)return;
         const k0=(kd&15)%FAC_N,kind=FAC_HD?hdKind(k0,(NW.cityAt(ring[0],ring[1])||{}).st,h,bi):k0,shopF=(kd&16)&&mh<0.5&&h>6,[FM,su,sv]=FAC[kind],G=GG[kind];
         col.setHex(church===1?0xe4ddd0:cc).convertSRGBToLinear();if(kind===11||kind===12||kind===13||kind===17||kind===18||kind===14||kind===19||kind===16||kind===20)col.setRGB(0.92+0.08*hsh(bi,3),0.92+0.08*hsh(bi,3),0.9+0.08*hsh(bi,4));const y0=mh>0.5?gnd:gnd-1.5,y1=gnd+h;
         let cx=0,cz=0;for(let q=0;q<n;q++){cx+=ring[q*2];cz+=ring[q*2+1];}cx/=n;cz/=n;
+        // grattacieli tutti diversi: vetri colorati, gradoni, guglie e corone
+        const tower=kind===2&&n===4&&h>45&&!church,tv=hsh(bi,61);let yTop=y1;
+        if(tower){col.setHex([0x9fc3e8,0xa8d8c8,0xd8b890,0xe8e8ec,0x7a8494,0x8fd0d8,0xc8a0a8][(hsh(bi,63)*7)|0]).convertSRGBToLinear();if(tv<0.5&&h>70)yTop=gnd+h*(0.55+0.15*hsh(bi,64));}
         [ring].concat(holes||[]).forEach(rg=>{const n=rg.length/2;let per=0;for(let q=0;q<n;q++){const ax=rg[q*2],az=rg[q*2+1],bx=rg[(q+1)%n*2],bz=rg[(q+1)%n*2+1],L=Math.hypot(bx-ax,bz-az);
           const u0=per/su,u1=(per+L)/su;per+=L;
           if(church)quad(G1,ax,az,bx,bz,y0,y1,per/7-L/7,per/7,(y0-gnd)/6.4,h/6.4);
-          else quad(G,ax,az,bx,bz,y0,y1,u0,u1,sv?(y0-gnd)/sv:0,sv?h/sv:1);
+          else quad(G,ax,az,bx,bz,y0,yTop,u0,u1,sv?(y0-gnd)/sv:0,sv?(yTop-gnd)/sv:1);
           if(!(mh>2))addSeg(T,ax,az,bx,bz);}});
+        if(tower){const sh=yTop<y1?0.62+0.12*hsh(bi,65):1,rr=[];for(let q=0;q<4;q++)rr.push([cx+(ring[q*2]-cx)*sh,cz+(ring[q*2+1]-cz)*sh]);
+          if(yTop<y1){// gradone: terrazza grigia e torre più stretta sopra
+            const c0=col.clone();col.setRGB(0.42,0.43,0.45);const s0=RP.length/3;ring.slice(0,8).forEach((v,ii)=>{});for(let q=0;q<4;q++){RP.push(ring[q*2]-x0,yTop,ring[q*2+1]-z0);RC.push(col.r,col.g,col.b);}RI.push(s0,s0+1,s0+2,s0,s0+2,s0+3,s0,s0+2,s0+1,s0,s0+3,s0+2);col.copy(c0);
+            let per=0;for(let q=0;q<4;q++){const[ax,az]=rr[q],[bx,bz]=rr[(q+1)%4],L=Math.hypot(bx-ax,bz-az);quad(G,ax,az,bx,bz,yTop,y1,per/su,(per+L)/su,sv?(yTop-gnd)/sv:0,sv?h/sv:1);per+=L;}}
+          // corona luminosa in cima e/o guglia
+          if(hsh(bi,66)<0.5){const c0=col.clone();col.setRGB(1,1,1);for(let q=0;q<4;q++){const[ax,az]=rr[q],[bx,bz]=rr[(q+1)%4];const vx=(ax+bx)/2-cx,vz=(az+bz)/2-cz,l=Math.hypot(vx,vz)||1;CRP.push([ax+vx/l*0.15,az+vz/l*0.15,bx+vx/l*0.15,bz+vz/l*0.15,y1-2.2,y1-0.6]);}col.copy(c0);}
+          if(hsh(bi,67)<0.45)SPI.push([cx,cz,y1,h*(0.12+0.18*hsh(bi,68)),hsh(bi,69)<0.5]);}
         // negozi sul fronte (lato 0)
         if(shopF&&n===4){const ax=ring[0],az=ring[1],bx=ring[2],bz=ring[3],L=Math.hypot(bx-ax,bz-az),tx=(bx-ax)/L,tz=(bz-az)/L;let nx=-tz,nz=tx;const mx=(ax+bx)/2,mz=(az+bz)/2;if((mx-cx)*nx+(mz-cz)*nz<0){nx=-nx;nz=-nz;}
           const rx=nz,rz=-nx,k=Math.max(1,Math.round(L/6.2)),seg=L/k,gy=gnd+0.02;
@@ -978,7 +994,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
             quad(G,ax+ox,az+oz,bx+ox,bz+oz,y1-0.5,y1+0.6,0.02,0.04,0.02,0.04);}}}});
       const put=(A,Uv,I,M,Cc)=>{if(!I.length)return;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(A,3));if(Uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(Uv,2));if(Cc)g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));g.setIndex(I);g.computeVertexNormals();
         const m=new THREE.Mesh(g,M);m.position.set(x0,0,z0);m.castShadow=true;m.receiveShadow=true;scene.add(m);T.dobj.push(m);};
-      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);DEHORS(T,DH,x0,z0);}
+      GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofM);put(DP,DU,DI,darkRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);DEHORS(T,DH,x0,z0);TOWERX(T,CRP,SPI,x0,z0);}
     // alberi veri (censimento e filari)
     const tl=treeT.get(T.key);if(tl&&tl.length){const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),co=new THREE.Color(),UPV=new THREE.Vector3(0,1,0);
       const by=[[],[],[],[],[],[]];tl.forEach(ti=>{const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;
