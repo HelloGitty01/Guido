@@ -201,7 +201,7 @@ function prepCarLevel(sc,k,cfg,flatTo){
     if(I.steer){const c=I.steer.getCenter(new THREE.Vector3()),z=I.steer.getSize(new THREE.Vector3()),R=Math.min(T.big?0.24:0.2,Math.max(0.17,Math.max(z.y,z.z)/2*0.95)),wt=Math.min(1.0,Math.max(0.3,Math.atan2(z.x,z.y)));
       const roof=T.roofY||sz.y,eyeX=c.x-0.55,eyeY=Math.min(c.y+0.36,roof-0.12);
       T.ck={model:false,W:Wb,wsx:T.wsX,dashTop:c.y+0.12,eyeX,eyeY,drvZ:c.z,wx:c.x-0.02,wy:c.y-0.04,R,wt,rm:[T.wsX-0.28,Math.min(roof-0.12,eyeY+0.17)],sm:[c.x+0.02,c.y+0.16,Wb/2+0.12]};}
-    if(I.swC){const c=I.swC,z=I.steer.getSize(new THREE.Vector3()),R=Math.max(z.y,z.z)/2,roof=T.roofY||sz.y,eyeY=Math.min(c.y+(T.van?0.44:0.4),roof-0.08),eyeX=c.x-(T.van?0.44:0.48);
+    if(I.swC){const c=I.swC,z=I.steer.getSize(new THREE.Vector3()),R=Math.max(z.y,z.z)/2,roof=T.roofY||sz.y,eyeY=Math.min(c.y+(T.van?0.24:0.4),roof-0.08),eyeX=c.x-(T.van?0.44:0.48);
       // piano della plancia al centro: si cerca con un raggio dall'alto sul modello vero, per appoggiarci lo schermo dell'infotainment
       let dashY=c.y+0.14,dashX=c.x+0.25;{const RC=new THREE.Raycaster(),ms=[];F.obj.updateMatrixWorld(true);F.obj.traverse(o=>{if(o.isMesh&&o.userData.role!=='glass'&&o.userData.role!=='wheel')ms.push(o);});
         for(const dx of [0.18,0.26,0.34]){RC.set(new THREE.Vector3(c.x+dx,roof-0.05,0.02),new THREE.Vector3(0,-1,0));RC.far=roof-c.y+0.3;const h=RC.intersectObjects(ms,false).find(h=>h.point.y<c.y+0.45&&h.point.y>c.y-0.1);if(h){dashY=h.point.y;dashX=c.x+dx;break;}}}
@@ -280,13 +280,15 @@ function carTier(k,which,need){const key=k+'|'+which;let t=CARLOD.tiers[key];if(
   return t;}
 function buildCarLOD(){CARLOD.inst=true;}
 // fari del traffico di notte: una macchia di luce sull'asfalto davanti a ogni auto in marcia, tutte in un'unica mesh
-const CARBEAM=(()=>{const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');g.save();g.scale(1,0.55);const gr=g.createRadialGradient(0,116,4,0,116,250);
-  gr.addColorStop(0,'rgba(255,240,210,0.0)');gr.addColorStop(0.08,'rgba(255,240,210,0.85)');gr.addColorStop(0.45,'rgba(255,232,190,0.35)');gr.addColorStop(1,'rgba(255,225,180,0)');g.fillStyle=gr;g.fillRect(0,0,256,240);g.restore();
+const CARBEAM=(()=>{const c=document.createElement('canvas');c.width=128;c.height=64;const g=c.getContext('2d'),D=g.createImageData(128,64);
+  for(let y=0;y<64;y++)for(let x=0;x<128;x++){const u=x/127,v=(y-31.5)/31.5,w=0.18+0.82*u,lat=Math.exp(-Math.pow(v/w,2)*3.2)*Math.min(1,Math.max(0,(w-Math.abs(v))*6)),a=Math.min(1,u*7)*Math.pow(1-u,0.85)*lat,k=(y*128+x)*4;D.data[k]=255;D.data[k+1]=238;D.data[k+2]=205;D.data[k+3]=Math.round(255*Math.min(1,a*1.5));}
+  g.putImageData(D,0,0);
   const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;const m=new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-6,polygonOffsetUnits:-12,toneMapped:false});
   const geo=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2).translate(0.5,0,0),CAP=160,im=new THREE.InstancedMesh(geo,m,CAP);im.count=0;im.frustumCulled=false;im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.renderOrder=3;scene.add(im);
   const L=new THREE.Matrix4(),M=new THREE.Matrix4();
   return{m,im,update(list,night,cx,cz){m.opacity=night;im.visible=night>0.01;if(!im.visible){im.count=0;return;}let n=0;for(let i=0;i<list.length&&n<CAP;i++){const e=list[i],g=e.g;if(e.stat||!g.parent||!g.visible)continue;if((g.position.x-cx)**2+(g.position.z-cz)**2>160*160)continue;
       const T=TYPES[e.k]||{L:4.2};g.updateMatrix();L.makeScale(9,1,4.2).setPosition(T.L/2-0.2,0.07,0);M.multiplyMatrices(g.matrix,L);im.setMatrixAt(n++,M);}
+    if(typeof pl!=='undefined'&&pl&&pl.lights&&pl.mesh&&pl.T&&n<CAP&&!pl.flip){const m=pl.mesh;m.updateMatrixWorld();const f=pl.flash?1.6:1;L.makeScale(22*f,1,7.5).setPosition(pl.T.L/2-0.3,0.07,0);M.multiplyMatrices(m.matrixWorld,L);im.setMatrixAt(n++,M);}
     im.count=n;im.instanceMatrix.needsUpdate=true;}};})();CARLOD.tier=(k,w,n)=>carTier(k,w,n);
 function updateCarLOD(){const cx=camera.position.x,cz=camera.position.z,R2=(MOBILE?40:QG.hi?130:90)**2,RS2=(MOBILE?10:14)**2,RT2=(MOBILE?25:45)**2,night=NIGHT||WX!=='clear',L=CARLOD.list;
   // via le auto non più in scena (zone smontate)

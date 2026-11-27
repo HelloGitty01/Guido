@@ -305,7 +305,7 @@ function updateCamera(dt){
     {const lx=pl.x+ch*5,ly=(pl.yb??pl.terrH)+1.1+Math.sin(pl.slopeP)*5,lz=pl.z-sh*5,w=ORB.w;camLook.set(lx+(pl.x-lx)*w,ly+(pl.terrH+0.9-ly)*w,lz+(pl.z-lz)*w);}camera.lookAt(camLook);
   }
   speedFx(dt);
-  const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?3.2:0;headSpot.distance=pl.flash?170:70;headSpot.angle=pl.flash?0.36:0.62;headSpot.penumbra=0.55;}
+  const ud=m.userData;ud.tailM.emissiveIntensity=pl.brkIn>0.08?2.2:(pl.lights?0.7:0.12);ud.revM.emissiveIntensity=pl.sel==='R'?2.6:0;ud.headM.emissiveIntensity=pl.flash?7:pl.lights?2.5:0.15;if(pl.flash&&!headSpot){toggleLights();toggleLights();}if(headSpot){headSpot.intensity=pl.flash?7:pl.lights?4.6:0;headSpot.distance=pl.flash?170:80;headSpot.angle=pl.flash?0.36:0.62;headSpot.penumbra=0.55;}
   if(headSpot){const ch=Math.cos(pl.h),sh=Math.sin(pl.h);{// faro agganciato all'auto: segue sempre muso, beccheggio e rollio
     const m=pl.mesh;if(m&&headSpot.parent!==m){m.add(headSpot);m.add(headSpot.target);}const fl=pl.flash?40:16;headSpot.position.set(pl.T.L/2+0.1,0.72,0);headSpot.target.position.set(fl,-0.6,0);}}
   if(CINE.intro)CINE.introCam(dt);else if(POL.sc){POL.cam(dt);CINE.used=true;}else if(CINE.used){CINE.used=false;if(view!=='cockpit')camera.position.copy(tmpV);}
