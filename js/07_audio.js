@@ -140,6 +140,15 @@ function updateTrafficVoices(t){updateSirens(t);if(!tVoices.length)return;tvT-=1
 function dong(){if(!AC)return;const t0=AC.currentTime,out=ACOUT();[[587,0],[440,0.36]].forEach(([f,dt])=>{const t=t0+dt;
   [[1,0.085],[2.01,0.02],[2.98,0.008]].forEach(([k,a])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f*k;
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a,t+0.012);g.gain.exponentialRampToValueAtTime(0.0008,t+(k===1?1.3:0.6));o.connect(g).connect(out);o.start(t);o.stop(t+1.4);});});}
+// campana: parziali non armoniche (tono di "hum", fondamentale, terza minore, quinta, ottava...) che si spengono a velocità diverse
+function bellStrike(f,t,a){if(!AC)return;const out=ACOUT();[[0.5,0.5,4.5],[1,1,3.2],[1.19,0.45,2.2],[1.5,0.3,1.8],[2,0.35,1.5],[2.5,0.16,1.0],[3.01,0.12,0.8],[4.17,0.06,0.5]].forEach(([k,w,d])=>{
+  const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f*k*(1+(Math.random()-0.5)*0.002);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a*w,t+0.006);g.gain.exponentialRampToValueAtTime(0.00005,t+d*1.6);o.connect(g).connect(out);o.start(t);o.stop(t+d*1.7);});}
+// le campane della piazza più vicina: a mezzogiorno suonano a festa, alle altre ore (dalle 7 alle 21) battono le ore
+function bellsTick(){if(!AC||TIME!=='cycle'||!started||paused)return;const P=(window.__PIAZ||[]).reduce((b,q)=>{const d=Math.hypot(q.x-pl.x,q.z-pl.z);return !b||d<b.d?{d,q}:b;},null);if(!P||P.d>700)return;
+  const h=Math.floor(CLOCK);if(bellsTick.h===h)return;const first=bellsTick.h==null;bellsTick.h=h;if(first||CLOCK-h>0.05)return;
+  const vol=0.16*Math.max(0,1-P.d/700)**1.5;if(vol<0.004)return;const t0=AC.currentTime+0.1,f0=P.q.S>36?196:P.q.S>30?262:330;
+  if(h===12){for(let i=0;i<28;i++){const k=i%3;bellStrike(f0*[1,1.26,1.5][k],t0+i*0.62+(k?0.05:0),vol*(k?0.7:1));}}
+  else if(h>=7&&h<=21){const n=h%12||12;for(let i=0;i<n;i++)bellStrike(f0,t0+i*2.1,vol);}}
 function ding(n=3){if(!AC)return;for(let i=0;i<n;i++){const t=AC.currentTime+i*0.32;const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=1480;
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.25,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+0.28);o.connect(g).connect(ACOUT());o.start(t);o.stop(t+0.3);}}
 let horn=null;
@@ -204,7 +213,7 @@ const AMB={on:false,t:0,g:null,
   tick(dt){SIREN.tick();if(!AC||!started||!NW)return;const on=CFG.amb!==false&&!paused&&!pl.ended&&AC.state==='running';if(!this.g){if(!on)return;this.init();}
     const t=AC.currentTime;this.g.gain.setTargetAtTime(on?(view==='cockpit'?0.55:1)*Math.max(0.25,1-Math.abs(pl.vx)/38):0,t,0.4);if(!on)return;
     const day=Math.max(0,Math.min(1,DAYLV)),act=0.35+0.65*day,L=this.lv;   // di notte tutto più quieto
-    this.t-=dt;if(this.t<=0){this.t=0.5;const x=pl.x,z=pl.z,C=NW.cityAt(x,z),ind=NWT&&NWT.indAt&&NWT.indAt(x,z),city=!!C&&!ind,h=pl.terrH||0,rain=WX==='rain';
+    this.t-=dt;if(this.t<=0){bellsTick();this.t=0.5;const x=pl.x,z=pl.z,C=NW.cityAt(x,z),ind=NWT&&NWT.indAt&&NWT.indAt(x,z),city=!!C&&!ind,h=pl.terrH||0,rain=WX==='rain';
       let sea=0,lake=0;for(const[a,b]of[[90,0],[-90,0],[0,90],[0,-90],[0,0],[60,60],[-60,-60]]){const w=waterLv(x+a,z+b);if(w){if(w.lv<1)sea++;else lake++;}}
       const big=C&&C.r1>800;L.city=city?(big?0.06:0.035)*act:0;L.city2=city?(big?0.018:0.01)*act*act:0;L.ind=ind?0.07*(0.55+0.45*day):0;L.hum=ind?0.012*(0.5+0.5*day):0;
       L.sea=sea?Math.min(0.09,0.025+sea*0.012):0;L.lake=lake?Math.min(0.03,0.008+lake*0.004):0;

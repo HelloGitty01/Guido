@@ -423,6 +423,10 @@ function applyEnv(tick){
   // nebbia serale (e del primo mattino) che sale in montagna
   {const eve=(H>17.2&&H<22)?Math.min(1,(H-17.2)/0.9,(22-H)/0.9):(H>4.6&&H<8.2)?Math.min(1,(H-4.6)/0.6,(8.2-H)/0.9)*0.85:0,alt=(NW&&pl.P)?sstep(150,330,pl.terrH||0):0,k=eve*alt*(WX==='fog'?0:1);
    if(k>0.02){fogN=fogN*(1-k)+10*k;fogF=fogF*(1-k)+140*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(K.bot).lerp(new THREE.Color(0xa4abb3),0.3).multiplyScalar(0.3+0.7*(K.day||0)),0.75*k);sunI*=1-0.5*k;}}
+  // foschia del mattino in pianura: non tutti i giorni, si dirada verso le 9:30
+  {if(H<3.5)window.__mistP=1;if(window.__mistD==null||(H>=3.5&&window.__mistP)){window.__mistD=Math.random()<0.55?1:0;window.__mistP=0;}
+   const mw=(H>4.4&&H<9.8)?Math.min(1,(H-4.4)/0.7,(9.8-H)/1.6):0,low=(NW&&pl.P)?1-sstep(110,240,pl.terrH||0):0,k=mw*low*window.__mistD*(WX==='clear'?1:WX==='rain'?0.4:0);
+   if(k>0.02){fogN=fogN*(1-k)+18*k;fogF=fogF*(1-k)+320*k;fogC=new THREE.Color(fogC).lerp(new THREE.Color(0xd6d9da).multiplyScalar(0.35+0.65*(K.day||0)),0.8*k);sunI*=1-0.35*k;}}
   sun.intensity=sunI;sun.color.set(sunC);hemiL.intensity=hemiI;U.uSun.value.copy(SUNOFF).normalize();U.uSunC.value.set(sunC).multiplyScalar(WX==='clear'?1:0.35);if(!NIGHT&&ENVGEN&&(!tick||(frameN%600===0))){const t=ENVGEN.make(!tick);if(t&&scene.environment!==t)scene.environment=t;}ENVB.sun=sunI;ENVB.hemi=hemiI;ENVB.exp=exp;fog.color.set(fogC);fog.near=fogN*QG.fog;fog.far=fogF*QG.fog;scene.background.set(fogC);renderer.toneMappingExposure=exp;
   clouds.forEach(c=>{c.material.color.set(clouds_c);c.visible=WX!=='fog';});
   HZN.color(fog.color,K.day||0);

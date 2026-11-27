@@ -1343,7 +1343,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const rows=(base,row,w,jit)=>(g,n)=>{g.fillStyle=base;g.fillRect(0,0,n,n);for(let i=0;i<n;i+=16){g.fillStyle=row;g.fillRect(0,i,n,w*2);for(let k=0;k<45;k++){g.fillStyle=jit[k%jit.length];g.fillRect(Math.random()*n,i+Math.random()*16,2+Math.random()*4,1+Math.random()*2);}}};
       return k=>C[k]||(C[k]=mk(k,{arato:rows('#6e5540','#3e2e22',4,['#7a6250','#5a4636']),grano:rows('#cdb36a','#9a8044',3,['#d8c27a','#b49a58','#e0cf8a']),mais:rows('#5e7236','#33401f',5,['#6e8240','#4a5a2c']),
         medica:rows('#6e8a40','#566e30',3,['#7e9a4a','#668238']),girasoli:rows('#5a6a30','#34401c',4,['#e0b820','#d8a818','#4a5a28'])}[k]));})();
-    function fields(T){const x0=T.i*TS,z0=T.j*TS,bl=bldT.get(T.key);for(let q=FIELDS.length-1;q>=0;q--)if(FIELDS[q].T===T.key)FIELDS.splice(q,1);if(!bl)return;const BY={};
+    function fields(T,pb){const x0=T.i*TS,z0=T.j*TS,bl=bldT.get(T.key);for(let q=FIELDS.length-1;q>=0;q--)if(FIELDS[q].T===T.key)FIELDS.splice(q,1);if(!bl)return;const BY={};
       for(const bi of bl){const b=NW.J.blds[bi],r=b[3],n=r.length/2;if(b[0]>14||n<3)continue;let cx=0,cz=0;for(let q=0;q<n;q++){cx+=r[q*2];cz+=r[q*2+1];}cx/=n;cz/=n;if(NW.cityAt(cx,cz)||bl.length>60)continue;
         const a0=Math.atan2(r[3]-r[1],r[2]-r[0]);for(let f=0;f<3;f++){const hs=hsh(bi,f+801);if(hs<0.25)continue;const ang=a0+(hsh(bi,f+811)<0.5?0:Math.PI/2),dist=45+hs*70,dir=a0+f*2.1+hsh(bi,f+821);
           const fx=cx+Math.cos(dir)*dist,fz=cz+Math.sin(dir)*dist,W=50+hsh(bi,f+831)*70,D=30+hsh(bi,f+841)*50,ca=Math.cos(ang),sa=Math.sin(ang);
@@ -1353,9 +1353,32 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const kind=['arato','grano','mais','medica','girasoli','grano'][(hsh(bi,f+851)*6)|0],L=BY[kind]||(BY[kind]={P:[],U:[],I:[]}),NU=Math.ceil(W/8),NV=Math.ceil(D/8),s0=L.P.length/3;
           for(let j=0;j<=NV;j++)for(let i=0;i<=NU;i++){const u=-W/2+W*i/NU,v=-D/2+D*j/NV,[x,z]=P(u,v);L.P.push(x-x0,NW.Hground(x,z)+0.06,z-z0);L.U.push(u/12,v/12);}
           for(let j=0;j<NV;j++)for(let i=0;i<NU;i++){const a=s0+j*(NU+1)+i;L.I.push(a,a+NU+1,a+1,a+1,a+NU+1,a+NU+2);}
+          if(pb&&(kind==='grano'||kind==='medica')){const nb=3+((hsh(bi,f+861)*8)|0);for(let k=0;k<nb;k++){const[x,z]=P((hsh(k,bi+f)-0.5)*W*0.8,(hsh(k+40,bi+f)-0.5)*D*0.8),g=NW.Hground(x,z),r=hsh(k,bi)*3.14;
+              pb.add(GC,0xd2ae5c,x,g+0.68,z,r,1.36,1.25,1.36,0,Math.PI/2);addSeg(T,x-0.6,z,x+0.6,z);}}
+          if(pb&&kind==='arato'&&NW.Hground(fx,fz)>120&&NW.Hground(fx,fz)<700&&hsh(bi,f+871)<0.6){// vigneto: filari di viti sui pali, seguono il terreno a tratti di 6 m
+            for(let v=-D/2+2;v<D/2-1;v+=2.6)for(let u=-W/2+2;u<W/2-2;u+=6){const[x,z]=P(u+3,v),g=NW.Hground(x,z);pb.add(GB,0x4e6b2c,x,g+1.05,z,Math.atan2(-sa,ca),6,0.9,0.55);pb.add(GB,0x5a4430,x,g+0.35,z,Math.atan2(-sa,ca),6,0.7,0.12);}}
           FIELDS.push({x:fx,z:fz,r:Math.hypot(W,D)/2,ca,sa,W,D,T:T.key});}}
       for(const k in BY){const L=BY[k],g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(L.P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(L.U,2));g.setIndex(L.I);g.computeVertexNormals();
         const m=new THREE.Mesh(g,fieldMat(k));m.position.set(x0,0,z0);m.receiveShadow=true;scene.add(m);T.dobj.push(m);}}
+    // campagna: paracarri bianchi, filari di cipressi lungo alcune strade, edicole votive agli incroci
+    function campagna(T,pb){const l=segT.get(T.key);if(!l)return;const x0=T.i*TS,z0=T.j*TS;let trees=false;const yh0=NW.yh;NW.yh=NaN;
+      try{for(let q=0;q<l.length;q+=2){const ri=l[q],R=NW.roads[ri],i=l[q+1];if(R.priv||R.t||R.b||R.c<4||R.c>7)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
+        const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||urbD(xm,zm)<45)continue;
+        const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx,hw=R.w/2,alt=R.Hh[i];
+        // paracarri: bianchi con la fascia nera, ogni 30 m sui due lati
+        for(let u=Math.ceil(a/30)*30;u<b;u+=30){const f=(u-a)/L;for(const sd of[-1,1]){const x=R.X[i]+tx*(u-a)+nx*sd*(hw+0.9),z=R.Z[i]+tz*(u-a)+nz*sd*(hw+0.9);
+            if(NW.nearJ(x,z,14)||NW.roadAt(x,z,0.3)||waterLv(x,z)!=null)continue;const h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*f;pb.add(GB,0xf2f0ea,x,h+0.45,z,Math.atan2(-tz,tx),0.16,0.9,0.16);pb.add(GB,0x1c1c1c,x,h+0.78,z,Math.atan2(-tz,tx),0.165,0.18,0.165);addSeg(T,x-0.1,z,x+0.1,z);}}
+        // viale di cipressi: solo su alcune strade di pianura e collina
+        if(HDT&&R.c>=5&&alt<650&&hsh(ri,4441)<0.14){for(let u=Math.ceil(a/11)*11;u<b;u+=11){const f=(u-a)/L;for(const sd of[-1,1]){const off=hw+3.4+hsh(u|0,sd+ri)*0.6,x=R.X[i]+tx*(u-a)+nx*sd*off,z=R.Z[i]+tz*(u-a)+nz*sd*off;
+            if(NW.nearJ(x,z,22)||NW.roadAt(x,z,1.5)||waterLv(x,z)!=null||urbD(x,z)<12)continue;const g=NW.Hground(x,z),sc=10+hsh(x|0,z|0)*3.5;
+            HDT.add(T,{v:'cyp',x,z,m:new THREE.Matrix4().compose(new THREE.Vector3(x,g-0.15,z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),hsh(z|0,x|0)*6.28),new THREE.Vector3(sc*0.95,sc,sc*0.95)),c:new THREE.Color(0.92,0.96,0.9)});addSeg(T,x-0.3,z,x+0.3,z);trees=true;}}}}
+      // edicola votiva in qualche incrocio di campagna
+      const nd=NW.J.nodes;for(let k=0;k<nd.length;k+=2){const x=nd[k],z=nd[k+1];if(x<x0||x>=x0+TS||z<z0||z>=z0+TS)continue;if(hsh(k,6113)>0.16||NW.cityAt(x,z)||urbD(x,z)<60)continue;
+        let ok=null;for(let a=0;a<8&&!ok;a++){const an=a*0.785+0.39,px=x+Math.cos(an)*9,pz=z+Math.sin(an)*9;if(!NW.roadAt(px,pz,2.2)&&waterLv(px,pz)==null&&urbD(px,pz)>8)ok=[px,pz,an];}if(!ok)continue;
+        const[px,pz,an]=ok,g=NW.Hground(px,pz),ry=-an+Math.PI/2;pb.add(GB,0xcfc6b6,px,g+0.25,pz,ry,1.5,0.5,1.2);pb.add(GB,0xf1ebdf,px,g+1.4,pz,ry,1.2,1.9,0.9);pb.add(GCo,0xa4523a,px,g+2.65,pz,ry+0.785,1.45,0.75,1.45);
+        const fx=px-Math.cos(an)*0.46,fz=pz-Math.sin(an)*0.46;pb.add(GB,0x34404e,fx,g+1.55,fz,ry,0.6,0.85,0.06);pb.add(GB,0xe8d9a8,fx,g+1.48,fz,ry,0.22,0.42,0.07);pb.add(GB,0xc8402e,fx-Math.sin(ry)*0.25,g+0.75,fz-Math.cos(ry)*0.25,ry,0.14,0.18,0.14);
+        addSeg(T,px-0.7,pz,px+0.7,pz);addSeg(T,px,pz-0.6,px,pz+0.6);}}
+      finally{NW.yh=yh0;}if(trees)HDT.buildFar(T);}
     // strade senza uscita / chiuse: transenna bianca e rossa e cartello "STRADA CHIUSA" in fondo
     function deadEnds(T,pb){const l=segT.get(T.key);if(!l)return;const x0=T.i*TS,z0=T.j*TS;
       for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b)continue;for(const end of[0,1]){if(end===0&&i!==0)continue;if(end===1&&i!==R.N-2)continue;
@@ -1482,7 +1505,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     function dehors(T,pb){const D=T.deh;if(!D)return;for(let k=0;k<D.length/4;k++){const x=D[k*4],y=D[k*4+1],z=D[k*4+2],r=D[k*4+3],a=r*6;
       loose(T,pb,x,z,y,0.9,18,()=>{pb.add(GDT,0xf0ece4,x,y+0.74,z,0,0.8,0.05,0.8);pb.add(GDT,0x3a3d40,x,y+0.37,z,0,0.1,0.74,0.1);pb.add(GDT,0x3a3d40,x,y+1.15,z,0,0.06,2.3,0.06);pb.add(GDU,UCOL[(r*UCOL.length)|0],x,y+2.25,z,a,1.25,0.5,1.25);});
       for(let j=0;j<2;j++){const cx=x+Math.cos(a+j*Math.PI)*0.75,cz=z+Math.sin(a+j*Math.PI)*0.75;loose(T,pb,cx,cz,y,0.3,4,()=>{pb.add(GB,0x6b4a30,cx,y+0.22,cz,a,0.42,0.45,0.42);pb.add(GB,0x6b4a30,cx-Math.cos(a+j*Math.PI)*0.2,y+0.62,cz-Math.sin(a+j*Math.PI)*0.2,a,0.42,0.4,0.05);});}}}
-    function build(T){const n0=T.dobj.length,pb=PB(T.i*TS,T.j*TS);T.__wr=0;try{buildSigns(T,pb);city(T,pb);piazza(T,pb);infill(T,pb);dehors(T,pb);deadEnds(T,pb);fields(T);grim(T,pb);fringe(T,pb);civicBuild(T,pb);industry(T,pb);alpine(T,pb);country(T,pb);}catch(e){console.warn('varietà',e);}const m=pb.mesh();if(m){m.userData.nomerge=1;scene.add(m);T.dobj.push(m);}
+    function build(T){const n0=T.dobj.length,pb=PB(T.i*TS,T.j*TS);T.__wr=0;try{buildSigns(T,pb);city(T,pb);piazza(T,pb);infill(T,pb);dehors(T,pb);deadEnds(T,pb);fields(T,pb);campagna(T,pb);grim(T,pb);fringe(T,pb);civicBuild(T,pb);industry(T,pb);alpine(T,pb);country(T,pb);}catch(e){console.warn('varietà',e);}const m=pb.mesh();if(m){m.userData.nomerge=1;scene.add(m);T.dobj.push(m);}
       try{const L=T.dobj.slice(n0).filter(o=>!o.isSprite&&!o.isLight&&!o.isInstancedMesh);L.forEach(o=>o.updateMatrixWorld(true));mergeStatic({children:L},null,m=>{scene.add(m);T.dobj.push(m);},true);}catch(e){console.warn('unione zona',e);}
       // tutto ciò che non si muove: niente ricalcolo delle matrici a ogni fotogramma
       for(let q=n0;q<T.dobj.length;q++){const o=T.dobj[q];if(o.isSprite||!o.matrixAutoUpdate||o.userData.mixer||o.userData.mov)continue;o.updateMatrixWorld(true);o.traverse(c=>{c.matrixAutoUpdate=false;});}}
