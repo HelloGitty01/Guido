@@ -213,7 +213,42 @@ const CKINTRO=(()=>{let root=null,iv=null;
   function dip(){if(!root||!root.__shade)return;const sh=root.__shade;sh.style.transition='opacity .45s ease';sh.style.opacity='1';setTimeout(()=>{if(root){sh.style.transition='opacity .9s ease';sh.style.opacity='0';}},700);}
   function stop(){if(iv)clearInterval(iv);iv=null;if(root)root.remove();root=null;const cv=renderer.domElement;cv.style.filter='';cv.style.transition='';}
   return{start,stop,dip,get on(){return !!root;}};})();
-window.__ckIntro=CKINTRO;
+// ================= INTRO: il drone che insegue un'auto =================
+// Quattro o cinque riprese su strade panoramiche. Ogni ripresa si prepara a schermo nero (si costruisce tutta la zona),
+// poi durante il volo il caricamento è sospeso: niente scatti. Riprese diverse: inseguimento, laterale, dall'alto, frontale bassa.
+const DRONE=(()=>{let on=false,root=null,shade=null,car=null,shots=[],k=-1,t=0,st='load',wait=0;
+  const posAt=(R,s)=>{s=Math.max(0,Math.min(R.cum[R.N-1]-0.01,s));let lo=0,hi=R.N-1;while(hi-lo>1){const m=(lo+hi)>>1;if(R.cum[m]<=s)lo=m;else hi=m;}const L=R.cum[lo+1]-R.cum[lo]||1,f=(s-R.cum[lo])/L;
+    return{x:R.X[lo]+(R.X[lo+1]-R.X[lo])*f,z:R.Z[lo]+(R.Z[lo+1]-R.Z[lo])*f,h:R.Hh[lo]+(R.Hh[lo+1]-R.Hh[lo])*f};};
+  function pick(){const C=[];for(const R of NW.roads){if(R.t||R.b||R.priv||R.c<4||R.c>7||R.N<6)continue;const Lr=R.cum[R.N-1];if(Lr<260)continue;
+      for(let s0=30;s0+200<Lr;s0+=90){const a=posAt(R,s0),b=posAt(R,s0+100),c=posAt(R,s0+200);if(NW.cityAt(a.x,a.z)||NW.cityAt(c.x,c.z))continue;
+        const d1=Math.atan2(b.z-a.z,b.x-a.x),d2=Math.atan2(c.z-b.z,c.x-b.x);let tu=Math.abs(Math.atan2(Math.sin(d2-d1),Math.cos(d2-d1)));const el=Math.abs(c.h-a.h),lk=NW.lakeAt(b.x+60,b.z)||NW.lakeAt(b.x-60,b.z)||NW.lakeAt(b.x,b.z+60)||NW.lakeAt(b.x,b.z-60);
+        C.push({R,s0,sc:Math.min(tu,1.6)+Math.min(el,30)/25+(lk?0.9:0)+(R.n&&/Pradalto|Vallombra|Litoranea|Passo/i.test(R.n)?0.8:0)+Math.random()*0.5,x:b.x,z:b.z});}}
+    C.sort((p,q)=>q.sc-p.sc);const out=[];for(const c of C){if(out.length>=5)break;if(out.some(o=>Math.hypot(o.x-c.x,o.z-c.z)<1500))continue;out.push(c);}
+    const TY=['chase','side','top','front','chase'];return out.map((c,i)=>Object.assign(c,{ty:TY[i%TY.length],dur:8.5,v:14+Math.random()*4,sd:Math.random()<0.5?1:-1}));}
+  function carAt(S,tt){const R=S.R,s=S.s0+10+S.v*tt,a=posAt(R,s-3),b=posAt(R,s+3),dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,ux=dx/l,uz=dz/l,nx=-uz,nz=ux,o=Math.min(R.w/4,2.0),p=posAt(R,s);
+    return{x:p.x+nx*o,z:p.z+nz*o,y:p.h,ux,uz};}
+  function prepare(){const S=shots[k],c=carAt(S,0);camera.position.set(c.x,c.y+20,c.z);window.__tileFreeze=false;try{NWT.update(0,true);NWT.update(0,true);}catch(e){}
+    if(!car){try{car=makeCar(randType?'utilitaria':'utilitaria',randColor(),true);}catch(e){car=null;}if(car)scene.add(car);}window.__tileFreeze=true;}
+  function start(sp){try{if(on||!NW||!NWT)return;shots=pick();if(!shots.length)return;on=true;k=0;t=0;st='load';wait=2;
+    root=document.createElement('div');root.style.cssText='position:absolute;inset:0;z-index:0;pointer-events:none';sp.insertBefore(root,sp.firstChild);
+    shade=document.createElement('div');shade.style.cssText='position:absolute;inset:0;background:#000;opacity:1;transition:opacity .9s ease';root.appendChild(shade);}catch(e){console.warn('intro drone',e);on=false;}}
+  function frame(dt){if(!on)return false;dt=Math.min(dt,0.05);
+    if(st==='load'){if(wait-->0)return true;prepare();st='play';t=0;requestAnimationFrame(()=>{if(shade){shade.style.transition='opacity .9s ease';shade.style.opacity='0';}});}
+    const S=shots[k];t+=dt;
+    if(t>S.dur-0.5&&st==='play'){st='out';if(shade){shade.style.transition='opacity .45s ease';shade.style.opacity='1';}}
+    if(t>S.dur&&st==='out'){k=(k+1)%shots.length;st='load';wait=1;return true;}
+    const c=carAt(S,t);if(car){car.position.set(c.x,c.y+0.05,c.z);car.rotation.set(0,Math.atan2(-c.uz,c.ux),0);car.visible=true;}
+    const u=t/S.dur,nx=-c.uz,nz=c.ux,sd=S.sd;let px,py,pz,lx=c.x+c.ux*6,ly=c.y+1,lz=c.z+c.uz*6,fov=52;
+    if(S.ty==='chase'){const b=15-u*4;px=c.x-c.ux*b+nx*sd*3;pz=c.z-c.uz*b+nz*sd*3;py=c.y+7.5-u*2;}
+    else if(S.ty==='side'){px=c.x+nx*sd*(17-u*5)+c.ux*(4-u*10);pz=c.z+nz*sd*(17-u*5)+c.uz*(4-u*10);py=c.y+4.5;lx=c.x;lz=c.z;fov=46;}
+    else if(S.ty==='top'){px=c.x+c.ux*(6+u*6);pz=c.z+c.uz*(6+u*6);py=c.y+30+u*18;lx=c.x+c.ux*2;lz=c.z+c.uz*2;ly=c.y;fov=50;}
+    else{const a=24-u*30;px=c.x+c.ux*a+nx*sd*4;pz=c.z+c.uz*a+nz*sd*4;py=c.y+2.2+Math.max(0,-a)*0.25;lx=c.x;lz=c.z;fov=50;}
+    py=Math.max(py,NW.H(px,pz)+1.5);camera.position.set(px,py,pz);camera.lookAt(lx,ly,lz);if(Math.abs(camera.fov-fov)>0.1){camera.fov=fov;camera.updateProjectionMatrix();}
+    sun.position.set(lx+SUNOFF.x,ly+SUNOFF.y,lz+SUNOFF.z);sun.target.position.set(lx,ly,lz);return true;}
+  function stop(){on=false;window.__tileFreeze=false;if(car){scene.remove(car);car=null;}if(root)root.remove();root=shade=null;}
+  return{start,stop,frame,get on(){return on;}};})();
+window.__ckIntro=DRONE;
+
 function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,dk=CKO.dark||0,key=Math.round(kmh)+'|'+Math.round(rpm/50)+'|'+Math.round(dk*20);if(key===CKO.nv)return;CKO.nv=key;
   const c=document.getElementById('ckNdl'),g=c.getContext('2d'),k=CKO.nk||1;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);{const b=CKO.nb||[0,0];g.setTransform(k,0,0,k,-b[0]*k,-b[1]*k);}g.lineCap='round';
   if(dk>0.05){const B=ckBacklit(C);if(B){g.globalAlpha=Math.min(1,dk*1.1);g.drawImage(B.c,B.x,B.y);g.globalAlpha=1;}else CKO.nv=null;}   // di notte: numeri e tacche retroilluminati, quadrante scuro
@@ -372,7 +407,9 @@ const CINE={shot:null,t:0,list:null,i:0,intro:null,used:false,env:false,
     return{C,S,i:0,k:0,shot:null,t:0,clk:6.2,envT:0};},
   menu(dt){if(!NW)return;const F=this.film||(this.film=this.mkFilm());if(!F)return;dt=Math.min(dt,0.05);
     // tempo accelerato: un giorno intero in circa 20 secondi
-    if(!started){F.clk=(F.clk+dt*(CKINTRO.on?0.05:1.25))%24;if(TIME!=='cycle'||!this.env){this.env=true;TIME='cycle';CLOCK=F.clk;applyEnv();}F.envT-=dt;if(F.envT<=0){F.envT=0.08;CLOCK=F.clk;applyEnv(true);}}
+    if(DRONE.on&&!F.dr){F.dr=1;F.clk=16.8;}
+    if(!started){F.clk=(F.clk+dt*(CKINTRO.on?0.05:DRONE.on?0:1.25))%24;if(TIME!=='cycle'||!this.env){this.env=true;TIME='cycle';CLOCK=F.clk;applyEnv();}F.envT-=dt;if(F.envT<=0){F.envT=0.08;CLOCK=F.clk;applyEnv(true);}}
+    if(DRONE.on){if(!started){F.clk=(F.clk+dt*0.06)%24;}if(DRONE.frame(dt)){const fe=document.getElementById('cineFade');if(fe)fe.style.opacity='0';return;}}
     if(CKINTRO.on&&F.S.length){if(!F.ck){F.ck=1;F.clk=6.1;F.shot=null;}
       if(!F.shot||F.t>F.shot.dur){F.shot={ty:'ck',r:F.S[F.i++%F.S.length],dur:9};F.t=0;F.dip=false;}const S=F.shot,r=S.r;F.t+=dt;this.used=true;if(!F.dip&&F.t>S.dur-0.5){F.dip=true;CKINTRO.dip();}
       const nx=-r.dz,nz=r.dx,o=Math.min(r.w/4,2.2),x=r.x+nx*o+r.dx*F.t*0.15,z=r.z+nz*o+r.dz*F.t*0.15,y=NW.H(x,z)+1.25,lx=x+r.dx*60,lz=z+r.dz*60;camera.position.set(x,y,z);camera.lookAt(lx,NW.H(lx,lz)+1.0,lz);

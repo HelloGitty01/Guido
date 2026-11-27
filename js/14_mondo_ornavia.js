@@ -1365,7 +1365,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     function alpine(T,pb){const x0=T.i*TS,z0=T.j*TS;if(!NW.J.alp)return;for(const a of NW.J.alp){if(a[0]<x0-500||a[0]>x0+TS+500||a[1]<z0-500||a[1]>z0+TS+500)continue;
       const R=NW.roads.find(r=>r.n==='Strada per '+a[2]);if(!R)continue;const inT=(x,z)=>x>=x0&&x<x0+TS&&z>=z0&&z<z0+TS;
       for(let i=6;i<R.N-1;i+=3){const L=Math.hypot(R.X[i+1]-R.X[i],R.Z[i+1]-R.Z[i])||1,tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L;
-        for(const sd of [1,-1]){if(hsh(i,sd+5)<0.35)continue;const x=R.X[i]+(-tz)*sd*(R.w/2+1.3),z=R.Z[i]+tx*sd*(R.w/2+1.3);if(!inT(x,z))continue;const g=Math.max(gH(x,z),R.Hh[i]-0.2);pb.add(GS,0xf2f4f8,x+(-tz)*sd*0.5,g-0.05,z+tx*sd*0.5,Math.atan2(-tz,tx),2.6+hsh(i,sd)*1.8,0.55+hsh(i,sd+1)*0.3,1.4);}   /* cumuli di neve spalata, bassi e tondi */
+        for(const sd of [1,-1]){if(hsh(i,sd+5)<0.35)continue;const x=R.X[i]+(-tz)*sd*(R.w/2+1.3),z=R.Z[i]+tx*sd*(R.w/2+1.3);if(!inT(x,z))continue;{const yh0=NW.yh;NW.yh=NaN;const rq=NW.roadAt(x,z,2.2);NW.yh=yh0;if(rq)continue;}const g=Math.max(gH(x,z),R.Hh[i]-0.2);pb.add(GS,0xf2f4f8,x+(-tz)*sd*0.5,g-0.05,z+tx*sd*0.5,Math.atan2(-tz,tx),2.6+hsh(i,sd)*1.8,0.55+hsh(i,sd+1)*0.3,1.4);}   /* cumuli di neve spalata, bassi e tondi */
         if(i%12===0)for(const sd of [1,-1]){const x=R.X[i]+(-tz)*sd*(R.w/2+0.6),z=R.Z[i]+tx*sd*(R.w/2+0.6);if(inT(x,z))pb.add(GB,sd>0?0xd8d8d8:0xd8d8d8,x,R.Hh[i]+0.55,z,0,0.12,1.1,0.12),pb.add(GB,0xd02020,x,R.Hh[i]+0.95,z,0,0.13,0.15,0.13);}}   /* paline da neve */
       {const i=Math.max(2,R.N-30),L=Math.hypot(R.X[i+1]-R.X[i],R.Z[i+1]-R.Z[i])||1,tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,x=R.X[i]+tz*(R.w/2+1.2),z=R.Z[i]-tx*(R.w/2+1.2);
         if(inT(x,z)){const g=gH(x,z);pb.add(GC6,0x8a8f94,x,g+1.1,z,0,0.09,2.2,0.09);plane(T,tm('alp'+a[2],(g2,w,h)=>{g2.fillStyle='#fff';g2.fillRect(0,0,w,h);g2.strokeStyle='#111';g2.lineWidth=12;g2.strokeRect(10,10,w-20,h-20);g2.fillStyle='#111';g2.font='bold 96px Arial';g2.textAlign='center';g2.textBaseline='middle';g2.fillText(a[2].toUpperCase(),w/2,h*0.42);g2.font='40px Arial';g2.fillText('alt. '+Math.round(R.Hh[R.N-1])+' m',w/2,h*0.78);},640,260),x,g+2.5,z,Math.atan2(tx,tz),1.6,0.65);}}
@@ -1800,6 +1800,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const mb=(vm?8:0)|(vr?16:0),md=vm?8:0;for(const c of T.lb)if((c.layers.mask&~OURS)===0)c.layers.mask=mb;for(const c of T.ld)if((c.layers.mask&~OURS)===0)c.layers.mask=md;});}
   let lastBox=null,VXW=0;
   function update(dt,force){const cx=camera.position.x,cz=camera.position.z;if(!NW.inside(cx,cz)&&!force)return;const ci=Math.floor(cx/TS),cj=Math.floor(cz/TS);
+    // intro col drone: durante una ripresa non si costruisce né si smonta niente (la zona è già pronta)
+    if(window.__tileFreeze&&!force){cullTiles();if(HDT)HDT.update(dt,false);WAVT.value+=dt;WIND.update(dt,cx,camera.position.y,cz);SEA.tick();LMX.update(dt);return;}
     let n=force?1e9:1,allNear=true;const want=[];
     for(let a=-RAD;a<=RAD;a++)for(let b=-RAD;b<=RAD;b++){const i=ci+a,j=cj+b;if(!okTile(i*TS,j*TS,TS))continue;const T=tiles.get(tk(i,j)),dd=Math.max(Math.abs(a),Math.abs(b));
       if(!T){want.push([dd,i,j]);allNear=false;}else if(dd<=DET&&!T.det)want.push([dd-0.5,i,j]);else if(dd>DET+1&&T.det)undetail(T);}
