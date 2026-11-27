@@ -55,6 +55,14 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
      for(let it=0;it<2;it++){const B=Float32Array.from(A);let lo=0,hi=0;for(let i=0;i<N;i++){if(fix[i])continue;while(cum[i]-cum[lo]>W*2)lo++;while(hi<N-1&&cum[hi+1]-cum[i]<=W*2)hi++;
          let sw=0,sv=0;for(let j=lo;j<=hi;j++){const d=(cum[j]-cum[i])/W,w=Math.exp(-d*d);sw+=w;sv+=w*A[j];}B[i]=sv/sw;}A=B;}
      for(let i=0;i<N;i++)if(!fix[i])H[i]=Math.max(H[i]-6,Math.min(H[i]+6,A[i]));});}
+  // incroci: vicino al punto d'incontro le strade si raccordano alla stessa quota, con una curva dolce (niente gradini fra le carreggiate che si sovrappongono)
+  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),JM=new Map();
+   roads.forEach(R=>{if(R.c>=10)return;for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);let e=JM.get(k);if(!e)JM.set(k,e={x:R.X[i],z:R.Z[i],h:0,n:0,w:0,b:false});e.h+=R.Hh[i];e.n++;e.w=Math.max(e.w,R.w);if(R.b||R.t)e.b=true;}});
+   const JL=[],JH=new Map(),jc=(x,z)=>Math.floor(x/40)*100003+Math.floor(z/40);
+   JM.forEach(e=>{if(e.n<2||e.b)return;e.h/=e.n;JL.push(e);const k=jc(e.x,e.z);let l=JH.get(k);if(!l)JH.set(k,l=[]);l.push(e);});
+   roads.forEach(R=>{if(R.b||R.t||R.c>=10)return;for(let i=0;i<R.N;i++){let best=null,bd=1e9;const ci=Math.floor(R.X[i]/40),cj=Math.floor(R.Z[i]/40);
+       for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const l=JH.get((ci+a)*100003+cj+b);if(l)for(const e of l){const d=Math.hypot(e.x-R.X[i],e.z-R.Z[i]);if(d<bd){bd=d;best=e;}}}
+       if(!best)continue;const D=best.w*0.9+10;if(bd>=D)continue;const u=bd/D,w=u*u*(3-2*u);R.Hh[i]=best.h+(R.Hh[i]-best.h)*w;}});}
   // indice spaziale (celle da 64 m) dei segmenti percorribili, con margine per lo spianamento del terreno
   const HC=64,hash=new Map(),hk=(i,j)=>i*1000003+j;
   roads.forEach((R,ri)=>{if(R.c>=10)return;const m=Math.min(60,R.w/2+40);for(let i=0;i<R.N-1;i++){

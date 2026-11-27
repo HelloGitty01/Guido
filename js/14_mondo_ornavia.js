@@ -106,7 +106,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const chev=dir=>{const t=canvasTex(256,(g,n)=>{g.fillStyle='#f4f4f0';g.fillRect(0,0,n,n);g.fillStyle='#111';for(let k=0;k<2;k++){const x0=n*(0.12+k*0.38);g.beginPath();
         if(dir>0){g.moveTo(x0,n*0.12);g.lineTo(x0+n*0.22,n*0.5);g.lineTo(x0,n*0.88);g.lineTo(x0+n*0.13,n*0.88);g.lineTo(x0+n*0.35,n*0.5);g.lineTo(x0+n*0.13,n*0.12);}
         else{const xr=n-x0;g.moveTo(xr,n*0.12);g.lineTo(xr-n*0.22,n*0.5);g.lineTo(xr,n*0.88);g.lineTo(xr-n*0.13,n*0.88);g.lineTo(xr-n*0.35,n*0.5);g.lineTo(xr-n*0.13,n*0.12);}g.fill();}
-        g.strokeStyle='#999';g.lineWidth=6;g.strokeRect(3,3,n-6,n-6);});return new THREE.MeshStandardMaterial({map:t,roughness:0.6,side:THREE.DoubleSide});};
+        g.strokeStyle='#999';g.lineWidth=6;g.strokeRect(3,3,n-6,n-6);});return new THREE.MeshStandardMaterial({map:t,roughness:0.6,side:THREE.FrontSide,emissive:0xffffff,emissiveMap:t,emissiveIntensity:0.12});};
     const cg=(()=>{const P=new THREE.PlaneGeometry(0.62,0.5);P.translate(0,1.15,0);const S=new THREE.BoxGeometry(0.06,1.4,0.06);S.translate(0,0.7,-0.04);
       const out=new THREE.BufferGeometry(),pa=[P,S].map(x=>x.toNonIndexed());['position','normal','uv'].forEach(k=>{const arr=new Float32Array(pa[0].attributes[k].array.length+pa[1].attributes[k].array.length);arr.set(pa[0].attributes[k].array);arr.set(pa[1].attributes[k].array,pa[0].attributes[k].array.length);out.setAttribute(k,new THREE.BufferAttribute(arr,pa[0].attributes[k].itemSize));});
       out.addGroup(0,pa[0].attributes.position.count,0);out.addGroup(pa[0].attributes.position.count,pa[1].attributes.position.count,1);return out;})();
@@ -815,10 +815,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7||R.c===0)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
           const K=kOf(R),kk=(K[i]+K[i+1])/2;if(Math.abs(kk)<1/95)continue;if(NW.cityAt(R.X[i],R.Z[i]))continue;
           const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx,out=kk>0?-1:1;   // lato esterno della curva
-          const tight=Math.abs(kk)>1/40,stp=tight?6:11,sc=tight?1.45:1.1;
+          const tight=Math.abs(kk)>1/40,stp=tight?7:12,sc=tight?1.85:1.4,ix=-nx*out,iz=-nz*out;
           for(let u=Math.ceil(a/stp)*stp;u<b;u+=stp){const f=(u-a)/L,x=R.X[i]+tx*(u-a)+nx*out*(R.w/2+1.3),z=R.Z[i]+tz*(u-a)+nz*out*(R.w/2+1.3);
             {const yh0=NW.yh;NW.yh=NaN;const rq=NW.roadAt(x,z,0.4);NW.yh=yh0;if(rq&&rq.R!==R)continue;}
-            CH[kk>0?0:1].push(x-x0,NW.Hground(x,z),z-z0,Math.atan2(nx*out,nz*out)+Math.PI,sc);}}
+            // pannello doppio: una faccia guarda chi arriva in un senso, l'altra chi arriva nell'altro (frecce opposte), entrambe rivolte verso chi guida
+            const g=NW.Hground(x,z),f1x=-tx+ix*0.45,f1z=-tz+iz*0.45,f2x=tx+ix*0.45,f2z=tz+iz*0.45;CH[kk>0?0:1].push(x-x0,g,z-z0,Math.atan2(f1x,f1z),sc);CH[kk>0?1:0].push(x-x0,g,z-z0,Math.atan2(f2x,f2z),sc);}}
         // curve a gomito dove due strade si congiungono (angolo forte, nessun incrocio): cartelli a frecce grandi sul lato esterno
         for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7||R.c===0)continue;if(i!==R.N-2)continue;const ex=R.X[R.N-1],ez=R.Z[R.N-1];if(NW.cityAt(ex,ez))continue;
           const others=NW.near(ex,ez,2.5).filter(o=>o.R!==R).map(o=>o.R);const uniq=[...new Set(others)];if(uniq.length!==1)continue;const S=uniq[0];if(S.priv||S.c>7)continue;
@@ -827,7 +828,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const turn=Math.atan2(ux*vz-uz*vx,ux*vx+uz*vz);if(Math.abs(turn)<0.9)continue;const out=turn>0?-1:1;
           // tre cartelli: prima, sul vertice e dopo, lungo il bordo esterno
           const nRx=-uz,nRz=ux,nSx=-vz,nSz=vx,pts=[[ex-ux*4+nRx*out*(R.w/2+1.4),ez-uz*4+nRz*out*(R.w/2+1.4),Math.atan2(nRx*out,nRz*out)+Math.PI],[ex+ux*(R.w/2+1.6)+nRx*out*(R.w/2+1.6),ez+uz*(R.w/2+1.6)+nRz*out*(R.w/2+1.6),Math.atan2(ux,uz)+Math.PI],[ex+vx*4+nSx*out*(S.w/2+1.4),ez+vz*4+nSz*out*(S.w/2+1.4),Math.atan2(nSx*out,nSz*out)+Math.PI]];
-          for(const[x,z,rot]of pts){if(x<x0||x>=x0+TS||z<z0||z>=z0+TS)continue;{const yh0=NW.yh;NW.yh=NaN;const rq=NW.roadAt(x,z,0.3);NW.yh=yh0;if(rq)continue;}CH[out>0?1:0].push(x-x0,NW.Hground(x,z),z-z0,rot,1.6);}}
+          for(const[x,z]of pts){if(x<x0||x>=x0+TS||z<z0||z>=z0+TS)continue;{const yh0=NW.yh;NW.yh=NaN;const rq=NW.roadAt(x,z,0.3);NW.yh=yh0;if(rq)continue;}const g=NW.Hground(x,z),ix=-nRx*out,iz=-nRz*out;
+            CH[out>0?1:0].push(x-x0,g,z-z0,Math.atan2(-ux+ix*0.45,-uz+iz*0.45),2.0);CH[out>0?0:1].push(x-x0,g,z-z0,Math.atan2(vx+ix*0.45,vz+iz*0.45),2.0);}}
         CH.forEach((A,j)=>{if(!A.length)return;const n=A.length/5,im=new THREE.InstancedMesh(VERGE.ch.g,VERGE.ch.m[j],n),M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),V=new THREE.Vector3(),S1=new THREE.Vector3(1,1,1);
           for(let k=0;k<n;k++){Q.setFromAxisAngle(Y,A[k*5+3]);V.set(A[k*5],A[k*5+1],A[k*5+2]);S1.setScalar(A[k*5+4]);M.compose(V,Q,S1);im.setMatrixAt(k,M);}im.position.set(x0,0,z0);im.castShadow=true;im.updateMatrix();im.matrixAutoUpdate=false;scene.add(im);T.objs.push(im);});}
       if(VP.length){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(VP,3));g.setAttribute('color',new THREE.Float32BufferAttribute(VC,3));g.setAttribute('va',new THREE.Float32BufferAttribute(VA,1));g.setIndex(VI);g.computeVertexNormals();
@@ -1329,7 +1331,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     function alpine(T,pb){const x0=T.i*TS,z0=T.j*TS;if(!NW.J.alp)return;for(const a of NW.J.alp){if(a[0]<x0-500||a[0]>x0+TS+500||a[1]<z0-500||a[1]>z0+TS+500)continue;
       const R=NW.roads.find(r=>r.n==='Strada per '+a[2]);if(!R)continue;const inT=(x,z)=>x>=x0&&x<x0+TS&&z>=z0&&z<z0+TS;
       for(let i=6;i<R.N-1;i+=3){const L=Math.hypot(R.X[i+1]-R.X[i],R.Z[i+1]-R.Z[i])||1,tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L;
-        for(const sd of [1,-1]){if(hsh(i,sd+5)<0.35)continue;const x=R.X[i]+(-tz)*sd*(R.w/2+0.9),z=R.Z[i]+tx*sd*(R.w/2+0.9);if(!inT(x,z))continue;const g=Math.max(NW.Hground(x,z),R.Hh[i]-0.2);pb.add(GI,0xf2f4f8,x,g+0.15,z,i,2.4+hsh(i,sd)*1.6,0.7+hsh(i,sd+1)*0.5,1.2);}
+        for(const sd of [1,-1]){if(hsh(i,sd+5)<0.35)continue;const x=R.X[i]+(-tz)*sd*(R.w/2+1.3),z=R.Z[i]+tx*sd*(R.w/2+1.3);if(!inT(x,z))continue;const g=Math.max(NW.Hground(x,z),R.Hh[i]-0.2);pb.add(GS,0xf2f4f8,x+(-tz)*sd*0.5,g-0.05,z+tx*sd*0.5,Math.atan2(-tz,tx),2.6+hsh(i,sd)*1.8,0.55+hsh(i,sd+1)*0.3,1.4);}   /* cumuli di neve spalata, bassi e tondi */
         if(i%12===0)for(const sd of [1,-1]){const x=R.X[i]+(-tz)*sd*(R.w/2+0.6),z=R.Z[i]+tx*sd*(R.w/2+0.6);if(inT(x,z))pb.add(GB,sd>0?0xd8d8d8:0xd8d8d8,x,R.Hh[i]+0.55,z,0,0.12,1.1,0.12),pb.add(GB,0xd02020,x,R.Hh[i]+0.95,z,0,0.13,0.15,0.13);}}   /* paline da neve */
       {const i=Math.max(2,R.N-30),L=Math.hypot(R.X[i+1]-R.X[i],R.Z[i+1]-R.Z[i])||1,tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,x=R.X[i]+tz*(R.w/2+1.2),z=R.Z[i]-tx*(R.w/2+1.2);
         if(inT(x,z)){const g=NW.Hground(x,z);pb.add(GC6,0x8a8f94,x,g+1.1,z,0,0.09,2.2,0.09);plane(T,tm('alp'+a[2],(g2,w,h)=>{g2.fillStyle='#fff';g2.fillRect(0,0,w,h);g2.strokeStyle='#111';g2.lineWidth=12;g2.strokeRect(10,10,w-20,h-20);g2.fillStyle='#111';g2.font='bold 96px Arial';g2.textAlign='center';g2.textBaseline='middle';g2.fillText(a[2].toUpperCase(),w/2,h*0.42);g2.font='40px Arial';g2.fillText('alt. '+Math.round(R.Hh[R.N-1])+' m',w/2,h*0.78);},640,260),x,g+2.5,z,Math.atan2(tx,tz),1.6,0.65);}}
