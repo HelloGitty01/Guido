@@ -9,7 +9,20 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const fbm=(x,z,o)=>{let a=0,f=1,am=0.5;for(let k=0;k<o;k++){a+=am*vn(x*f,z*f);f*=2.03;am*=0.5;}return a;};
   // boschetti: macchie d'alberi raggruppate invece di alberi sparsi uniformi
   const CLUMP=(x,z,h)=>h<6?0:sstep(0.6,0.74,fbm(x/120+5.3,z/120-2.1,2)/0.75);
+  // ---------- stagioni: tinte globali per terreno, erba, foglie (scelte nel menu, cambiano senza ricostruire il mondo) ----------
+  const SEA={g:{value:new THREE.Vector4(1,1,1,0)},g2:{value:new THREE.Vector4(0,0,0,0)},gr:{value:new THREE.Vector4(1,1,1,0)},lf:{value:new THREE.Vector4(0,0,0,0)},cur:'estate'};
+  window.__SEASON='estate';
+  SEA.set=(k)=>{SEA.cur=k;window.__SEASON=k;const P={
+      primavera:{g:[0.84,1.1,0.78,0],g2:[0,0,0,0],gr:[0.82,1.12,0.78,1],lf:[0,0,0,0]},
+      estate:{g:[1.1,1.0,0.76,0],g2:[0,0,0,0],gr:[1.15,1.02,0.68,0],lf:[0,0,0,0]},
+      autunno:{g:[1.08,0.9,0.72,0],g2:[0.9,0,0,0],gr:[1.18,0.92,0.62,0],lf:[0.92,0,0,0]},
+      inverno:{g:[0.88,0.9,0.86,0],g2:[0,0.3,0,0],gr:[1.1,0.98,0.8,0],lf:[0.35,0.72,0,0]}}[k]||null;if(!P)return;
+    SEA.g.value.fromArray(P.g);SEA.g2.value.fromArray(P.g2);SEA.gr.value.fromArray(P.gr);SEA.lf.value.fromArray(P.lf);};
+  // brina: d'inverno al mattino presto il prato si imbianca
+  SEA.tick=()=>{if(SEA.cur!=='inverno'){SEA.g.value.w=0;return;}const H=typeof CLOCK==='number'?CLOCK:12,k=(TIME==='cycle'?(H<6?1:H<10.5?1-(H-6)/4.5:H>19?Math.min(1,(H-19)/3):0):TIME==='night'?0.8:TIME==='day'?0.25:0.4);SEA.g.value.w=0.3*k;};
+  window.__setSeason=SEA.set;
   const forestF=(x,z,h,sl)=>{if(h<85)return 0;const n=fbm(x/700+11,z/700,3);return sstep(0.42,0.6,n+sstep(110,260,h)*0.22+sl*0.5)*(1-sstep(950,1150,h));};
+  const forestHalo=(x,z,h,sl)=>{if(h<85)return 0;const n=fbm(x/700+11,z/700,3);return sstep(0.26,0.5,n+sstep(110,260,h)*0.22+sl*0.5)*(1-sstep(950,1150,h));};
   // ---------- materiali ----------
   const ROCK=(()=>{const I=window.HDON&&window.HDIMG;if(!I||!I.roccia)return null;const t=new THREE.Texture(I.roccia);t.wrapS=t.wrapT=THREE.MirroredRepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.needsUpdate=true;return t;})();
   const terrM=addRelief(new THREE.MeshStandardMaterial({map:grassTex,vertexColors:true,roughness:1,envMapIntensity:0.35}),3,0.6);terrM.color.setRGB(1.1,0.95,0.84);
@@ -37,7 +50,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         vec3 vc=vec3(0.62);
         #endif
         diffuseColor.rgb=mix(diffuseColor.rgb,rc*vc*1.55,smoothstep(0.2,0.9,vRk));}`);}};
-  {const gf0=grassFrag;var grassFrag2=sh=>{const twice=sh.fragmentShader.indexOf('snW')>=0;gf0(sh);if(!twice)sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n#ifdef USE_COLOR\nfloat snW=smoothstep(1.25,1.9,(vColor.r+vColor.g+vColor.b)/3.0);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.86,0.89,0.93),snW);\n#endif');};}
+  {const gf0=grassFrag;var grassFrag2=sh=>{const twice=sh.fragmentShader.indexOf('snW')>=0;gf0(sh);sh.uniforms.uSea=SEA.g;sh.uniforms.uSea2=SEA.g2;if(!twice)sh.fragmentShader='uniform vec4 uSea;uniform vec4 uSea2;\n'+sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n#ifdef USE_COLOR\nfloat snW=smoothstep(1.25,1.9,(vColor.r+vColor.g+vColor.b)/3.0);float lmV=dot(vColor.rgb,vec3(0.33));vec3 dc0=diffuseColor.rgb;diffuseColor.rgb*=uSea.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.58,0.3,0.1)*lmV*1.2,uSea2.x*0.55*smoothstep(0.78,0.55,lmV));diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.86,0.88,0.9)*(0.8+0.25*lmV),(uSea.w+uSea2.y*0.25)*(1.0-snW));diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.86,0.89,0.93),snW);\n#endif');};}
   terrM.onBeforeCompile=grassFrag2;terrM.customProgramCacheKey=()=>ROCK?'grass4r':'grass4';
   {const fb=farM.onBeforeCompile;farM.onBeforeCompile=sh=>{fb(sh);grassFrag2(sh);};}
   const ASF=window.HDON&&window.HDIMG&&HDIMG.asfalto;
@@ -58,7 +71,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function roadMat(key,rank){const k=key+rank;if(mcache.has(k))return mcache.get(k);const m=new THREE.MeshStandardMaterial({map:TEX[key],color:key==='pv'?0xc4bfb6:0xffffff,roughness:key==='pv'?0.85:0.92,polygonOffset:true,polygonOffsetFactor:-1-rank*0.5,polygonOffsetUnits:-2-rank*2});addRelief(m,key==='pv'?5:3.5,0.55);mcache.set(k,m);return m;}
   function texKey(R){if(R.c>=9)return 'pv';if(R.c===8)return 'pl';if(R.c===7)return 'r2';
     if(R.o){const l=R.c===0?Math.max(2,Math.round((R.w-3)/3.6)):R.c===1||R.c===3?1:Math.max(1,Math.round((R.w-1.5)/3.5));return 'm'+Math.min(4,l);}return 'r2';}
-  const waterM=new THREE.MeshStandardMaterial({color:0x2b5a73,roughness:0.08,metalness:0.15,envMapIntensity:1.2,transparent:true,opacity:0.9});
+  const waterM=new THREE.MeshStandardMaterial({color:0x2e6677,roughness:0.08,metalness:0.15,envMapIntensity:1.2,transparent:true,opacity:0.9});
   // onde: la superficie resta piatta, si muovono le normali (riflessi che corrono); ampiezza per specchio d'acqua: poche nei laghi, tante nel mare
   // ---------- vento: direzione e forza che cambiano lentamente; lieve in città, più forte in campagna e in montagna, forte col temporale ----------
   const WIND=(()=>{const u={value:new THREE.Vector4(1,0,0.4,0)},CA=[];for(let i=0;i<8;i++)CA.push(new THREE.Vector4(0,0,0,0));const uC={value:CA};
@@ -330,6 +343,14 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const avgC=new Map();const farMat=(mm,by,nm)=>{let src=null;for(const m of by.keys())if(m.name===nm){src=m;break;}const map=src&&src.map;let col=new THREE.Color(0.25,0.33,0.18);
       if(map&&map.image){let a=avgC.get(map);if(!a){try{const cv=document.createElement('canvas');cv.width=cv.height=24;const g=cv.getContext('2d');g.drawImage(map.image,0,0,24,24);const d=g.getImageData(0,0,24,24).data;let r=0,gg=0,b=0,n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]>140){r+=d[i];gg+=d[i+1];b+=d[i+2];n++;}if(n)a=new THREE.Color(r/n/255,gg/n/255,b/n/255).convertSRGBToLinear();}catch(e){}avgC.set(map,a||null);}if(a)col=a.clone();}
       const f=new THREE.MeshStandardMaterial({color:col.multiply(mm.color),roughness:0.95,metalness:0,side:mm.side});f.name=mm.name+'_far';return f;};
+    // stagione sulle chiome: in autunno ogni albero prende il suo colore (giallo, arancio, rosso ruggine), d'inverno le chiome si diradano
+    const LEAFGLSL=`{vec3 _c=diffuseColor.rgb;float _gr=_c.g-max(_c.r,_c.b)*0.92;float _h=fract(sin(dot(vSeed,vec2(12.9898,78.233)))*43758.5453);
+      vec3 _ac=mix(vec3(0.95,0.55,0.1),vec3(0.95,0.82,0.18),_h);_ac=mix(_ac,vec3(0.7,0.2,0.06),step(0.78,_h));_ac=mix(_ac,_c,step(0.93,_h)*0.6);
+      diffuseColor.rgb=mix(_c,_ac*dot(_c,vec3(0.45,0.8,0.25))*1.5,uLf.x*smoothstep(-0.03,0.04,_gr));
+      if(uLf.y>0.0){float _n=fract(sin(dot(floor(gl_FragCoord.xy*0.5)+vSeed,vec2(12.99,78.23)))*43758.55);if(_n<uLf.y)discard;}}`;
+    const leafSeason=(mm,bb)=>{const ob=mm.onBeforeCompile;mm.onBeforeCompile=sh=>{ob(sh);sh.uniforms.uLf=SEA.lf;
+      sh.vertexShader='varying vec2 vSeed;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvSeed=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xz;');
+      sh.fragmentShader='uniform vec4 uLf;varying vec2 vSeed;\n'+sh.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\n'+LEAFGLSL);};const ck=mm.customProgramCacheKey;mm.customProgramCacheKey=()=>ck()+'_ls';};
     const prep=(key,G,leafRe,sink=0,tint=1)=>{if(!G)return;const sc=G.scene;sc.updateMatrixWorld(true);const by=new Map();sc.traverse(m=>{if(!m.isMesh)return;if(!by.has(m.material))by.set(m.material,[]);by.get(m.material).push(gBake(m,m.matrixWorld));});
       const all=[...by.values()].flat(),bb=gBox(all),h=bb.max.y-bb.min.y;
       // il tronco: centro della base
@@ -337,11 +358,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       gShift(all,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));
       const parts=[...by.entries()].map(([m,l])=>{const mm=gFixMat(m.clone());const leaf=leafRe.test(m.name)||m.transparent||m.alphaTest>0;
         if(leaf){mm.transparent=false;mm.alphaTest=0.45;mm.alphaToCoverage=true;mm.side=THREE.DoubleSide;if(mm.map){mm.map=coverageMips(mm.map,0.45);}mm.roughness=0.9;mm.metalness=0;if(tint!==1)mm.color.multiplyScalar(tint);}else{mm.roughness=Math.max(0.8,mm.roughness);mm.metalness=0;}
-        fadeHook(false)(mm);return{geo:gMerge(l),mat:mm,name:m.name};});
+        fadeHook(false)(mm);if(leaf&&(key==='lin'||key==='pop'))leafSeason(mm);return{geo:gMerge(l),mat:mm,name:m.name};});
       // versione leggera per la distanza (stesso modello, poche foglie e niente rami fini): stessi materiali
       let far=null;const FG=MODELS['hd_'+key2file[key]+'_far'];if(FG){const fs=FG.scene;fs.updateMatrixWorld(true);const fb=new Map();fs.traverse(m=>{if(!m.isMesh)return;const nm=m.material.name;if(!fb.has(nm))fb.set(nm,[]);fb.get(nm).push(gBake(m,m.matrixWorld));});
         const fa=[...fb.values()].flat();gShift(fa,-c.x,-bb.min.y-sink*h,-c.z,1/(h*(1-sink)));far=[...fb.entries()].map(([nm,l])=>{const P=parts.find(p=>p.name===nm)||parts[0];return{geo:gMerge(l),mat:farMat(P.mat,by,P.name)};});}
-      try{far=bbMake(parts);}catch(e){console.warn('pannello albero',key,e);}
+      try{far=bbMake(parts);if(far&&(key==='lin'||key==='pop'))far.forEach(f=>leafSeason(f.mat));}catch(e){console.warn('pannello albero',key,e);}
       V[key]={parts,far,items:new Set(),im:null};};
     const key2file={lin:'linden',fir:'fir',palm:'palm',cyp:'cypress',pop:'poplar'};
     prep('lin',MODELS.hd_linden,/001/);prep('fir',MODELS.hd_fir,/branch/i,0.28,1.45);prep('palm',MODELS.hd_palm,/leaves/i);prep('cyp',MODELS.hd_cypress,/2_sided/i,0,1.1);prep('pop',MODELS.hd_poplar,/branch/i,0,1.1);
@@ -643,15 +664,18 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const fld=hsh(Math.floor(x/140+fbm(x/300,z/300,1)*2),Math.floor(z/110));
     // tavolozza per zona: costa calda e asciutta, colline verdi morbide, montagna più fredda; macchie grandi di prato più giallo o più verde
     const mz=fbm(x/1100+3,z/1100-7,2)/0.75,coast=1-sstep(25,140,h),mont=sstep(380,800,h);
-    let base=[0.96+0.14*mz,0.85-0.03*mz,0.64-0.04*mz];base=base.map((v,q)=>v*(1-coast)+[1.05,0.9,0.66][q]*coast);base=base.map((v,q)=>v*(1-mont)+[0.8,0.82,0.7][q]*mont);
+    // prato più verde e vario: zone più fresche (verde), più asciutte (giallo paglia) e chiazze di terra bruna, tutto sfumato
+    const wet=fbm(x/260-4,z/260+9,3)/0.75,brn=sstep(0.25,0.85,fbm(x/90+2,z/90-6,2)/0.75);
+    let base=[0.86+0.1*mz-0.05*wet,0.93-0.02*mz+0.03*wet,0.6-0.05*mz];base=base.map((v,q)=>v*(1-0.35*brn)+[0.92,0.8,0.58][q]*0.35*brn);base=base.map((v,q)=>v*(1-coast)+[1.05,0.9,0.66][q]*coast);base=base.map((v,q)=>v*(1-mont)+[0.8,0.82,0.7][q]*mont);
     if(h<230&&sl<0.1&&fld>0.42)c=[[1.08,0.9,0.58],[0.86,0.86,0.58],[1.0,0.82,0.6],[0.82,0.82,0.54]][(fld*40|0)%4].map((v,q)=>v*0.75+base[q]*0.25);else c=base;
     const gk=CLUMP(x,z,h);c=c.map(v=>v*(1-0.22*gk));
-    const ff=forestF(x,z,h,sl);c=c.map((v,q)=>v*(1-ff)+[0.42,0.48,0.38][q]*ff);
+    // sotto e attorno ai boschi il prato scurisce a poco a poco verso il colore delle chiome: niente stacco netto fra erba chiara e alberi scuri
+    const ff=forestF(x,z,h,sl),fh=forestHalo(x,z,h,sl);c=c.map((v,q)=>v*(1-fh*0.55)+[0.6,0.7,0.46][q]*fh*0.55);c=c.map((v,q)=>v*(1-ff)+[0.4,0.47,0.34][q]*ff);
     const rock=sstep(0.55,0.95,sl)+sstep(900,1100,h)*0.6;c=c.map((v,q)=>v*(1-Math.min(1,rock))+[0.62,0.6,0.57][q]*Math.min(1,rock));
     let snow=sstep(1250,1400,h+60*n);if(NW.J.alp)for(const a of NW.J.alp){const d=Math.hypot(x-a[0],z-a[1]);if(d<400)snow=Math.max(snow,(1-sstep(110,400,d+90*fbm(x/60,z/60,2)))*Math.min(1,0.35+0.9*fbm(x/22,z/22,3)));}TCR=Math.min(1,rock)*(1-snow);c=c.map((v,q)=>v*(1-snow)+2.3*snow);
     const ci=NW.cityAt(x,z),pa=ci?null:NW.placeAt(x,z);const urb=ci?1:pa?(1-sstep(0.55,1,pa.f))*(pa.p.t===2?0.4:0.75):0;
     c=c.map((v,q)=>v*(1-urb)+[0.66,0.64,0.6][q]*urb);
-    const lk=NW.lakeAt(x,z);if(lk&&h<NW.lakes[lk-1].lv)c=[0.72,0.68,0.55];
+    const lk=NW.lakeAt(x,z);if(lk){const lv=NW.lakes[lk-1].lv;if(h<lv)c=[0.55,0.52,0.42];else if(h<lv+1.6){const t=(h-lv)/1.6;c=c.map((v,q)=>v*t+[0.88,0.82,0.64][q]*(1-t));}else if(h<lv+6){const t=(h-lv-1.6)/4.4;c=c.map((v,q)=>v*(0.85+0.15*t)+[0.62,0.78,0.46][q]*0.15*(1-t));}}   // riva: ghiaia chiara, poi erba più verde
     if(h<3.4)c=[0.95,0.86,0.62];
     return c.map(v=>v*n*smogK(x,z));}
   function smogK(x,z){let k=1;for(const S of LMX.smog){const d=Math.hypot(x-S.x,z-S.z);if(d<S.r)k=Math.min(k,0.72+0.28*sstep(0.3,1,d/S.r));}return k;}
@@ -1713,7 +1737,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
     const U={uT:{value:0},uP:{value:new THREE.Vector2()},uR:{value:RAD}};
     const m=new THREE.MeshStandardMaterial({map:tex,alphaTest:0.42,side:THREE.DoubleSide,roughness:1,metalness:0});m.alphaToCoverage=true;
-    m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);sh.uniforms.uWind=WIND.u;sh.uniforms.uCar=WIND.uC;sh.vertexShader='uniform float uT;uniform vec2 uP;uniform float uR;uniform vec4 uWind;uniform vec4 uCar[8];\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 wp=modelMatrix*instanceMatrix*vec4(transformed,1.0);vec4 bs=modelMatrix*instanceMatrix*vec4(transformed.x,0.0,transformed.z,1.0);float hh=uv.y;
+    m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);sh.uniforms.uGr=SEA.gr;sh.fragmentShader='uniform vec4 uGr;\n'+sh.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+        diffuseColor.rgb*=uGr.rgb;if(uGr.w>0.0&&vUv.y>0.45){float fh=fract(sin(dot(floor(vUv*vec2(34.0,26.0)),vec2(12.9898,78.233)))*43758.5453);if(fh>1.0-0.045*uGr.w)diffuseColor.rgb=fh>0.992?vec3(0.95,0.95,0.92):fh>0.985?vec3(0.95,0.8,0.15):fh>0.975?vec3(0.62,0.4,0.85):vec3(0.9,0.35,0.3);}`);sh.uniforms.uWind=WIND.u;sh.uniforms.uCar=WIND.uC;sh.vertexShader='uniform float uT;uniform vec2 uP;uniform float uR;uniform vec4 uWind;uniform vec4 uCar[8];\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 wp=modelMatrix*instanceMatrix*vec4(transformed,1.0);vec4 bs=modelMatrix*instanceMatrix*vec4(transformed.x,0.0,transformed.z,1.0);float hh=uv.y;
         float dc=distance(bs.xz,cameraPosition.xz);float shr=1.0-smoothstep(uR-14.0,uR,dc);wp.y=bs.y+(wp.y-bs.y)*shr;
         float gw=0.55+0.45*sin(uT*1.5-dot(bs.xz,uWind.xy)*0.11)*sin(uT*0.37-dot(bs.xz,uWind.xy)*0.023+1.0);
         vec2 wv=(uWind.xy*uWind.z*(0.22*gw+0.05)+vec2(sin(uT*2.3+bs.x*0.31+bs.z*0.17),cos(uT*1.9+bs.z*0.27-bs.x*0.11))*(0.02+0.05*uWind.z))*hh*hh;
@@ -1739,7 +1764,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       if(ok0&&pn>0.14&&urbD(cx,cz)>9){const near=NW.near(cx,cz,CELL+12).map(n=>({R:n.R,i:n.i}));
         for(let q=0;q<K;q++){const x=cx+(hsh(ci*31+q,cj*17)-0.5)*CELL,z=cz+(hsh(cj*29+q*7,ci*13+q)-0.5)*CELL,r=hsh(ci+q*5,cj-q*3);if(r>Math.min(1,(pn-0.05)*2.2))continue;
           let bad=false;for(const n of near){const R=n.R;if(R.c>=10)continue;let dmin=1e9;for(let t=Math.max(0,n.i-2);t<Math.min(R.N-1,n.i+3);t++){const ax=R.X[t],az=R.Z[t],ex=R.X[t+1]-ax,ez=R.Z[t+1]-az,l2=ex*ex+ez*ez||1e-9;let u=((x-ax)*ex+(z-az)*ez)/l2;u=u<0?0:u>1?1:u;dmin=Math.min(dmin,Math.hypot(x-ax-u*ex,z-az-u*ez));}if(dmin<R.w/2+2.2){bad=true;break;}}
-          if(bad||NW.lakeAt(x,z)||inB(x,z)||urbD(x,z)<8||inPiaz(x,z,2))continue;if(window.__FIELDS&&__FIELDS.some(F=>{const dx=x-F.x,dz=z-F.z;if(dx*dx+dz*dz>F.r*F.r)return false;const u=dx*F.ca+dz*F.sa,v=-dx*F.sa+dz*F.ca;return Math.abs(u)<F.W/2+1&&Math.abs(v)<F.D/2+1;}))continue;const y=gH(x,z);if(y>1150)continue;
+          if(bad||NW.lakeAt(x,z)||inB(x,z)||urbD(x,z)<8||inPiaz(x,z,2)||NW.cityAt(x,z)||(NW.J.alp||[]).some(a=>Math.abs(a[0]-x)<380&&Math.abs(a[1]-z)<380))continue;if(window.__FIELDS&&__FIELDS.some(F=>{const dx=x-F.x,dz=z-F.z;if(dx*dx+dz*dz>F.r*F.r)return false;const u=dx*F.ca+dz*F.sa,v=-dx*F.sa+dz*F.ca;return Math.abs(u)<F.W/2+1&&Math.abs(v)<F.D/2+1;}))continue;const y=gH(x,z);if(y>1150)continue;
           const sc=0.8+hsh(q*3+ci,q+cj)*0.6;c.push(x,y-0.04,z,r*6.283,sc,r);}}
       CC.set(k,c);if(CC.size>900){const it=CC.keys().next().value;CC.delete(it);}return c;};
     let lx=1e9,lz=1e9,tm=0,lastMul=-1;
@@ -1776,7 +1801,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     if(!HIDE&&(n>0||force)){const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);for(let a=-FR;a<=FR;a++)for(let b=-FR;b<=FR;b++){const i=fi+a,j=fj+b;if(!okTile(i*FS,j*FS,FS))continue;if(!far.has(tk(i,j))){buildFar(i,j);if(!force)break;}}}
     far.forEach((F,k)=>{const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);if(Math.abs(F.i-fi)>FR+1||Math.abs(F.j-fj)>FR+1){scene.remove(F.m);F.m.geometry.dispose();far.delete(k);}});
     cullTiles();if(GRASS&&started)GRASS.update(dt);
-    if(HDT)HDT.update(dt,force);WAVT.value+=dt;WIND.update(dt,camera.position.x,camera.position.y,camera.position.z);
+    if(HDT)HDT.update(dt,force);WAVT.value+=dt;WIND.update(dt,camera.position.x,camera.position.y,camera.position.z);SEA.tick();
     anims.forEach(a=>{const p=a.m.position;if(Math.abs(p.x-cx)+Math.abs(p.z-cz)<160)a.m.userData.mixer.update(dt);});LMX.update(dt);VXW=heavy&&!force?VXW+1:0;if(!heavy||force||VXW>4){VXW=0;VX.update(dt,force);}}
   function segQ(x,z){return bseg.get(tk(Math.floor(x/BC),Math.floor(z/BC)))||[];}
   function addDyn(list){const T={segs:[]};list.forEach(q=>addSeg(T,...q));return T;}
