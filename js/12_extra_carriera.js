@@ -412,9 +412,9 @@ const PCARD={list:null,got:{},want:null,t:0,
       L.forEach(it=>{const u=URL.createObjectURL(it.blob);this.urls.push(u);const f=document.createElement('figure');f.className='pc got';
         f.innerHTML=(it.type==='clip'?`<span class="clipTag">▶ clip</span><video src="${u}" muted preload="metadata"></video>`:`<img src="${u}" alt="">`)+`<figcaption>${it.name||'Valdovia'} · ${new Date(it.t).toLocaleDateString('it-IT')}</figcaption>`;
         f.onclick=()=>LBX.show({src:u,clip:it.type==='clip',cap:(it.name||'Valdovia'),file:'guido_'+(it.type==='clip'?'clip':'foto')+'_'+it.id+'.'+(it.type==='clip'?(it.ext||'webm'):'jpg'),blob:it.blob,del:()=>ALBUM.del(it.id).then(()=>this.media())});box.appendChild(f);});});},
-  album(){const box=document.getElementById('pcAlbum');if(!box)return;const L=this.build();if(!L){box.innerHTML='<p class="note">Le cartoline compaiono quando il mondo è caricato.</p>';return;}this.load();
+  album(){this.media();const box=document.getElementById('pcAlbum');if(!box)return;const L=this.build();if(!L){box.innerHTML='<p class="note">Le cartoline compaiono quando il mondo è caricato.</p>';return;}this.load();
     const n=L.filter(o=>this.got[o.id]).length;document.getElementById('pcCount').textContent=n+' / '+L.length;
-    this.media();box.innerHTML=L.map(o=>{const g=this.got[o.id];return g&&g.img?`<figure class="pc got" data-id="${o.id}"><img src="${g.img}" alt=""><figcaption>${o.n}</figcaption></figure>`:`<figure class="pc"><div class="q">${o.k==='alto'?'⛰':o.k==='acqua'?'🌊':'🏛'}</div><figcaption>${g?o.n:'??? · '+o.hint}</figcaption></figure>`;}).join('');
+    box.innerHTML=L.map(o=>{const g=this.got[o.id];return g&&g.img?`<figure class="pc got" data-id="${o.id}"><img src="${g.img}" alt=""><figcaption>${o.n}</figcaption></figure>`:`<figure class="pc"><div class="q">${o.k==='alto'?'⛰':o.k==='acqua'?'🌊':'🏛'}</div><figcaption>${g?o.n:'??? · '+o.hint}</figcaption></figure>`;}).join('');
     box.querySelectorAll('figure.got').forEach(f=>{const o=L.find(q=>q.id===f.dataset.id),g=this.got[o.id];f.onclick=()=>LBX.show({src:g.img,cap:o.n,file:'cartolina_'+o.n.replace(/\W+/g,'_')+'.jpg'});});}};
 
 // ================= ALBUM: foto scattate al volo, clip e cartoline, salvate nel browser (IndexedDB) =================
