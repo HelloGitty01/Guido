@@ -145,7 +145,10 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   const sfF=surfaceAt(pl.x+c0*a,pl.z-s0*a),sfR=surfaceAt(pl.x-c0*b,pl.z+s0*b);pl.surfR=sfR;
   const wf=s0=>WET<1?(s0==='asphalt'?WET:s0==='dirt'?0.82:0.9):1;
   const ofr=sf=>sf==='asphalt'?1:(P.offroad||1);
-  const muF=P.mu*SURF[sfF].mu*wf(sfF)*ofr(sfF),muR=P.mu*SURF[sfR].mu*wf(sfR)*ofr(sfR);const rr=(SURF[sfF].rr+SURF[sfR].rr)/2;
+  // aderenza ruota per ruota: con due ruote sull'erba o sulla ghiaia l'auto tira da quella parte
+  const sfW=[0,1,2,3].map(i=>{const x=pl.x+c0*WX[i]+s0*WY[i],z=pl.z-s0*WX[i]+c0*WY[i];return (i<2?(Math.abs(WY[i])<0.01?sfF:surfaceAt(x,z)):surfaceAt(x,z))||sfR;}).map(sf=>SURF[sf]?sf:'asphalt');pl.surfW=sfW;
+  const muWi=sfW.map(sf=>P.mu*SURF[sf].mu*wf(sf)*ofr(sf));
+  const muF=(muWi[0]+muWi[1])/2,muR=(muWi[2]+muWi[3])/2;const rr=(SURF[sfW[0]].rr+SURF[sfW[1]].rr+SURF[sfW[2]].rr+SURF[sfW[3]].rr)/4;
   const sel=pl.sel,fwd=sel==='D',rev=sel==='R',neu=sel==='N';
   if(fwd&&pl.gear>1&&Math.abs(pl.vx)<1.5)pl.gear=1;
   const drive=neu?pl.thrIn:Math.max(pl.thrIn,pl.brkIn<0.05?0.045:0),brake=pl.brkIn;
@@ -181,7 +184,7 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   const Fz=[0,1,2,3].map(i=>{let f=Fs[i]+(i<2?-dLong/2:dLong/2)+(WY[i]<0?1:-1)*dLat*(i<2?rsd:1-rsd);
     const mi=Fs[i]/G,cb=2*ze*om*mi;f+=Math.max(-0.7*Fs[i],Math.min(1.0*Fs[i],cb*vroad[i]*0.6));return Math.max(0.04*Fs[i],f)*(pl.nLoad??1);});
   // aderenza di ogni gomma (cala un po' quando la gomma è molto caricata)
-  const muW=[muF,muF,muR,muR],Dm=Fz.map((f,i)=>muW[i]*f*(1-0.09*(f/Fs[i]-1)));
+  const muW=muWi,Dm=Fz.map((f,i)=>muW[i]*f*(1-0.09*(f/Fs[i]-1)));
   pl.fy=pl.fy&&pl.fy.length===4?pl.fy:[0,0,0,0];
   const cap=Dm.map((d,i)=>Math.sqrt(Math.max(0.03*d*d,d*d-pl.fy[i]*pl.fy[i]))*0.97);
   // trazione: differenziale aperto o autobloccante, controllo trazione
