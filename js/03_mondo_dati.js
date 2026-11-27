@@ -49,7 +49,7 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   // curve raccordate: nella realtà una strada non cambia mai direzione con uno spigolo, se non agli incroci.
   // Ogni vertice interno che non è condiviso con un'altra strada diventa un arco di cerchio, con il raggio minimo della sua categoria
   // (limitato dalla lunghezza dei tratti adiacenti). Ponti e gallerie restano come sono.
-  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),cnt=new Map();roads.forEach(R=>{for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);cnt.set(k,(cnt.get(k)||0)+1);}});
+  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),cnt=new Map();roads.forEach(R=>{const seen=new Set();for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);if(seen.has(k))continue;seen.add(k);cnt.set(k,(cnt.get(k)||0)+1);}});
    const RAD=c=>c<=1?160:c<=3?90:c<=4?60:c===5?42:c===6?30:c===7?20:12;
    roads.forEach(R=>{if(R.b||R.t||R.N<3||R.c>=10)return;const r0=RAD(R.c);
      for(let pass=0;pass<2;pass++){const X=Array.from(R.X),Z=Array.from(R.Z),H=Array.from(R.Hh),N=X.length,oX=[X[0]],oZ=[Z[0]],oH=[H[0]],mp=new Int32Array(N);let ch=false;
@@ -64,7 +64,7 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
          const side=ux*vz-uz*vx>0?1:-1,cx=sx-uz*r*side,cz=sz+ux*r*side;   // centro a sinistra o a destra della direzione
          const a0=Math.atan2(sz-cz,sx-cx),a1=Math.atan2(ez-cz,ex-cx);let da=a1-a0;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
          const n=Math.max(2,Math.ceil(Math.abs(da)*r/3.5));
-         mp[i]=oX.length+(n>>1);for(let k=0;k<=n;k++){const f=k/n,a=a0+da*f;oX.push(cx+Math.cos(a)*r);oZ.push(cz+Math.sin(a)*r);oH.push(sh+(eh-sh)*f);}
+         mp[i]=oX.length+(n>>1);for(let k=0;k<=n;k++){const f=k/n,a=a0+da*f,px=cx+Math.cos(a)*r,pz=cz+Math.sin(a)*r;if(Math.hypot(px-oX[oX.length-1],pz-oZ[oZ.length-1])<0.05)continue;oX.push(px);oZ.push(pz);oH.push(sh+(eh-sh)*f);}
          used=t;ch=true;}
        mp[N-1]=oX.length;oX.push(X[N-1]);oZ.push(Z[N-1]);oH.push(H[N-1]);if(!ch)break;
        R.imap=R.imap?R.imap.map(v=>mp[v]):mp;
@@ -72,7 +72,7 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
    // gli archi del grafo stradale puntano ai vertici: si riallineano agli indici nuovi
    if(J.edges){if(!J.__e0)J.__e0=J.edges.map(e=>e.slice());J.edges=J.__e0.map(e0=>{const e=e0.slice(),R=roads[e[0]];if(R&&R.imap){e[1]=R.imap[e[1]];e[2]=R.imap[e[2]];}return e;});}}
   // profili altimetrici morbidi: niente scalini o cunette secche; i punti condivisi con altre strade (incroci) e ponti/gallerie restano dove sono
-  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),cnt=new Map();roads.forEach(R=>{for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);cnt.set(k,(cnt.get(k)||0)+1);}});
+  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),cnt=new Map();roads.forEach(R=>{const seen=new Set();for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);if(seen.has(k))continue;seen.add(k);cnt.set(k,(cnt.get(k)||0)+1);}});
    roads.forEach(R=>{if(R.b||R.t||R.N<3)return;const N=R.N,H=R.Hh,cum=R.cum,fix=new Uint8Array(N);fix[0]=fix[N-1]=1;for(let i=1;i<N-1;i++)if(cnt.get(key(R.X[i],R.Z[i]))>1)fix[i]=1;
      const W=R.c<=2?45:R.c<=5?30:22;let A=Float32Array.from(H);
      for(let it=0;it<2;it++){const B=Float32Array.from(A);let lo=0,hi=0;for(let i=0;i<N;i++){if(fix[i])continue;while(cum[i]-cum[lo]>W*2)lo++;while(hi<N-1&&cum[hi+1]-cum[i]<=W*2)hi++;
@@ -80,12 +80,22 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
      for(let i=0;i<N;i++)if(!fix[i])H[i]=Math.max(H[i]-6,Math.min(H[i]+6,A[i]));});}
   // incroci: vicino al punto d'incontro le strade si raccordano alla stessa quota, con una curva dolce (niente gradini fra le carreggiate che si sovrappongono)
   {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),JM=new Map();
-   roads.forEach(R=>{if(R.c>=10)return;for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);let e=JM.get(k);if(!e)JM.set(k,e={x:R.X[i],z:R.Z[i],h:0,n:0,w:0,b:false});e.h+=R.Hh[i];e.n++;e.w=Math.max(e.w,R.w);if(R.b||R.t)e.b=true;}});
+   roads.forEach(R=>{if(R.c>=10)return;const seen=new Set();for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);if(seen.has(k))continue;seen.add(k);let e=JM.get(k);if(!e)JM.set(k,e={x:R.X[i],z:R.Z[i],h:0,n:0,w:0,b:false});e.h+=R.Hh[i];e.n++;e.w=Math.max(e.w,R.w);if(R.b||R.t)e.b=true;}});
    const JL=[],JH=new Map(),jc=(x,z)=>Math.floor(x/40)*100003+Math.floor(z/40);
    JM.forEach(e=>{if(e.n<2||e.b)return;e.h/=e.n;JL.push(e);const k=jc(e.x,e.z);let l=JH.get(k);if(!l)JH.set(k,l=[]);l.push(e);});
-   roads.forEach(R=>{if(R.b||R.t||R.c>=10)return;for(let i=0;i<R.N;i++){let best=null,bd=1e9;const ci=Math.floor(R.X[i]/40),cj=Math.floor(R.Z[i]/40);
-       for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const l=JH.get((ci+a)*100003+cj+b);if(l)for(const e of l){const d=Math.hypot(e.x-R.X[i],e.z-R.Z[i]);if(d<bd){bd=d;best=e;}}}
-       if(!best)continue;const D=best.w*0.9+10;if(bd>=D)continue;const u=bd/D,w=u*u*(3-2*u);R.Hh[i]=best.h+(R.Hh[i]-best.h)*w;}});}
+   // solo gli incroci che stanno su questa stessa strada, misurati lungo la strada: un incrocio vicino in pianta ma su un altro tornante, più in basso, non conta
+   roads.forEach(R=>{if(R.b||R.t||R.c>=10)return;const JI=[];for(let i=0;i<R.N;i++){const e=JM.get(key(R.X[i],R.Z[i]));if(e&&e.n>=2&&!e.b)JI.push([i,e]);}if(!JI.length)return;
+     const H0=Float32Array.from(R.Hh);for(let i=0;i<R.N;i++){let best=null,bd=1e9;for(const[j,e]of JI){const d=Math.abs(R.cum[i]-R.cum[j]);if(d<bd){bd=d;best=e;}}
+       const D=best.w*0.9+10;if(bd>=D)continue;const u=bd/D,w=u*u*(3-2*u);R.Hh[i]=best.h+(H0[i]-best.h)*w;}});}
+  // pendenza massima: le strade vere non superano il 12-15% (o poco più della pendenza media, se la strada sale molto); i tratti troppo ripidi
+  // si spalmano su quelli vicini, a parità di quota agli estremi e agli incroci (il terreno attorno si adegua con scarpate e rilevati)
+  {const key=(x,z)=>Math.round(x*2)+','+Math.round(z*2),cnt=new Map();roads.forEach(R=>{const seen=new Set();for(let i=0;i<R.N;i++){const k=key(R.X[i],R.Z[i]);if(seen.has(k))continue;seen.add(k);cnt.set(k,(cnt.get(k)||0)+1);}});
+   roads.forEach(R=>{if(R.b||R.t||R.N<3||R.c>=10)return;const N=R.N,H=R.Hh,c=R.cum,L=c[N-1];if(L<30)return;const fix=new Uint8Array(N);fix[0]=fix[N-1]=1;for(let i=1;i<N-1;i++)if(cnt.get(key(R.X[i],R.Z[i]))>1)fix[i]=1;
+     let fixes=[];for(let i=0;i<N;i++)if(fix[i])fixes.push(i);let gm=0.13;for(let q=1;q<fixes.length;q++){const a=fixes[q-1],b=fixes[q],d=c[b]-c[a];if(d>1)gm=Math.max(gm,Math.abs(H[b]-H[a])/d*1.15);}gm=Math.min(gm,0.3);
+     for(let it=0;it<3;it++){for(let i=1;i<N;i++){if(fix[i])continue;const d=c[i]-c[i-1];H[i]=Math.max(H[i-1]-gm*d,Math.min(H[i-1]+gm*d,H[i]));}
+       for(let i=N-2;i>=0;i--){if(fix[i])continue;const d=c[i+1]-c[i];H[i]=Math.max(H[i+1]-gm*d,Math.min(H[i+1]+gm*d,H[i]));}}
+     // ammorbidisce i cambi di pendenza (raccordi verticali)
+     const B=Float32Array.from(H);for(let i=1;i<N-1;i++){if(fix[i])continue;let sw=0,sv=0;for(let j=i-1;j>=0&&c[i]-c[j]<14;j--){const w=1-(c[i]-c[j])/14;sw+=w;sv+=w*B[j];}for(let j=i+1;j<N&&c[j]-c[i]<14;j++){const w=1-(c[j]-c[i])/14;sw+=w;sv+=w*B[j];}H[i]=(sv+B[i])/(sw+1);}});}
   // indice spaziale (celle da 64 m) dei segmenti percorribili, con margine per lo spianamento del terreno
   const HC=64,hash=new Map(),hk=(i,j)=>i*1000003+j;
   roads.forEach((R,ri)=>{if(R.c>=10)return;const m=Math.min(60,R.w/2+40);for(let i=0;i<R.N-1;i++){

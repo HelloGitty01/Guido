@@ -1494,17 +1494,22 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         let dsg=30;for(const sg of segQ(x,z))for(const sg2 of [sg]){const ex=sg2[2]-sg2[0],ez=sg2[3]-sg2[1],l2=ex*ex+ez*ez||1e-9;let t=((x-sg2[0])*ex+(z-sg2[1])*ez)/l2;t=t<0?0:t>1?1:t;dsg=Math.min(dsg,Math.hypot(x-sg2[0]-ex*t,z-sg2[1]-ez*t));}
         const R=Math.min(dr+4,dB(x,z,30)-2,dsg-2);if(R>=6)cand.push([R,x,z,dir||[1,0],rp]);}
       cand.sort((a,b)=>b[0]-a[0]);const used=[];let nPlaced=0,trees=false;
-      for(const[R,x,z,dir,rp]of cand){if(nPlaced>=40)break;if(used.some(u=>Math.hypot(u[0]-x,u[1]-z)<u[2]+Math.min(R,14)+2))continue;const r=hsh(x|0,z|0),g=gH(x,z)+0.02,dx=dir[0],dz=dir[1],ry=Math.atan2(-dz,dx),P=(u,v)=>[x+dx*u-dz*v,z+dz*u+dx*v];
+      for(const[R,x,z,dir,rp]of cand){if(nPlaced>=40)break;if(used.some(u=>Math.hypot(u[0]-x,u[1]-z)<u[2]+Math.min(R,14)+2))continue;
+        // pendenza del lotto: su un declivio niente piazzali o giardini sospesi; le palazzine poggiano sul punto più basso, con lo zoccolo
+        let hmn=1e9,hmx=-1e9;{const rr=Math.min(R,14);for(let a2=-1;a2<=1;a2++)for(let b2=-1;b2<=1;b2++){const hh=gH(x+a2*rr,z+b2*rr);hmn=Math.min(hmn,hh);hmx=Math.max(hmx,hh);}}const slopeL=hmx-hmn;if(slopeL>6)continue;
+        const r=hsh(x|0,z|0),g=(slopeL>1.2?hmn:gH(x,z))+0.02,dx=dir[0],dz=dir[1],ry=Math.atan2(-dz,dx),P=(u,v)=>[x+dx*u-dz*v,z+dz*u+dx*v];
         const box=(u,v,y,lu,lv,h,col)=>{const[px,pz]=P(u,v);pb.add(GB,col,px,g+y,pz,ry,lu,h,lv);};
         const wall=(u0,v0,u1,v1)=>{const[a,b]=P(u0,v0),[c,d]=P(u1,v1);addSeg(T,a,b,c,d);};const rect=(lu,lv,cu=0,cv=0)=>{wall(cu-lu/2,cv-lv/2,cu+lu/2,cv-lv/2);wall(cu+lu/2,cv-lv/2,cu+lu/2,cv+lv/2);wall(cu+lu/2,cv+lv/2,cu-lu/2,cv+lv/2);wall(cu-lu/2,cv+lv/2,cu-lu/2,cv-lv/2);};
         let used_r=R;
         const lane=(w)=>{if(!rp)return;const vx=rp[0]-x,vz=rp[1]-z,d=Math.hypot(vx,vz);if(d<4||d>45)return;const ux=vx/d,uz=vz/d,len=d-rp[2]/2+0.3,mx=x+ux*len/2,mz=z+uz*len/2;pb.add(GB,0x3b3d40,mx,g+0.08,mz,Math.atan2(-uz,ux),len,0.06,w);};
+        if(slopeL>1.2&&!(R>=10&&r<0.36))continue;
         if(R>=10&&r<0.36){// palazzina bassa (2-4 piani): riempie i vuoti tra le case
           const W=Math.max(9,Math.min(2*R-5,24)),D=Math.max(8,Math.min(2*R-5,14)),fl=2+((r*31)|0)%3,H=fl*3.1+0.5,PAL=[0xe3c590,0xd59a78,0xe8b49a,0xefe3c8,0xf0dc9c,0xc9d3b0,0xcfcac2,0xbfcad0,0xdcc8a8],c=PAL[(r*97|0)%PAL.length];
-          box(0,0,H/2,W,D,H,c);box(0,0,H+0.3,W+0.3,D+0.3,0.6,0x8a857c);box(0,0,0.35,W+0.1,D+0.1,0.7,0x9a948a);
-          const nw=Math.floor(W/3);for(let f=0;f<fl;f++)for(let k=0;k<nw;k++){const u=-W/2+1.5+k*3+(W-nw*3)/2,y=1.9+f*3.1;if(f===0&&k===(nw>>1)){box(u,D/2+0.03,1.3,1.6,0.08,2.4,0x2a2622);continue;}
+          const Z0=slopeL>1.2?slopeL+0.3:0;if(Z0)box(0,0,Z0/2-0.3,W+0.2,D+0.2,Z0+0.3,0x9a948a);   // zoccolo che segue il pendio
+          box(0,0,Z0+H/2,W,D,H,c);box(0,0,Z0+H+0.3,W+0.3,D+0.3,0.6,0x8a857c);box(0,0,Z0+0.35,W+0.1,D+0.1,0.7,0x9a948a);
+          const nw=Math.floor(W/3);for(let f=0;f<fl;f++)for(let k=0;k<nw;k++){const u=-W/2+1.5+k*3+(W-nw*3)/2,y=Z0+1.9+f*3.1;if(f===0&&k===(nw>>1)){box(u,D/2+0.03,Z0+1.3,1.6,0.08,2.4,0x2a2622);continue;}
             box(u,D/2+0.03,y,1.2,0.06,1.45,0x2f3a44);box(u,-D/2-0.03,y,1.2,0.06,1.45,0x2f3a44);box(u,D/2+0.05,y,1.4,0.06,0.12,0xe8e4dc);}
-          const nd=Math.floor(D/3);for(let f=0;f<fl;f++)for(let k=0;k<nd;k++){const v=-D/2+1.5+k*3+(D-nd*3)/2,y=1.9+f*3.1;box(W/2+0.03,v,y,0.06,1.2,1.45,0x2f3a44);box(-W/2-0.03,v,y,0.06,1.2,1.45,0x2f3a44);}
+          const nd=Math.floor(D/3);for(let f=0;f<fl;f++)for(let k=0;k<nd;k++){const v=-D/2+1.5+k*3+(D-nd*3)/2,y=Z0+1.9+f*3.1;box(W/2+0.03,v,y,0.06,1.2,1.45,0x2f3a44);box(-W/2-0.03,v,y,0.06,1.2,1.45,0x2f3a44);}
           rect(W,D);used_r=Math.min(R,Math.hypot(W,D)/2+1);}
         else if(R>=11&&r<0.56){// parcheggio a pettine con corsia d'accesso dalla strada
           const Lu=Math.min(2*R-2,50),rows=R>=15?2:1,Lv=rows===2?17:11;box(0,0,0.08,Lu,Lv,0.06,0x3b3d40);lane(5.5);
