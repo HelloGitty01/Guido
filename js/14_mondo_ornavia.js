@@ -781,7 +781,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         // profilo della lama (distanza dal palo, quota): la classica "W"
         const PR=[[0,0.44],[0.06,0.52],[0.0,0.6],[0.06,0.68],[0,0.76]];
         for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
-          const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||NW.nearJ(R.X[i],R.Z[i],16)||NW.nearJ(R.X[i+1],R.Z[i+1],16))continue;const nearC=urbD(xm,zm)<700;if(!nearC&&R.c<5)continue;
+          const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||NW.nearJ(R.X[i],R.Z[i],16)||NW.nearJ(R.X[i+1],R.Z[i+1],16))continue;const nearC=urbD(xm,zm)<700;if(!nearC&&(R.c<5||R.c>6||(NW.J.alp||[]).some(a=>Math.hypot(a[0]-xm,a[1]-zm)<160)))continue;
           const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx;
           [1,-1].forEach(sd=>{if(!nearC){const hm=(R.Hh[i]+R.Hh[i+1])/2,gx=xm+nx*sd*(R.w/2+5),gz=zm+nz*sd*(R.w/2+5);if(hm-NW.Hground(gx,gz)<2.2)return;}   // in montagna e in collina: solo sul lato a valle
             const off=R.w/2+1.1,pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,(k?R.Hh[i+1]:R.Hh[i])];});
@@ -1757,7 +1757,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function tileLeaves(L,list){const add=o=>o.traverse(c=>{if(c.isMesh||c.isSprite||c.isPoints||c.isLine)L.push(c);});list.forEach(add);return L;}
   function cullTiles(){camera.updateMatrixWorld();CPM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);CF.setFromProjectionMatrix(CPM);
     const rear=view==='cockpit'&&CFG.mir!==false&&started;if(rear){rearCam.updateMatrixWorld();CPM.multiplyMatrices(rearCam.projectionMatrix,rearCam.matrixWorldInverse);CF2.setFromProjectionMatrix(CPM);}
-    const M=40;tiles.forEach(T=>{const x0=T.i*TS,z0=T.j*TS;CBX.min.set(x0-M,-200,z0-M);CBX.max.set(x0+TS+M,500,z0+TS+M);const vm=CF.intersectsBox(CBX),vr=rear&&CF2.intersectsBox(CBX),st=(vm?1:0)|(vr?2:0);
+    const M=40;tiles.forEach(T=>{const x0=T.i*TS,z0=T.j*TS;CBX.min.set(x0-M,T.y0??-200,z0-M);CBX.max.set(x0+TS+M,T.y1??3200,z0+TS+M);const vm=CF.intersectsBox(CBX),vr=rear&&CF2.intersectsBox(CBX),st=(vm?1:0)|(vr?2:0);
       const n=T.objs.length*1000+(T.dobj?T.dobj.length:0);if(st===T.cv&&n===T.cn)return;T.cn=n;T.cv=st;
       if(T.leavesN!==n){T.lb=tileLeaves([],T.objs);T.ld=T.dobj?tileLeaves([],T.dobj):[];T.leavesN=n;}
       const mb=(vm?8:0)|(vr?16:0),md=vm?8:0;for(const c of T.lb)if((c.layers.mask&~OURS)===0)c.layers.mask=mb;for(const c of T.ld)if((c.layers.mask&~OURS)===0)c.layers.mask=md;});}
