@@ -194,7 +194,7 @@ HOME.swapTick=function(){if(HOME.mode||!HOME.ok||!started||!pl.mesh||HOME.vis===
 // ---------- aggiornamento a ogni fotogramma ----------
 function walkInput(){let f=(kd(KEYMAP.thr)||keys.ArrowUp||keys.KeyW?1:0)-(kd(KEYMAP.brk)||keys.ArrowDown||keys.KeyS?1:0),t=(kd(KEYMAP.right)||keys.ArrowRight?1:0)-(kd(KEYMAP.left)||keys.ArrowLeft?1:0);
   if(touch.on){f=Math.max(f,touch.thr>0.1?touch.thr:0)-(touch.brk>0.1?touch.brk:0);t=touch.steer;}
-  const gps=navigator.getGamepads?navigator.getGamepads():[];for(const gp of gps){if(!gp)continue;const ax=gp.axes[0]||0,ay=gp.axes[1]||0;if(Math.abs(ax)>0.15)t=ax;if(Math.abs(ay)>0.15)f=-ay;break;}
+  const gps=[padMain()].filter(Boolean);for(const gp of gps){if(!gp)continue;const ax=gp.axes[0]||0,ay=gp.axes[1]||0;if(Math.abs(ax)>0.15)t=ax;if(Math.abs(ay)>0.15)f=-ay;break;}
   return{f,t,run:keys.ShiftLeft||keys.ShiftRight||Math.abs(f)>0.9&&touch.on};}
 function pushOut(o,r){if(!NWT)return;for(let it=0;it<2;it++)for(const s of NWT.segQ(o.x,o.z)){const ax=s[0],az=s[1],bx=s[2],bz=s[3],dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1;let t=((o.x-ax)*dx+(o.z-az)*dz)/L2;t=t<0?0:t>1?1:t;const px=ax+dx*t,pz=az+dz*t,ex=o.x-px,ez=o.z-pz,d=Math.hypot(ex,ez);if(d<r&&d>1e-6){o.x=px+ex/d*r;o.z=pz+ez/d*r;}}}
 function walkTo(g,tx,tz,sp,dt){const dx=tx-g.x,dz=tz-g.z,d=Math.hypot(dx,dz);if(d<0.08){g.sp+=(0-g.sp)*Math.min(1,dt*8);return d;}const th=Math.atan2(dx,dz);let dh=th-g.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));g.h+=Math.sign(dh)*Math.min(Math.abs(dh),dt*5);
