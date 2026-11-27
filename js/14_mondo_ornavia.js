@@ -781,7 +781,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         // profilo della lama (distanza dal palo, quota): la classica "W"
         const PR=[[0,0.44],[0.06,0.52],[0.0,0.6],[0.06,0.68],[0,0.76]];
         for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
-          const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||NW.nearJ(R.X[i],R.Z[i],16)||NW.nearJ(R.X[i+1],R.Z[i+1],16))continue;const nearC=urbD(xm,zm)<700;if(!nearC&&(R.c<5||R.c>6||(NW.J.alp||[]).some(a=>Math.hypot(a[0]-xm,a[1]-zm)<160)))continue;
+          const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||NW.nearJ(R.X[i],R.Z[i],16)||NW.nearJ(R.X[i+1],R.Z[i+1],16))continue;if((NW.J.alp||[]).some(a=>Math.hypot(a[0]-xm,a[1]-zm)<160))continue;const nearC=urbD(xm,zm)<700;if(!nearC&&(R.c<5||R.c>6))continue;
           const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx;
           [1,-1].forEach(sd=>{if(!nearC){const hm=(R.Hh[i]+R.Hh[i+1])/2,gx=xm+nx*sd*(R.w/2+5),gz=zm+nz*sd*(R.w/2+5);if(hm-NW.Hground(gx,gz)<2.2)return;}   // in montagna e in collina: solo sul lato a valle
             const off=R.w/2+1.1,pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,(k?R.Hh[i+1]:R.Hh[i])];});
@@ -1363,7 +1363,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     // campagna: paracarri bianchi, filari di cipressi lungo alcune strade, edicole votive agli incroci
     function campagna(T,pb){const l=segT.get(T.key);if(!l)return;const x0=T.i*TS,z0=T.j*TS;let trees=false;const yh0=NW.yh;NW.yh=NaN;
       try{for(let q=0;q<l.length;q+=2){const ri=l[q],R=NW.roads[ri],i=l[q+1];if(R.priv||R.t||R.b||R.c<4||R.c>7)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
-        const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||urbD(xm,zm)<45)continue;
+        const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||urbD(xm,zm)<45||(NW.J.alp||[]).some(p=>Math.hypot(p[0]-xm,p[1]-zm)<170))continue;
         const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx,hw=R.w/2,alt=R.Hh[i];
         // paracarri: bianchi con la fascia nera, ogni 30 m sui due lati
         for(let u=Math.ceil(a/30)*30;u<b;u+=30){const f=(u-a)/L;for(const sd of[-1,1]){const x=R.X[i]+tx*(u-a)+nx*sd*(hw+0.9),z=R.Z[i]+tz*(u-a)+nz*sd*(hw+0.9);
