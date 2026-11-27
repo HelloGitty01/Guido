@@ -708,13 +708,14 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const portals=R=>{if(R._pt)return R._pt;let f=-1,l=-1;for(let i=0;i<R.N-1;i++){if(NW.Hg((R.X[i]+R.X[i+1])/2,(R.Z[i]+R.Z[i+1])/2)-(R.Hh[i]+R.Hh[i+1])/2>3){if(f<0)f=i;l=i+1;}}return R._pt=[f,l];};
       const inTunP=(R,x,z)=>{const[f,l]=portals(R);if(f<0)return false;const dfx=R.X[f+1]-R.X[f],dfz=R.Z[f+1]-R.Z[f],dlx=R.X[l-1]-R.X[l],dlz=R.Z[l-1]-R.Z[l];
         return (x-R.X[f])*dfx+(z-R.Z[f])*dfz>0&&(x-R.X[l])*dlx+(z-R.Z[l])*dlz>0;};
-      const mark=(R,a,b,h,tin)=>{if(a<0||b<0||a>n||b>n)return;const k=b*N+a;if(tin)return;if(!(LO.get(k)<=h))LO.set(k,h);};
+      // quota sotto cui abbassare il vertice: quella della strada nel punto più vicino al vertice (non la più bassa del tratto: farebbe gradini nelle discese)
+      const mark=(R,a,b,i,ax,az,bx,bz,L)=>{if(a<0||b<0||a>n||b>n)return;const k=b*N+a,vx=x0+a*st,vz=z0+b*st;let t=((vx-ax)*(bx-ax)+(vz-az)*(bz-az))/(L*L);t=t<0?0:t>1?1:t;const h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t-0.14;if(!(LO.get(k)<=h))LO.set(k,h);};
       for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++){const l=segT.get(tk(ti+di,tj+dj));if(!l)continue;
         for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.b||R.c>=9)continue;const ax=R.X[i],az=R.Z[i],bx=R.X[i+1],bz=R.Z[i+1],L=Math.hypot(bx-ax,bz-az);if(L<0.01)continue;
           const hw=R.w/2+(R.t?1.6:0.8);if(Math.max(ax,bx)<x0-hw-st||Math.min(ax,bx)>x0+size+hw+st||Math.max(az,bz)<z0-hw-st||Math.min(az,bz)>z0+size+hw+st)continue;
           const nx=-(bz-az)/L,nz=(bx-ax)/L,M=Math.ceil(L/(st*0.35));
           for(let u=0;u<=M;u++){const f=u/M,x=ax+(bx-ax)*f,z=az+(bz-az)*f,h=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*f-0.14;
-            const tin=R.t&&inTunP(R,x,z);for(const o of [-hw,-hw/2,0,hw/2,hw]){const a=Math.floor((x+nx*o-x0)/st),b=Math.floor((z+nz*o-z0)/st);if(tin){if(a>=0&&b>=0&&a<n&&b<n)CAND.push(a,b,h);continue;}mark(R,a,b,h);mark(R,a+1,b,h);mark(R,a,b+1,h);mark(R,a+1,b+1,h);}}}}
+            const tin=R.t&&inTunP(R,x,z);for(const o of [-hw,-hw/2,0,hw/2,hw]){const a=Math.floor((x+nx*o-x0)/st),b=Math.floor((z+nz*o-z0)/st);if(tin){if(a>=0&&b>=0&&a<n&&b<n)CAND.push(a,b,h);continue;}mark(R,a,b,i,ax,az,bx,bz,L);mark(R,a+1,b,i,ax,az,bx,bz,L);mark(R,a,b+1,i,ax,az,bx,bz,L);mark(R,a+1,b+1,i,ax,az,bx,bz,L);}}}}
       LO.forEach((v,k)=>{if(Hs[k]>v){Hs[k]=v;pos[k*3+1]=v-0.04;}});
       // sopra la galleria, dove il terreno passerebbe dentro la volta (vicino agli imbocchi), si apre un buco: si vede la galleria in trincea
       for(let c=0;c<CAND.length;c+=3){const a=CAND[c],b=CAND[c+1],h=CAND[c+2],m=Math.min(Hs[b*N+a],Hs[b*N+a+1],Hs[(b+1)*N+a],Hs[(b+1)*N+a+1]);if(m<h+6.6)HOLE.add(b*n+a);}}
@@ -874,7 +875,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     // marciapiedi rialzati con cordolo (interrotti agli incroci)
     {const A=[],Uv=[],I=[];const q4=(p,uv)=>{const s0=A.length/3;p.forEach(v=>A.push(v[0]-x0,v[1],v[2]-z0));uv.forEach(u=>Uv.push(u[0],u[1]));I.push(s0,s0+1,s0+2,s0+1,s0+3,s0+2);};
       runs.forEach((list,ri)=>{const R=NW.roads[ri];if(!NW.swRoad(R)||!NW.cityAt(R.X[list[0]],R.Z[list[0]]))return;const hw=R.w/2,W=NW.SWW,Hs=NW.SWH;
-        list.forEach(i=>{const ax=R.X[i],az=R.Z[i],bx=R.X[i+1],bz=R.Z[i+1],L=Math.hypot(bx-ax,bz-az);if(L<0.5)return;const tx=(bx-ax)/L,tz=(bz-az)/L,nx=-tz,nz=tx,n=Math.max(1,Math.round(L/3));
+        list.forEach(i=>{const ax=R.X[i],az=R.Z[i],bx=R.X[i+1],bz=R.Z[i+1],L=Math.hypot(bx-ax,bz-az);if(L<0.5)return;if(!NW.cityAt((ax+bx)/2,(az+bz)/2))return;   // marciapiedi solo dentro l'abitato, tratto per tratto
+          const tx=(bx-ax)/L,tz=(bz-az)/L,nx=-tz,nz=tx,n=Math.max(1,Math.round(L/3));
           for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,mx=ax+(bx-ax)*(t0+t1)/2,mz=az+(bz-az)*(t0+t1)/2;if(NW.nearJ(mx,mz,11))continue;
             const p0x=ax+(bx-ax)*t0,p0z=az+(bz-az)*t0,p1x=ax+(bx-ax)*t1,p1z=az+(bz-az)*t1,h0=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t0,h1=R.Hh[i]+(R.Hh[i+1]-R.Hh[i])*t1;
             for(const sd of [1,-1]){const ix=nx*sd*hw,iz=nz*sd*hw,ox=nx*sd*(hw+W),oz=nz*sd*(hw+W);

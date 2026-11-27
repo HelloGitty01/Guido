@@ -140,7 +140,9 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
    if(pl.yb<gy-0.08){const pen=gy-0.08-pl.yb;pl.vb+=pen*kz*1.6*dt+Math.max(0,vg-pl.vb)*Math.min(1,dt*18);if(pl.yb<gy-0.16){if(pl.vb<vg-3)landing(Math.min(1,(vg-pl.vb)/8),1);pl.yb=gy-0.16;pl.vb=Math.max(pl.vb,vg);}}  // tampone e finecorsa morbidi
    pl.nLoad=Math.max(0,Math.min(2.6,N));}
   // velocità verticale della strada sotto ogni ruota (dossi, cordoli, buche)
-  if(!pl.wh||pl.wh.length!==4)pl.wh=hw.slice();const vroad=hw.map((h,i)=>Math.max(-3,Math.min(3,(h-pl.wh[i])/dt)));pl.wh=hw;
+  if(!pl.wh||pl.wh.length!==4)pl.wh=hw.slice();const vr0=hw.map((h,i)=>(h-pl.wh[i])/dt),vrm=(vr0[0]+vr0[1]+vr0[2]+vr0[3])/4;pl.wh=hw;
+  // conta solo quanto ogni ruota sale o scende rispetto alle altre (dossi, cordoli, buche): una salita o una discesa regolare non è un colpo
+  const vroad=vr0.map(v=>Math.max(-3,Math.min(3,v-vrm*0.97)));
   {let mx=0,wi=0;vroad.forEach((v,i)=>{if(Math.abs(v)>Math.abs(mx)){mx=v;wi=i;}});pl.suspCd=(pl.suspCd||0)-dt;if(Math.abs(mx)>0.55&&pl.suspCd<=0&&!pl.air&&Math.hypot(pl.vx,pl.vy)>0.8){pl.suspCd=0.14;suspNoise(Math.min(1,(Math.abs(mx)-0.4)/1.6),mx>0,wi<2);}}
   const sfF=surfaceAt(pl.x+c0*a,pl.z-s0*a),sfR=surfaceAt(pl.x-c0*b,pl.z+s0*b);pl.surfR=sfR;
   const wf=s0=>WET<1?(s0==='asphalt'?WET:s0==='dirt'?0.82:0.9):1;
@@ -269,10 +271,10 @@ function stepPhysics(dt){if(NW)NW.yh=pl.terrH;
   collide(dt);
   suspension(dt,ax);
   {const P2=pl.P,ssf=(pl.T.W-0.2)/(2*P2.h),lat=(pl.ay||0)/G+Math.tan(pl.slopeR),tilt=pl.slopeR+pl.susp.r,sf=pl.surfR;
-   pl.tipT=(Math.abs(lat)>ssf*0.97)?(pl.tipT||0)+dt:0;
+   pl.tipT=(Math.abs(lat)>ssf*1.02&&Math.hypot(pl.vx,pl.vy)>6&&simT-(pl.hitT??-9)>0.6)?(pl.tipT||0)+dt:0;
    // niente ribaltamenti appena partiti o da fermi: un'inclinazione letta male dal terreno (bordo strada, banchina) non deve rovesciare l'auto
    const mv=Math.hypot(pl.vx,pl.vy),fresh=simT-(pl.t0??-99)<2.5;
-   if(!fresh&&(pl.tipT>0.18||(Math.abs(tilt)>0.72&&mv>3)||(sf!=='asphalt'&&Math.abs(pl.vy)>7&&Math.abs(pl.vx)>6)))startFlip(Math.sign((Math.abs(tilt)>0.72?tilt:-(pl.ay||pl.vy)))||1,Math.hypot(pl.vx,pl.vy)>13);}
+   if(!fresh&&(pl.tipT>0.32||(Math.abs(tilt)>0.78&&mv>4)||(sf!=='asphalt'&&Math.abs(pl.vy)>9&&Math.abs(pl.vx)>9&&simT-(pl.hitT??-9)>0.8)))startFlip(Math.sign((Math.abs(tilt)>0.72?tilt:-(pl.ay||pl.vy)))||1,Math.hypot(pl.vx,pl.vy)>13);}
   pl.skid=((pl.lockF||pl.lockR)&&Math.abs(pl.vx)>3)||(pl.spinW>0&&Math.abs(pl.vx)<25)||(pl.slip>(pl.alPk||0.2)*0.9&&Math.abs(pl.vx)>4)||(pl.brkIn>0.95&&Math.abs(pl.vx)>8&&pl.surfR!=='asphalt');
 }
 function suspension(dt,axInst){
@@ -371,7 +373,7 @@ function scratch(cx,cz,vn,zone){try{if(CTRL.pad.cal&&CTRL.pad.cal.ok&&vn>=1.6){c
     V.forEach((v,k)=>{pos.push(v.x+fn.x*0.002/ws,v.y+fn.y*0.002/ws,v.z+fn.z*0.002/ws);if(N)nor.push(gRd(N,I[k],0),gRd(N,I[k],1),gRd(N,I[k],2));else nor.push(fn.x,fn.y,fn.z);uv.push(UV[k][0],UV[k][1]);});}
   if(!pos.length)return;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
   const d=new THREE.Mesh(geo,scrTex(kind,lvl));d.userData.scr=true;d.renderOrder=2;m.add(d);const Ls=car.userData.scrs||(car.userData.scrs=[]);Ls.push(d);if(Ls.length>SCR.max){const o=Ls.shift();o.parent&&o.parent.remove(o);o.geometry.dispose();}}
-function impact(vn,cx,cz,nx,nz){
+function impact(vn,cx,cz,nx,nz){pl.hitT=simT;
   if(vn<1.2||pl.hitCd>0)return;pl.hitCd=0.5;if(vn>2)pl.hits++;
   if(!DAMAGE){const ch=Math.cos(pl.h),sh=Math.sin(pl.h),dx=cx-pl.x,dz=cz-pl.z,lx=dx*ch-dz*sh,lz=dx*sh+dz*ch,T=pl.T;
     const zone=Math.abs(lx)/(T.L/2)>Math.abs(lz)/(T.W/2)?(lx>0?'front':'rear'):'side';
