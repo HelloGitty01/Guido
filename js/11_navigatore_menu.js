@@ -311,9 +311,9 @@ function updateSkids(){const T=pl.T;if(!T||pl.flip)return;const ch=Math.cos(pl.h
 
 // ---- tab Partenza: una scheda per località, con vista dall'alto e descrizione ----
 const LOCINFO={
-  'Valdorna':['Capitale','≈ 220.000 abitanti · 4 km','La capitale di Valdonia: grattacieli e sedi delle grandi aziende in centro, viali alberati, negozi eleganti, locali e teatri. In periferia quartieri popolari e grandi superfici commerciali. È l\'anello autostradale A1 a collegarla al resto del paese.'],
-  'Porto Calvino':['Città di mare · porto','≈ 80.000 abitanti · 2,4 km','Il grande porto di Valdonia, con navi portacontainer, traghetti e il lungomare. Case di mattoni nel quartiere del porto, pescherie e ristoranti di pesce.'],
-  'Lido Serena':['Località balneare','≈ 45.000 abitanti · 1,8 km','Spiaggia, stabilimenti e lungomare con gelaterie, bar dei bagni e negozietti di souvenir. D\'estate è la meta preferita dei valdoniani.'],
+  'Valdorna':['Capitale','≈ 220.000 abitanti · 4 km','La capitale di Valdovia: grattacieli e sedi delle grandi aziende in centro, viali alberati, negozi eleganti, locali e teatri. In periferia quartieri popolari e grandi superfici commerciali. È l\'anello autostradale A1 a collegarla al resto del paese.'],
+  'Porto Calvino':['Città di mare · porto','≈ 80.000 abitanti · 2,4 km','Il grande porto di Valdovia, con navi portacontainer, traghetti e il lungomare. Case di mattoni nel quartiere del porto, pescherie e ristoranti di pesce.'],
+  'Lido Serena':['Località balneare','≈ 45.000 abitanti · 1,8 km','Spiaggia, stabilimenti e lungomare con gelaterie, bar dei bagni e negozietti di souvenir. D\'estate è la meta preferita dei valdoviani.'],
   'Ravenzo':['Città di pianura','≈ 40.000 abitanti · 1,7 km','Cittadina tranquilla di pianura, con un centro storico raccolto, trattorie e mercato. Buon punto di partenza per le strade provinciali.'],
   'Castellago':['Paese di lago','≈ 17.000 abitanti · 1,1 km','Affacciato sul lago, con il borgo in pietra, la passeggiata sull\'acqua, gelaterie e ristoranti con dehors.'],
   'Montecastro':['Paese di collina','≈ 13.000 abitanti · 1 km · 470 m','Arroccato sulle colline, con belvedere sulla valle, prodotti tipici e strade panoramiche piene di curve.'],

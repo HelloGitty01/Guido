@@ -1,7 +1,7 @@
 {
   "name": "Guido",
   "short_name": "Guido",
-  "description": "Guida per la Repubblica di Valdonia",
+  "description": "Guida per la Repubblica di Valdovia",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

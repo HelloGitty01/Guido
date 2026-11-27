@@ -352,7 +352,7 @@ const CINE={shot:null,t:0,list:null,i:0,intro:null,used:false,env:false,
     // Guido e Gatto salgono in auto mentre la ripresa scende
     if(DRV&&DRV.board())this.intro.brd=true;
     const tt=document.getElementById('cineTitle');if(tt){const st=document.getElementById('selStart'),wx=document.getElementById('selWx'),tm=document.getElementById('selTime');
-      tt.innerHTML='<div class="c1">'+pl.P.label+'</div><div class="c2">'+((NWT&&st&&st.value)?st.value+' · ':'')+'Repubblica di Valdonia</div><div class="c3">'+(tm?tm.selectedOptions[0].textContent:'')+(wx?' · '+wx.selectedOptions[0].textContent:'')+'</div>';}},
+      tt.innerHTML='<div class="c1">'+pl.P.label+'</div><div class="c2">'+((NWT&&st&&st.value)?st.value+' · ':'')+'Repubblica di Valdovia</div><div class="c3">'+(tm?tm.selectedOptions[0].textContent:'')+(wx?' · '+wx.selectedOptions[0].textContent:'')+'</div>';}},
   introCam(dt){const I=this.intro;if(I.bt!=null)return this.boardCam(dt);I.t+=dt;const u=Math.min(1,I.t/I.dur),e=u<0.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,cx=pl.x,cz=pl.z,cy=(pl.yb??pl.terrH);
     const a1=Math.atan2(tmpV.z-cz,tmpV.x-cx),r1=Math.hypot(tmpV.x-cx,tmpV.z-cz),h1=tmpV.y-cy,a0=a1+I.side*2.5,r0=110,h0=88;
     const a=a0+(a1-a0)*e,r=r0+(r1-r0)*e,h=h0+(h1-h0)*Math.pow(e,0.85);camera.position.set(cx+Math.cos(a)*r,cy+h,cz+Math.sin(a)*r);

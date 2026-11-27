@@ -227,7 +227,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         else if(walk(q.m,q.to.x,q.to.z,1.25,dt)){scene.remove(q.m);M.splice(i,1);}}}};})();
   // manifesti pubblicitari (inventati) incollati ai muri
   const POSTER=(()=>{const A=[['CONCERTO','in Piazza Grande','sabato ore 21','#1b2a6b','#ffd23f'],['BIRRA ORSA','fresca come la montagna','','#0f5132','#f4e9c8'],['CIRCO STELLATO','dal 12 al 20','Porto Calvino','#7a0f2e','#ffe08a'],['SALDI','fino al -50%','Ipermercato Orna','#e8222b','#ffffff'],
-      ['VALCOM 5G','la rete di Valdonia','','#0a4fa8','#ffffff'],['MOSTRA','Pittori di Valdonia','Museo Civico','#f2ead8','#2b2b2b'],['IL RITORNO','al Cinema Odeon','','#101010','#ff6a3d'],['SAGRA','della castagna','Pievalta','#7a4a1e','#ffe9b0']];
+      ['VALCOM 5G','la rete di Valdovia','','#0a4fa8','#ffffff'],['MOSTRA','Pittori di Valdovia','Museo Civico','#f2ead8','#2b2b2b'],['IL RITORNO','al Cinema Odeon','','#101010','#ff6a3d'],['SAGRA','della castagna','Pievalta','#7a4a1e','#ffe9b0']];
     const t=canvasTex(1024,(g,n)=>{const W=n/4,H=n/2;A.forEach(([a,b,c,bg,fg],i)=>{const x=(i%4)*W,y=((i/4)|0)*H;g.fillStyle='#e6e0d2';g.fillRect(x,y,W,H);g.fillStyle=bg;g.fillRect(x+10,y+10,W-20,H-20);g.fillStyle=fg;g.textAlign='center';
       g.font="bold 54px 'Bebas Neue',Impact,Arial";let sz=54;while(g.measureText(a).width>W-40&&sz>20){sz-=2;g.font=`bold ${sz}px 'Bebas Neue',Impact,Arial`;}g.fillText(a,x+W/2,y+H*0.3);
       g.font="28px 'Oswald',Arial";g.fillText(b,x+W/2,y+H*0.55);g.font="bold 24px 'Oswald',Arial";g.fillText(c,x+W/2,y+H*0.8);g.globalAlpha=0.25;g.fillStyle='#fff';g.fillRect(x+10,y+H*0.6+((i*37)%60),W-20,3);g.globalAlpha=1;});});
@@ -400,7 +400,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     {const [x,z]=W(a0+0.6,bm),g=new THREE.BufferGeometry(),hw=(b1-b0)*0.42;g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,-hw,0,0,hw,0,16,0],3));g.setIndex([0,1,2]);g.computeVertexNormals();
      const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:stoneTex,color:0xf3e9dd,roughness:0.7,side:THREE.DoubleSide}));m.position.set(x,g0+Hw,z);m.rotation.y=-Math.atan2(az,ax);grp.add(m);}
   }catch(e){console.warn('Duomo',e);}});
-  // ---------- Valdonia: chiese, torri, monumenti, ciminiere, porto, spiaggia, barche, mucche ----------
+  // ---------- Valdovia: chiese, torri, monumenti, ciminiere, porto, spiaggia, barche, mucche ----------
   const nightMats=[[LOGO,1.1],[TOWERX.crM,1.4]],lampPoleMX=new THREE.MeshStandardMaterial({color:0x6a6f75,metalness:0.6,roughness:0.45});
   function signTex(kind,lines){return canvasTex(512,(g,n)=>{const hw=kind!=='st',bg=hw?'#1f6e3d':'#1d4f9c';const H2=kind==='hwd'?272:kind.startsWith('hw')?240:280;g.canvas.height=H2;
     g.fillStyle=bg;g.fillRect(0,0,512,H2);g.strokeStyle='#fff';g.lineWidth=8;g.strokeRect(10,10,492,H2-20);g.fillStyle='#fff';g.textAlign='left';
@@ -409,11 +409,11 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     else if(kind==='hwd'){g.font='bold 50px Arial';lines.forEach((l,i)=>g.fillText(l,40,80+i*74));}
     else if(kind==='a1'){g.fillStyle='#fff';g.beginPath();g.ellipse(120,140,80,62,0,0,7);g.fill();g.fillStyle=bg;g.font='bold 70px Arial';g.textAlign='center';g.fillText('A1',120,165);g.fillStyle='#fff';g.textAlign='left';g.font='bold 52px Arial';g.fillText('Autostrada',220,160);}
     else{g.font='bold 62px Arial';g.fillText(lines[0],40,120);g.font='bold 48px Arial';g.fillText(lines[1],40,210);g.save();g.translate(450,140);g.beginPath();g.moveTo(0,-70);g.lineTo(36,-20);g.lineTo(13,-20);g.lineTo(13,70);g.lineTo(-13,70);g.lineTo(-13,-20);g.lineTo(-36,-20);g.closePath();g.fill();g.restore();}});}
-  const ADS=[['Caffè Ornello','Il risveglio di Valdonia','#5a3420','#f3e2c4','#c98a3c'],['Gelati Polare','Freschi di montagna','#bfe6f5','#0f4c75','#ffffff'],['Birra Valdorna','Bionda dal 1921','#14432b','#f2c84b','#f2c84b'],['Pasta Calvina','Al dente, sempre','#1d4fa0','#ffd23f','#ffffff'],
+  const ADS=[['Caffè Ornello','Il risveglio di Valdovia','#5a3420','#f3e2c4','#c98a3c'],['Gelati Polare','Freschi di montagna','#bfe6f5','#0f4c75','#ffffff'],['Birra Valdorna','Bionda dal 1921','#14432b','#f2c84b','#f2c84b'],['Pasta Calvina','Al dente, sempre','#1d4fa0','#ffd23f','#ffffff'],
     ['Assicurazioni Fenice','Viaggia sereno','#8c1c1c','#ffffff','#f5a623'],['Moto Rondine','Libertà su due ruote','#111111','#ff7a1a','#ffffff'],['Acqua Pievalta','Sorgente alpina','#ffffff','#1565c0','#7fb8e6'],['Banca Serena','Il tuo futuro, in buone mani','#13284f','#ffffff','#5ec4b6'],
     ['Pneumatici Grippa','Tenuta su ogni strada','#ffd400','#111111','#111111'],['Supermercati Sole','Aperti 7 giorni su 7','#ff8a00','#ffffff','#ffe066'],['Radio Guido','Musica che fa strada','#d7261e','#ffffff','#5e1511'],['Terme di San Rocco','Relax a un passo','#0f6e6e','#ffffff','#9fe0d8'],
     ['Mobilificio Ferrandina','Arreda la tua vita','#5b3a1e','#ffe9c7','#d9a066'],['Formaggi Pievalta','Stagionati in alta quota','#f6e27a','#5a3a10','#c0392b'],['Pizzeria Da Gino','Forno a legna dal 1968','#1e7a3a','#ffffff','#e53935'],['Concessionaria Vroom','Usato garantito','#0d47a1','#ffeb3b','#ffffff'],
-    ['Ornapetrol','Il pieno di Valdonia','#c8202a','#ffffff','#ffd23f'],['Cantine Collebruna','Rosso di collina','#5a0f1e','#f4d9a8','#d9a066'],['Lido Serena','Il mare più bello','#4fc3f7','#ffffff','#ffeb3b'],['Gatto Crocchette','Il gatto ringrazia','#ff7f2a','#ffffff','#4a2600'],['Autoscuola Guido','Patente in 30 giorni','#ffffff','#c8202a','#1d4fa0'],['Salumificio Montecastro','Tradizione di borgo','#7a1f1a','#ffe0b2','#ffb74d']];
+    ['Ornapetrol','Il pieno di Valdovia','#c8202a','#ffffff','#ffd23f'],['Cantine Collebruna','Rosso di collina','#5a0f1e','#f4d9a8','#d9a066'],['Lido Serena','Il mare più bello','#4fc3f7','#ffffff','#ffeb3b'],['Gatto Crocchette','Il gatto ringrazia','#ff7f2a','#ffffff','#4a2600'],['Autoscuola Guido','Patente in 30 giorni','#ffffff','#c8202a','#1d4fa0'],['Salumificio Montecastro','Tradizione di borgo','#7a1f1a','#ffe0b2','#ffb74d']];
   function adTex(i){const [b,sl,bg,fg,ac]=ADS[i%ADS.length];return canvasTex(512,(g,n)=>{g.canvas.height=256;g.fillStyle=bg;g.fillRect(0,0,512,256);g.fillStyle=ac;g.globalAlpha=0.35;
       for(let k=0;k<5;k++){g.beginPath();g.arc(420+k*8,40+k*30,60-k*8,0,7);g.fill();}g.globalAlpha=1;g.fillRect(0,214,512,10);g.fillStyle=fg;g.textAlign='left';
       g.font='bold '+(b.length>16?52:64)+'px Arial';g.fillText(b,32,110);g.font='italic 34px Arial';g.fillText(sl,34,170);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(8,8,496,240);});}
@@ -432,6 +432,50 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   let nightLv=-1;function setNight(on,lv){const t=lv==null?(on?1:0):lv;if(Math.abs(t-nightLv)<0.01)return;nightLv=t;nightOn=t>0.5;
     if(t>0)FAC.forEach(([m])=>{if(!m.userData.nm&&m.map){m.userData.nm=1;const tx=nightMask(m.map);if(tx){m.emissiveMap=tx;m.emissive=new THREE.Color(0xffffff);m.needsUpdate=true;}}});
     FAC.forEach(([m])=>{m.emissiveIntensity=0.9*t;});shopM.emissiveIntensity=0.75*t;lampHeadM.emissiveIntensity=2.2*t;poolM.visible=t>0.05;if(poolM.userData.op0==null)poolM.userData.op0=poolM.opacity;poolM.opacity=poolM.userData.op0*t;nightMats.forEach(([m,k])=>m.emissiveIntensity=k*t);}
+  // ---------- piazze: in ogni centro abitato una piazza con municipio, bandiere e chiesa ----------
+  // Si cerca uno spazio libero (niente case, niente strade, terreno quasi piano) vicino al centro, affacciato su una strada.
+  const PIAZ=(()=>{const out=[];try{
+    const BH=new Map(),bk=(i,j)=>i*100003+j;NW.J.blds.forEach((b,bi)=>{const r=b[3];if(!r||r.length<6)return;let mx=1e9,Mx=-1e9,mz=1e9,Mz=-1e9;for(let q=0;q<r.length;q+=2){mx=Math.min(mx,r[q]);Mx=Math.max(Mx,r[q]);mz=Math.min(mz,r[q+1]);Mz=Math.max(Mz,r[q+1]);}
+      const e=[mx,Mx,mz,Mz,r,bi];for(let i=Math.floor(mx/50);i<=Math.floor(Mx/50);i++)for(let j=Math.floor(mz/50);j<=Math.floor(Mz/50);j++){const k=bk(i,j);let l=BH.get(k);if(!l)BH.set(k,l=[]);l.push(e);}});
+    const inB=(x,z,m)=>{const l=BH.get(bk(Math.floor(x/50),Math.floor(z/50)));if(!l)return false;for(const[mx,Mx,mz,Mz,r]of l){if(x<mx-m||x>Mx+m||z<mz-m||z>Mz+m)continue;let ins=false;const n=r.length/2;for(let i=0,j=n-1;i<n;j=i++){const xi=r[i*2],zi=r[i*2+1],xj=r[j*2],zj=r[j*2+1];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)ins=!ins;}if(ins||m>0)return true;}return false;};
+    // ingombro dei landmark (chiese, torri, ciminiere): la piazza non ci passa sopra; i monumenti sì, ci stanno nel mezzo
+    const LMB=(NW.J.lms||[]).filter(l=>typeof l[1]==='number'&&(l[0]==='church'||l[0]==='tower'||l[0]==='chim'||l[0]==='monu')).map(l=>l[0]==='church'?[l[1],l[2],Math.max(l[4],l[5])*0.62+3]:l[0]==='monu'?[l[1],l[2],l[4]*0.6+4]:[l[1],l[2],l[0]==='tower'?l[4]+3:4]);
+    const inLm=(x,z)=>LMB.some(([a,b,r])=>Math.abs(a-x)<r&&Math.abs(b-z)<r&&Math.hypot(a-x,b-z)<r);
+    const onRd=(x,z,m)=>{const yh0=NW.yh;NW.yh=NaN;const r=NW.roadAt(x,z,m);NW.yh=yh0;return !!r;};
+    // rettangolo libero: centro, direzione u, semilati A (lungo u) e B (lungo n)
+    const free=(cx,cz,ux,uz,A,B,slope)=>{let hmin=1e9,hmax=-1e9;for(let a=-A;a<=A+0.01;a+=Math.max(2.5,A/6))for(let b=-B;b<=B+0.01;b+=Math.max(2.5,B/6)){const x=cx+ux*a-uz*b,z=cz+uz*a+ux*b;
+        if(inB(x,z,0)||onRd(x,z,0.4)||NW.lakeAt(x,z)||inLm(x,z))return null;const h=NW.Hground(x,z);hmin=Math.min(hmin,h);hmax=Math.max(hmax,h);if(hmax-hmin>slope)return null;}return[hmin,hmax];};
+    const LM=(NW.J.lms||[]).filter(l=>(l[0]==='church'||l[0]==='duomo')&&typeof l[1]==='number');
+    const hasCh=(x,z,r)=>NW.J.blds.some(b=>b[4]===1&&b[3]&&Math.abs(b[3][0]-x)<r&&Math.abs(b[3][1]-z)<r&&Math.hypot(b[3][0]-x,b[3][1]-z)<r)||LM.some(l=>Math.hypot(l[1]-x,l[2]-z)<r)||(NW.J.lms||[]).some(l=>l[0]==='duomo'&&l[1]&&l[1].length&&Math.hypot(l[1][0]-x,l[1][1]-z)<r*1.5);
+    const EMB={capitale:'torre',arte:'torre',borgo:'torre',porto:'onde',lido:'onde',lago:'onde',lago2:'onde',terme:'onde',alpino:'vetta',alp:'vetta',industria:'ruota',paese:'spighe'};
+    const SITES=NW.cities.map(C=>({n:C.n,x:C.wx,z:C.wz,R:C.R,st:C.st})).concat((NW.J.piaz||[]).map(p=>({n:p[4],x:p[0],z:p[1],R:200,st:'alp',fix:p})));
+    for(const C of SITES){let P=null;
+      if(C.fix){const[x,z,rot,S]=C.fix;P={x,z,ux:Math.cos(rot),uz:Math.sin(rot),S,g:NW.Hground(x,z)+0.12,h0:NW.Hground(x,z)-0.8};}
+      else{const S0=C.R>1500?46:C.R>800?40:C.R>450?34:28,Rs=Math.min(280,Math.max(120,C.R*0.4));
+        for(let S=S0;S>=22&&!P;S-=6){let best=null;
+          for(let r=0;r<=Rs;r+=9)for(let a=0,na=Math.max(1,Math.round(r*6.283/9));a<na;a++){const x=C.x+Math.cos(a/na*6.283)*r,z=C.z+Math.sin(a/na*6.283)*r;
+            // dev'essere affacciata su una strada (non autostrade): la strada corre lungo un lato
+            let rd=null;for(const q of NW.near(x,z,S/2+16)){if(q.R.c<3||q.R.c>=10||q.R.b||q.R.t)continue;const e=q.d-q.R.w/2-S/2;if(e<1||e>9)continue;if(!rd||e<rd.e)rd={e,q};}
+            if(!rd)continue;const R=rd.q.R,i=rd.q.i,ex=R.X[i+1]-R.X[i],ez=R.Z[i+1]-R.Z[i],l=Math.hypot(ex,ez)||1,ux=ex/l,uz=ez/l;
+            const f=free(x,z,ux,uz,S/2,S/2,S>30?3.2:2.6);if(!f)continue;const sc=r+(f[1]-f[0])*12;if(!best||sc<best.sc)best={sc,x,z,ux,uz,S,f};}
+          if(best)P={x:best.x,z:best.z,ux:best.ux,uz:best.uz,S:best.S,g:best.f[1]+0.12,h0:best.f[0]-0.8};}}
+      if(!P)continue;P.n=C.n;P.st=C.st;P.monu=false;P.emb=EMB[C.st]||'spighe';const S=P.S,nx=-P.uz,nz=P.ux;
+      // la strada sta dal lato in cui il centro della piazza "guarda": n punta lontano dalla strada
+      {const q=NW.near(P.x,P.z,S/2+18).filter(q=>q.R.c<10)[0];if(q){const rx=q.R.X[q.i]-P.x,rz=q.R.Z[q.i]-P.z;P.away=(rx*nx+rz*nz)>0?-1:1;}else P.away=1;}
+      // chiesa: chiesetta nei paesi, chiesa nei centri medi, cattedrale con cupola nelle città
+      if(!C.fix&&!hasCh(P.x,P.z,220)){const big=C.R>800,mid=C.R>400,w=big?18:mid?12:9,l=big?36:mid?24:17,h=big?16:mid?11:8;
+        const tries=[[0,P.away],[1,0],[-1,0]];for(const[a,b]of tries){const ax=b?nx*b:P.ux*a,az=b?nz*b:P.uz*a,d=S/2+l/2+2,cx=P.x+ax*d,cz=P.z+az*d;
+          const f=free(cx,cz,ax,az,l/2+1,w/2+1.5,4);if(!f)continue;const rot=Math.atan2(az,ax);(NW.J.lms||(NW.J.lms=[])).push(['church',cx,cz,rot,w,l,h,f[0]-0.2,big?1:0]);P.church=[cx,cz];break;}}
+      // municipio: il palazzo che si affaccia sulla piazza dal lato opposto alla strada (o il più vicino)
+      {let best=null;const cand=new Set();for(let i=Math.floor((P.x-S)/50);i<=Math.floor((P.x+S)/50);i++)for(let j=Math.floor((P.z-S)/50);j<=Math.floor((P.z+S)/50);j++)for(const e of BH.get(bk(i,j))||[])cand.add(e);
+        for(const[,, ,,r,bi]of cand){const b=NW.J.blds[bi];if(b[0]<7||b[4]===1)continue;const n=r.length/2;for(let q=0;q<n;q++){const ax=r[q*2],az=r[q*2+1],bx=r[(q+1)%n*2],bz=r[(q+1)%n*2+1],L=Math.hypot(bx-ax,bz-az);if(L<8)continue;
+            const mx=(ax+bx)/2,mz=(az+bz)/2,d=Math.hypot(mx-P.x,mz-P.z);if(d>S/2+16)continue;let fx=-(bz-az)/L,fz=(bx-ax)/L;if(fx*(P.x-mx)+fz*(P.z-mz)<0){fx=-fx;fz=-fz;}
+            const sc=d-(fx*(P.x-mx)+fz*(P.z-mz))/d*6;if(!best||sc<best.sc)best={sc,mx,mz,fx,fz,L,h:b[0],g:b[2],bi};}}
+        if(best)P.mun=best;}
+      out.push(P);}
+    console.log('piazze',out.length,out.filter(p=>p.church).length,'chiese nuove',out.filter(p=>p.mun).length,'municipi');}catch(e){console.warn('piazze',e);}
+    window.__PIAZ=out;return out;})();
+  const inPiaz=(x,z,m=0)=>{for(const P of PIAZ){const dx=x-P.x,dz=z-P.z;if(Math.abs(dx)>P.S||Math.abs(dz)>P.S)continue;const a=dx*P.ux+dz*P.uz,b=-dx*P.uz+dz*P.ux;if(Math.abs(a)<P.S/2+m&&Math.abs(b)<P.S/2+m)return P;}return null;};
   const LMX=(()=>{const L=NW.J.lms||[],M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),UP=new THREE.Vector3(0,1,0),co=new THREE.Color();
     const box4=(x,z,rot,w,l)=>{const c=Math.cos(rot),s=Math.sin(rot),P=[[-l/2,-w/2],[l/2,-w/2],[l/2,w/2],[-l/2,w/2]].map(([a,b])=>[x+a*c-b*s,z+a*s+b*c]);for(let q=0;q<4;q++)LMS.segs.push([P[q][0],P[q][1],P[(q+1)%4][0],P[(q+1)%4][1]]);};
     const plasterM=new THREE.MeshStandardMaterial({map:stoneTex,color:0xeee4d2,roughness:0.85}),towerM=new THREE.MeshStandardMaterial({map:stoneTex,color:0xc9b79a,roughness:0.9});
@@ -446,6 +490,10 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         const bel=new THREE.Mesh(new THREE.BoxGeometry(tw*0.7,2.2,tw*1.02),new THREE.MeshStandardMaterial({color:0x2a2a2a}));bel.position.set(l/2-tw/2,th-2.2,w/2+tw/2);G.add(bel);
         const sp=new THREE.Mesh(new THREE.ConeGeometry(tw*0.75,tw*1.4,4),tileRoofM);sp.rotation.y=Math.PI/4;sp.position.set(l/2-tw/2,th+tw*0.7,w/2+tw/2);G.add(sp);
         const ros=new THREE.Mesh(new THREE.CircleGeometry(w*0.16,16),new THREE.MeshStandardMaterial({color:0x5a6a7a,roughness:0.3,metalness:0.4}));ros.position.set(-l/2-0.05,h*0.7,0);ros.rotation.y=-Math.PI/2;G.add(ros);
+        if(e[8]){// cattedrale: tamburo e cupola all'incrocio della navata
+          const dr=new THREE.Mesh(new THREE.CylinderGeometry(w*0.3,w*0.3,w*0.28,16),plasterM);dr.position.set(l*0.18,h+w*0.38,0);G.add(dr);
+          const cu=new THREE.Mesh(new THREE.SphereGeometry(w*0.31,18,10,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:0x8a9a8a,roughness:0.55,metalness:0.35}));cu.position.set(l*0.18,h+w*0.52,0);G.add(cu);
+          const lt=new THREE.Mesh(new THREE.CylinderGeometry(w*0.05,w*0.06,w*0.16,8),plasterM);lt.position.set(l*0.18,h+w*0.9,0);G.add(lt);}
         G.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});grp.add(G);box4(x,z,rot,w,l);}
       else if(k==='tower'){const [,x,z,h,w,g]=e,t=add(new THREE.Mesh(new THREE.BoxGeometry(w,h,w),towerM));t.position.set(x,g+h/2,z);
         for(let q=0;q<12;q++){const a=q%3,sd=(q/3)|0,m=add(new THREE.Mesh(new THREE.BoxGeometry(1.1,1.4,1.1),towerM)),o=(a-1)*w*0.36,p=w/2-0.55;const [dx,dz]=[[o,p],[p,o],[o,-p],[-p,o]][sd];m.position.set(x+dx,g+h+0.7,z+dz);}
@@ -882,7 +930,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     const town=(n,exit)=>(g,w,h)=>{g.fillStyle='#fff';g.fillRect(0,0,w,h);g.strokeStyle='#111';g.lineWidth=10;g.strokeRect(10,10,w-20,h-20);g.fillStyle='#111';g.textAlign='center';g.textBaseline='middle';
       let fs=70;g.font='bold '+fs+'px Arial';while(g.measureText(n.toUpperCase()).width>w-60&&fs>30){fs-=4;g.font='bold '+fs+'px Arial';}g.fillText(n.toUpperCase(),w/2,h/2);
       if(exit){g.strokeStyle='#c81818';g.lineWidth=18;g.beginPath();g.moveTo(30,h-24);g.lineTo(w-30,24);g.stroke();}};
-    const GRAF=['VALDONIA LIBERA','ZONA 47','GATTO','NO FUTURE','SKRT','VALDORNA CREW','BRUNO + ALE','RESPECT','WOW','KAOS','2026','FERRO'];
+    const GRAF=['VALDOVIA LIBERA','ZONA 47','GATTO','NO FUTURE','SKRT','VALDORNA CREW','BRUNO + ALE','RESPECT','WOW','KAOS','2026','FERRO'];
     const grafTex=i=>tex('graf'+i,(g,w,h)=>{g.clearRect(0,0,w,h);const word=GRAF[i%GRAF.length],cols=[['#ff3b8d','#2b1055'],['#35e0a1','#103a2b'],['#ffd23f','#7a2e00'],['#4dc3ff','#0c2b52'],['#ff6b35','#2a0f00'],['#c77dff','#22004a']][i%6];
       g.save();g.translate(w/2,h/2);g.rotate((i%3-1)*0.08);let fs=150;g.font='900 '+fs+'px Impact, Arial Black, sans-serif';while(g.measureText(word).width>w*0.9&&fs>40){fs-=6;g.font='900 '+fs+'px Impact, Arial Black, sans-serif';}
       g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=fs*0.22;g.strokeStyle='#111';g.strokeText(word,0,0);g.lineWidth=fs*0.1;g.strokeStyle='#fff';g.strokeText(word,0,0);g.fillStyle=cols[0];g.fillText(word,0,0);
@@ -1118,7 +1166,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     // la costruzione è distribuita su più fotogrammi (una mattonella alla volta, a budget di tempo) per non dare scatti
     const Q=[];function tile(T){if(!Q.includes(T))Q.push(T);}
     // ---------- fuori città: centri commerciali col parcheggio, capannoni, cartelloni, cespugli ----------
-    let MALLS=null;const MALLN=['IperValdo','Centro Le Querce','Galleria del Ponte','Valdonia Shopping','Il Mulino','Porta Nord','MegaStore Brenna','Le Fornaci'];
+    let MALLS=null;const MALLN=['IperValdo','Centro Le Querce','Galleria del Ponte','Valdovia Shopping','Il Mulino','Porta Nord','MegaStore Brenna','Le Fornaci'];
     function malls(){if(MALLS)return MALLS;MALLS=[];NW.cities.forEach((C,ci)=>{if(C.r1<800)return;const want=C.r1>1500?3:1;let got=0;
       for(let t=0;t<400&&got<want;t++){const a=hsh(ci,t+50)*6.28,d=C.r1*(0.55+0.5*hsh(t,ci+70)),x=C.wx+Math.cos(a)*d,z=C.wz+Math.sin(a)*d;
         let best=null;for(const q of NW.near(x,z,70))if(q.R.c>=2&&q.R.c<=6&&!q.R.t&&!q.R.b&&(!best||q.d<best.d))best=q;if(!best||best.d<45)continue;
@@ -1154,7 +1202,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         plane(T,tm('vvf',(g,w,h)=>{g.fillStyle='#b81c1c';g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='bold 80px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('VIGILI DEL FUOCO',w/2,h/2);},1024,128),bx-nx*7.08,y+7.3,bz-nz*7.08,face,16,1.9);
         {const[ax,az]=P(0,2),f=makeCar('fire',0xffffff,false);f.position.set(ax,y+0.12,az);f.rotation.y=ry-Math.PI/2;scene.add(f);T.dobj.push(f);}
         {const[ax,az]=P(-9,-5),f=makeCar('fire',0xffffff,false);f.position.set(ax,y+0.12,az);f.rotation.y=ry-Math.PI/2;scene.add(f);T.dobj.push(f);box(-9,-5,2.2,5.2);}}}}
-    const adTex=i=>tex('ad'+i,(g,w,h)=>{const A=[['PASTA RINALDI','dal 1921','#c8102e','#fff4d6'],['MOBILI FERRO','Tutto -40%','#1d3557','#f1faee'],['BANCA DI VALDONIA','Il tuo futuro, adesso','#0b6e4f','#ffffff'],['GELATI POLO','Buono come una volta','#ff7aa2','#fff8e8'],['AUTO BERTONE','Nuova Lince da 12.900','#222','#ffcc00'],['RADIO VALDORNA','98.4 FM','#5f0f40','#fb8b24'],['ACQUA FONTE ALTA','Leggera per natura','#0077b6','#e0fbfc'],['IPERVALDO','Uscita 3 - aperto la domenica','#e63946','#ffffff']][i%8];
+    const adTex=i=>tex('ad'+i,(g,w,h)=>{const A=[['PASTA RINALDI','dal 1921','#c8102e','#fff4d6'],['MOBILI FERRO','Tutto -40%','#1d3557','#f1faee'],['BANCA DI VALDOVIA','Il tuo futuro, adesso','#0b6e4f','#ffffff'],['GELATI POLO','Buono come una volta','#ff7aa2','#fff8e8'],['AUTO BERTONE','Nuova Lince da 12.900','#222','#ffcc00'],['RADIO VALDORNA','98.4 FM','#5f0f40','#fb8b24'],['ACQUA FONTE ALTA','Leggera per natura','#0077b6','#e0fbfc'],['IPERVALDO','Uscita 3 - aperto la domenica','#e63946','#ffffff']][i%8];
       g.fillStyle=A[3];g.fillRect(0,0,w,h);g.fillStyle=A[2];g.fillRect(0,0,w*0.36,h);g.beginPath();g.arc(w*0.36,h/2,h*0.7,-1.6,1.6);g.fill();g.fillStyle=A[3];g.beginPath();g.arc(w*0.17,h/2,h*0.28,0,7);g.fill();
       g.fillStyle=A[2];g.font='900 '+(h*0.2|0)+'px Oswald, Impact, sans-serif';g.textAlign='left';g.textBaseline='middle';let fs=h*0.2;while(g.measureText(A[0]).width>w*0.5&&fs>20){fs-=4;g.font='900 '+(fs|0)+'px Oswald, Impact, sans-serif';}g.fillText(A[0],w*0.47,h*0.42);
       g.fillStyle='#333';g.font='italic '+(h*0.09|0)+'px Georgia, serif';g.fillText(A[1],w*0.47,h*0.66);},1024,384);
@@ -1304,12 +1352,67 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         const sm=signMat('chiusa','STRADA CHIUSA','#f4f4f0','#c8201a'),sg=new THREE.Mesh(new THREE.PlaneGeometry(1.4,0.36),sm);sg.position.set(sx-ux*0.05,h+2.0,sz-uz*0.05);sg.rotation.y=Math.atan2(-ux,-uz);scene.add(sg);T.dobj.push(sg);
         const sb=sg.clone();sb.rotation.y+=Math.PI;sb.position.set(sx+ux*0.05,h+2.0,sz+uz*0.05);scene.add(sb);T.dobj.push(sb);}}}
     // spazi vuoti tra le case: giardinetti, mercati all'aperto, piccoli supermercati, chioschi, giochi per bambini
-    const IFN=['SuperValdo','Spesa Facile','Market Ornella','Alimentari Rossi','Coop Valdonia','Il Mercatino'],KIO=[['EDICOLA','#1f4e8a'],['FIORI','#3f7d34'],['BAR','#8a2a1f'],['GELATI','#d07a1a'],['TABACCHI','#2a2a2a'],['PANINI','#a0521f']];
+    const IFN=['SuperValdo','Spesa Facile','Market Ornella','Alimentari Rossi','Coop Valdovia','Il Mercatino'],KIO=[['EDICOLA','#1f4e8a'],['FIORI','#3f7d34'],['BAR','#8a2a1f'],['GELATI','#d07a1a'],['TABACCHI','#2a2a2a'],['PANINI','#a0521f']];
     const signMat=(key,txt,bg,fg)=>{const t=tex('ifs_'+key,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.font='bold '+(h*0.5)+'px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,w/2,h/2+2);},512,96);return MT['ifm_'+key]||(MT['ifm_'+key]=new THREE.MeshStandardMaterial({map:t,roughness:0.6,emissiveMap:t,emissive:0xffffff,emissiveIntensity:0.25}));};
+    // ---------- la piazza: pavimento in pietra, fontana o monumento, panchine, aiuole con alberi, lampioni, pennoni con le bandiere ----------
+    const FLAG=(()=>{const hs=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};const cache={};
+      const mat=(key,draw,w,h)=>{if(cache[key])return cache[key];const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;
+        const m=new THREE.MeshStandardMaterial({map:t,side:THREE.DoubleSide,roughness:0.85});m.onBeforeCompile=sh=>{sh.uniforms.uT=WAVT;sh.vertexShader='uniform float uT;\n'+sh.vertexShader.replace('#include <begin_vertex>',`vec3 transformed=vec3(position);float fx=uv.x;
+          transformed.z+=(sin(uT*3.3+fx*5.5+position.y*0.8)*0.16+sin(uT*5.7+fx*9.0)*0.05)*fx;transformed.y-=0.12*fx*fx;`);};m.customProgramCacheKey=()=>'flagw';return cache[key]=m;};
+      // la bandiera della Valdovia: V a filo d'oro su verde bottiglia, con una cornice sottile
+      const valdovia=()=>mat('vd',(g,w,h)=>{g.fillStyle='#1f5038';g.fillRect(0,0,w,h);g.strokeStyle='#e0bc58';g.lineWidth=h*0.02;g.strokeRect(h*0.06,h*0.06,w-h*0.12,h*0.88);
+        g.lineWidth=h*0.045;g.lineJoin='round';g.beginPath();[[0.3,0.15],[0.42,0.15],[0.5,0.55],[0.58,0.15],[0.7,0.15],[0.555,0.85],[0.445,0.85]].forEach(([x,y],i)=>i?g.lineTo(x*w,y*h):g.moveTo(x*w,y*h));g.closePath();g.stroke();},384,256);
+      const PAL=[['#f3efe6','#a8322b'],['#2c5a7a','#f3efe6'],['#e2b33c','#2b4a8a'],['#2e6b3a','#f3efe6'],['#7a2a3a','#e8c25a'],['#f3efe6','#2c5a7a'],['#c8402e','#e8c25a'],['#3a3a46','#e8b44c'],['#5a8ac0','#f3efe6'],['#e8e2d2','#2e6b3a']];
+      // la bandiera del comune: due campi verticali e lo stemma che dice che tipo di posto è
+      const comune=(name,emb)=>{const hh=hs(name),pal=PAL[hh%PAL.length],gold='#e0b04a';return mat('c_'+name,(g,w,h)=>{g.fillStyle=pal[0];g.fillRect(0,0,w/2,h);g.fillStyle=pal[1];g.fillRect(w/2,0,w/2,h);
+        const cx=w/2,cy=h/2,u=h/10;g.fillStyle=gold;g.strokeStyle=gold;g.lineWidth=u*0.5;g.beginPath();g.arc(cx,cy,u*3.2,0,7);g.fillStyle='rgba(0,0,0,0.18)';g.fill();g.fillStyle=gold;
+        if(emb==='torre'){g.fillRect(cx-u*1.2,cy-u*1.4,u*2.4,u*3.4);for(let k=0;k<3;k++)g.fillRect(cx-u*1.2+k*u*0.95,cy-u*2.1,u*0.5,u*0.8);g.fillStyle=pal[0];g.fillRect(cx-u*0.35,cy+u*0.9,u*0.7,u*1.1);}
+        else if(emb==='onde'){for(let k=0;k<3;k++){g.beginPath();for(let x=-2.6;x<=2.6;x+=0.1){const y=cy+(k-1)*u*1.2+Math.sin(x*2.2)*u*0.35;x>-2.6?g.lineTo(cx+x*u,y):g.moveTo(cx+x*u,y);}g.stroke();}}
+        else if(emb==='vetta'){g.beginPath();g.moveTo(cx-u*2.6,cy+u*1.2);g.lineTo(cx-u*0.4,cy-u*2.0);g.lineTo(cx+u*0.6,cy-u*0.6);g.lineTo(cx+u*1.2,cy-u*1.3);g.lineTo(cx+u*2.6,cy+u*1.2);g.closePath();g.fill();
+          g.strokeStyle=pal[0];g.lineWidth=u*0.35;g.beginPath();for(let x=-2.2;x<=2.2;x+=0.1){const y=cy+u*1.9+Math.sin(x*2.6)*u*0.25;x>-2.2?g.lineTo(cx+x*u,y):g.moveTo(cx+x*u,y);}g.stroke();}
+        else if(emb==='ruota'){g.beginPath();g.arc(cx,cy,u*1.6,0,7);g.fill();for(let k=0;k<8;k++){g.save();g.translate(cx,cy);g.rotate(k*Math.PI/4);g.fillRect(-u*0.35,-u*2.3,u*0.7,u*0.9);g.restore();}g.fillStyle=pal[1];g.beginPath();g.arc(cx,cy,u*0.6,0,7);g.fill();}
+        else{for(const sd of[-1,1]){g.save();g.translate(cx+sd*u*0.5,cy+u*2);g.rotate(sd*0.35);g.fillRect(-u*0.12,-u*4,u*0.24,u*4);for(let k=0;k<5;k++)for(const s2 of[-1,1]){g.beginPath();g.ellipse(s2*u*0.35,-u*1.2-k*u*0.6,u*0.22,u*0.42,s2*0.5,0,7);g.fill();}g.restore();}}},384,256);};
+      return {valdovia,comune};})();
+    function piazza(T,pb){const x0=T.i*TS,z0=T.j*TS;for(const P of PIAZ){if(P.x<x0||P.x>=x0+TS||P.z<z0||P.z>=z0+TS)continue;
+      const S=P.S,ux=P.ux,uz=P.uz,nx=-uz,nz=ux,g=P.g,ry=Math.atan2(-uz,ux),at=(a,b)=>[P.x+ux*a+nx*b,P.z+uz*a+nz*b],r0=hsh(P.x|0,P.z|0);
+      const box=(a,b,y,la,lb,h,col,geo=GB)=>{const[x,z]=at(a,b);pb.add(geo,col,x,g+y,z,ry,la,h,lb);};
+      // basamento e lastricato
+      box(0,0,-(g-P.h0)/2,S+0.6,S+0.6,g-P.h0,0x9a9082);
+      const pm=roadMat('pv',2),pg=new THREE.PlaneGeometry(S,S,1,1);{const uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*S/6,uv.getY(i)*S/6);}
+      const pv=new THREE.Mesh(pg,pm);pv.rotation.set(-Math.PI/2,0,ry);pv.position.set(P.x,g+0.01,P.z);pv.receiveShadow=true;pv.userData.nomerge=1;scene.add(pv);T.dobj.push(pv);
+      // disegno a raggiera nel selciato e cordolo attorno
+      box(0,0,0.02,S*0.62,S*0.62,0.02,0xd6ccb8,GC);box(0,0,0.03,S*0.56,S*0.56,0.02,0xb3a893,GC);
+      [[0,-S/2,S,0.35],[0,S/2,S,0.35],[-S/2,0,0.35,S],[S/2,0,0.35,S]].forEach(([a,b,la,lb])=>box(a,b,0.06,la,lb,0.12,0xd9d2c4));
+      // al centro: fontana, monumento ai caduti o statua sul piedistallo
+      const K=Math.max(1,S/28),cbox=(a,b,y,la,lb,h,col,geo)=>box(a*K,b*K,y*K,la*K,lb*K,h*K,col,geo);
+      const kind=P.monu?'monu':['fontana','caduti','statua','fontana'][(r0*4)|0];
+      if(kind==='fontana'){cbox(0,0,0.35,7,7,0.7,0xcfc6b6,GC);cbox(0,0,0.64,6.4,6.4,0.06,0x3f6f8f,GC);cbox(0,0,1.4,0.7,0.7,2.2,0xd6cfc0,GC);cbox(0,0,2.5,2.4,2.4,0.3,0xcfc6b6,GC);cbox(0,0,2.66,2.1,2.1,0.04,0x4a7fa8,GC);cbox(0,0,3.05,0.45,0.45,0.8,0xd6cfc0,GC);cbox(0,0,3.55,0.5,0.5,0.5,0xd6cfc0,GS);
+        const[a,b]=at(0,0);for(let k=0;k<8;k++){const q=k/8*6.283;addSeg(T,a+Math.cos(q)*3.5*K,b+Math.sin(q)*3.5*K,a+Math.cos(q+0.785)*3.5*K,b+Math.sin(q+0.785)*3.5*K);}}
+      else if(kind!=='monu'){cbox(0,0,0.25,4.4,4.4,0.5,0xbfb7a8);cbox(0,0,0.65,3.4,3.4,0.3,0xcac2b2);const[a,b]=at(0,0);addSeg(T,a-2.2*K,b-2.2*K,a+2.2*K,b+2.2*K);addSeg(T,a-2.2*K,b+2.2*K,a+2.2*K,b-2.2*K);
+        if(kind==='caduti'){cbox(0,0,2.6,1.3,1.3,3.6,0xd8d0c0);cbox(0,0,5.6,0.8,0.8,2.6,0xd8d0c0);cbox(0,0,7.2,0.8,0.8,0.7,0xd8d0c0,GCo);cbox(0,0.66,2.6,0.9,0.04,0.6,0x2a2a2a);}
+        else{cbox(0,0,2.1,1.6,1.6,2.6,0xd8d0c0);cbox(0,0,3.5,1.9,1.9,0.25,0xcac2b2);// statua in bronzo
+          const bz=0x4a5a48;cbox(0,0,4.35,0.55,0.38,1.3,bz);cbox(0,0,5.25,0.62,0.42,0.6,bz);cbox(0,0,5.8,0.3,0.3,0.36,bz,GS);cbox(0.38,0,5.3,0.16,0.16,0.9,bz);cbox(-0.32,0.12,5.65,0.14,0.14,0.8,bz);}}
+      // panchine rivolte verso il centro, aiuole con un albero agli angoli, lampioni in ghisa
+      const nb=S>36?8:6;for(let k=0;k<nb;k++){const q=(k+0.5)/nb*6.283,rr=S*0.36,a=Math.cos(q)*rr,b=Math.sin(q)*rr,[x,z]=at(a,b),yr=ry-q+Math.PI/2;
+        loose(T,pb,x,z,g,0.9,40,()=>{pb.add(GB,0x7a4f2c,x,g+0.46,z,yr,1.9,0.06,0.48);const bx=Math.cos(q)*0.22,bz2=Math.sin(q)*0.22;const[wx,wz]=[x+(ux*bx+nx*bz2),z+(uz*bx+nz*bz2)];pb.add(GB,0x7a4f2c,wx,g+0.78,wz,yr,1.9,0.42,0.05);
+          for(const sd of[-0.8,0.8]){const[lx,lz]=[x+Math.cos(yr)*sd,z-Math.sin(yr)*sd];pb.add(GB,0x202224,lx,g+0.3,lz,yr,0.06,0.6,0.5);}});}
+      for(const[sa,sb]of[[-1,-1],[1,-1],[-1,1],[1,1]]){const a=sa*S*0.37,b=sb*S*0.37;box(a,b,0.25,3,3,0.5,0xcfc6b6);box(a,b,0.5,2.6,2.6,0.06,0x4f6e33);
+        if(HDT){const[tx,tz]=at(a,b),sc=7.5+hsh(tx|0,tz|0)*2.5;HDT.add(T,{v:P.st==='alp'||P.st==='alpino'?'fir':P.st==='lido'||P.st==='porto'?'palm':'lin',x:tx,z:tz,m:new THREE.Matrix4().compose(new THREE.Vector3(tx,g+0.4,tz),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),r0*6),new THREE.Vector3(sc,sc,sc)),c:new THREE.Color(0.95,0.97,0.92)});}
+        const[tx,tz]=at(a,b);addSeg(T,tx-1.5,tz,tx+1.5,tz);addSeg(T,tx,tz-1.5,tx,tz+1.5);}
+      for(const[sa,sb]of[[0,-1],[0,1],[-1,0],[1,0]]){const a=sa*(S/2-1.2),b=sb*(S/2-1.2),[x,z]=at(a,b);pb.add(GC,0x1d2620,x,g+2,z,0,0.16,4,0.16);pb.add(GC,0x1d2620,x,g+0.25,z,0,0.4,0.5,0.4);pb.add(GB,0xf3e3b8,x,g+4.25,z,ry,0.42,0.55,0.42);pb.add(GCo,0x1d2620,x,g+4.7,z,0,0.6,0.35,0.6);addSeg(T,x-0.15,z,x+0.15,z);}
+      // pennoni con la bandiera della Valdovia e quella del comune, davanti al municipio (o sul lato della piazza lontano dalla strada)
+      let fx,fz,dx,dz;if(P.mun){const M=P.mun;fx=M.mx+M.fx*2.2;fz=M.mz+M.fz*2.2;dx=M.fz;dz=-M.fx;}else{const[a,b]=at(0,P.away*(S/2-2.5));fx=a;fz=b;dx=ux;dz=uz;}
+      const fg=Math.max(g,NW.Hground(fx,fz)),FL=[FLAG.valdovia(),FLAG.comune(P.n,P.emb)];
+      FL.forEach((m,k)=>{const sd=k?1.6:-1.6,x=fx+dx*sd,z=fz+dz*sd;pb.add(GC,0xd8dcde,x,fg+4.25,z,0,0.12,8.5,0.12);pb.add(GS,0xc8a040,x,fg+8.55,z,0,0.24,0.24,0.24);pb.add(GC,0x8a8e90,x,fg+0.2,z,0,0.5,0.4,0.5);addSeg(T,x-0.1,z,x+0.1,z);
+        const fgm=new THREE.PlaneGeometry(2.4,1.6,12,4);fgm.translate(1.2,0,0);const f=new THREE.Mesh(fgm,m);f.position.set(x,fg+7.5,z);f.rotation.y=Math.atan2(dz,-dx)+0.6*(k?1:-1)*0+(hsh(k,P.x|0)-0.5)*0.4;f.castShadow=true;f.userData.nomerge=1;scene.add(f);T.dobj.push(f);});
+      if(HDT)HDT.buildFar(T);
+      if(P.mun){const M=P.mun,sm=signMat('mun_'+P.n,'MUNICIPIO','#e9e2d0','#3a3226'),sg=new THREE.Mesh(new THREE.PlaneGeometry(3.2,0.6),sm),ga=Math.max(M.g,NW.Hground(M.mx,M.mz));sg.position.set(M.mx+M.fx*0.08,ga+3.6,M.mz+M.fz*0.08);sg.rotation.y=Math.atan2(M.fx,M.fz);sg.userData.nomerge=1;scene.add(sg);T.dobj.push(sg);
+        pb.add(GB,0x3a2a1e,M.mx+M.fx*0.05,ga+1.35,M.mz+M.fz*0.05,Math.atan2(M.fx,M.fz),2.0,2.7,0.1);pb.add(GB,0xd9d0bf,M.mx+M.fx*0.6,ga+6.6,M.mz+M.fz*0.6,Math.atan2(M.fx,M.fz),3.6,0.18,1.2);}
+    }}
     function infill(T,pb){const x0=T.i*TS,z0=T.j*TS,C=NW.cityAt(x0+TS/2,z0+TS/2);if(!C||C.st==='industria')return;
       const POLY=[];for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(const bi of(bldT.get(tk(T.i+a,T.j+b))||[])){const r=NW.J.blds[bi][3];let mx=1e9,Mx=-1e9,mz=1e9,Mz=-1e9;for(let q=0;q<r.length;q+=2){mx=Math.min(mx,r[q]);Mx=Math.max(Mx,r[q]);mz=Math.min(mz,r[q+1]);Mz=Math.max(Mz,r[q+1]);}POLY.push([mx,Mx,mz,Mz,r]);}
       const dB=(x,z,lim)=>{let d=lim;for(const[mx,Mx,mz,Mz,r]of POLY){if(x<mx-d||x>Mx+d||z<mz-d||z>Mz+d)continue;let ins=false;const n=r.length/2;for(let i=0,j=n-1;i<n;j=i++){const xi=r[i*2],zi=r[i*2+1],xj=r[j*2],zj=r[j*2+1];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)ins=!ins;const ex=xj-xi,ez=zj-zi,l2=ex*ex+ez*ez||1;let t=((x-xi)*ex+(z-zi)*ez)/l2;t=t<0?0:t>1?1:t;d=Math.min(d,Math.hypot(x-xi-ex*t,z-zi-ez*t));}if(ins)return 0;}return d;};
-      const plots=VX.malls().map(M=>[M.x,M.z,80]).concat(VX.civic().map(M=>[M.x,M.z,55]));
+      const plots=VX.malls().map(M=>[M.x,M.z,80]).concat(VX.civic().map(M=>[M.x,M.z,55])).concat(PIAZ.map(P=>[P.x,P.z,P.S*0.75+8]));
       const cand=[];for(let x=x0+5;x<x0+TS;x+=10)for(let z=z0+5;z<z0+TS;z+=10){if(!NW.cityAt(x,z)||NW.lakeAt(x,z))continue;if(plots.some(p=>Math.hypot(p[0]-x,p[1]-z)<p[2]))continue;
         let dr=40,dir=null,rp=null;for(const q of NW.near(x,z,40)){if(q.R.c>=10)continue;const e=q.d-q.R.w/2-2.5;if(e<dr){dr=e;const R=q.R,i=q.i,ex=R.X[i+1]-R.X[i],ez=R.Z[i+1]-R.Z[i],l=Math.hypot(ex,ez)||1;dir=[ex/l,ez/l];rp=[R.X[i]+ex*q.t,R.Z[i]+ez*q.t,q.R.w];}}if(dr<3)continue;
         let dsg=30;for(const sg of segQ(x,z))for(const sg2 of [sg]){const ex=sg2[2]-sg2[0],ez=sg2[3]-sg2[1],l2=ex*ex+ez*ez||1e-9;let t=((x-sg2[0])*ex+(z-sg2[1])*ez)/l2;t=t<0?0:t>1?1:t;dsg=Math.min(dsg,Math.hypot(x-sg2[0]-ex*t,z-sg2[1]-ez*t));}
@@ -1364,7 +1467,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     function dehors(T,pb){const D=T.deh;if(!D)return;for(let k=0;k<D.length/4;k++){const x=D[k*4],y=D[k*4+1],z=D[k*4+2],r=D[k*4+3],a=r*6;
       loose(T,pb,x,z,y,0.9,18,()=>{pb.add(GDT,0xf0ece4,x,y+0.74,z,0,0.8,0.05,0.8);pb.add(GDT,0x3a3d40,x,y+0.37,z,0,0.1,0.74,0.1);pb.add(GDT,0x3a3d40,x,y+1.15,z,0,0.06,2.3,0.06);pb.add(GDU,UCOL[(r*UCOL.length)|0],x,y+2.25,z,a,1.25,0.5,1.25);});
       for(let j=0;j<2;j++){const cx=x+Math.cos(a+j*Math.PI)*0.75,cz=z+Math.sin(a+j*Math.PI)*0.75;loose(T,pb,cx,cz,y,0.3,4,()=>{pb.add(GB,0x6b4a30,cx,y+0.22,cz,a,0.42,0.45,0.42);pb.add(GB,0x6b4a30,cx-Math.cos(a+j*Math.PI)*0.2,y+0.62,cz-Math.sin(a+j*Math.PI)*0.2,a,0.42,0.4,0.05);});}}}
-    function build(T){const n0=T.dobj.length,pb=PB(T.i*TS,T.j*TS);T.__wr=0;try{buildSigns(T,pb);city(T,pb);infill(T,pb);dehors(T,pb);deadEnds(T,pb);fields(T);grim(T,pb);fringe(T,pb);civicBuild(T,pb);industry(T,pb);alpine(T,pb);country(T,pb);}catch(e){console.warn('varietà',e);}const m=pb.mesh();if(m){m.userData.nomerge=1;scene.add(m);T.dobj.push(m);}
+    function build(T){const n0=T.dobj.length,pb=PB(T.i*TS,T.j*TS);T.__wr=0;try{buildSigns(T,pb);city(T,pb);piazza(T,pb);infill(T,pb);dehors(T,pb);deadEnds(T,pb);fields(T);grim(T,pb);fringe(T,pb);civicBuild(T,pb);industry(T,pb);alpine(T,pb);country(T,pb);}catch(e){console.warn('varietà',e);}const m=pb.mesh();if(m){m.userData.nomerge=1;scene.add(m);T.dobj.push(m);}
       try{const L=T.dobj.slice(n0).filter(o=>!o.isSprite&&!o.isLight&&!o.isInstancedMesh);L.forEach(o=>o.updateMatrixWorld(true));mergeStatic({children:L},null,m=>{scene.add(m);T.dobj.push(m);},true);}catch(e){console.warn('unione zona',e);}
       // tutto ciò che non si muove: niente ricalcolo delle matrici a ogni fotogramma
       for(let q=n0;q<T.dobj.length;q++){const o=T.dobj[q];if(o.isSprite||!o.matrixAutoUpdate||o.userData.mixer||o.userData.mov)continue;o.updateMatrixWorld(true);o.traverse(c=>{c.matrixAutoUpdate=false;});}}
@@ -1468,7 +1571,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       GG.forEach((G,k)=>put(G.P,G.U,G.I,FAC[k][0],G.C));put(G1.P,G1.U,G1.I,stoneM,G1.C);put(RP,null,RI,roofM,RC);put(TP,TU,TI,tileRoofVM,TC);put(DP,DU,DI,darkRoofM);put(XP,XU,XI,snowRoofM);put(SP,SU,SI,shopM);put(AP,null,AI,awnM,AC);put(NP,NU,NI,NEON.m);put(LGP,LGU,LGI,LOGO);put(PSP,PSU,PSI,POSTER);T.deh=DH.length?DH:null;if(ENT.length){const by={};const G0=new THREE.BoxGeometry(1,1,1),mm=new THREE.Mesh(G0),M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),UPv=new THREE.Vector3(0,1,0);for(const[M,w,hh,d,x,y,z,ry]of ENT){M4.compose(new THREE.Vector3(x,y,z),Q.setFromAxisAngle(UPv,ry),new THREE.Vector3(w,hh,d));(by[M]||(by[M]=[])).push(gBake(mm,M4));}for(const k in by){const me=new THREE.Mesh(gMerge(by[k]),ENTM[k]);me.castShadow=true;me.receiveShadow=true;scene.add(me);T.objs.push(me);}}TOWERX(T,CRP,SPI,x0,z0);}
     // alberi veri (censimento e filari)
     const tl=treeT.get(T.key);if(tl&&tl.length){const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),V=new THREE.Vector3(),S3=new THREE.Vector3(),co=new THREE.Color(),UPV=new THREE.Vector3(0,1,0);
-      const by=[[],[],[],[],[],[]];tl.forEach(ti=>{const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;
+      const by=[[],[],[],[],[],[]];tl.forEach(ti=>{if(inPiaz(TR[ti*2],TR[ti*2+1],1))return;const C=NW.cityAt(TR[ti*2],TR[ti*2+1]),st=C&&C.st,r=hsh(ti,3);let v=r<0.82?0:1;
         if(st==='lido'||st==='porto')v=r<0.7?4:v;else if(st==='arte'||st==='terme')v=r<0.55?5:v;else if(st==='alpino')v=r<0.7?2:v;by[v].push(ti);});
       by.forEach((L,vi)=>{if(!L.length)return;const im=new THREE.InstancedMesh(TREEV[vi],treeVM,L.length);
         L.forEach((ti,q)=>{const x=TR[ti*2],z=TR[ti*2+1],g=NW.Hground(x,z),v=hsh(ti,7),s=(vi===4?10:vi===5?12:vi===2?10:vi?11:8)+v*5;Q.setFromAxisAngle(UPV,v*6.28);im.setMatrixAt(q,M4.compose(V.set(x,g-0.1,z),Q,S3.set(s*(0.9+0.2*hsh(ti,9)),s,s*(0.9+0.2*hsh(ti,5)))));
@@ -1592,7 +1695,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       if(ok0&&pn>0.14&&urbD(cx,cz)>9){const near=NW.near(cx,cz,CELL+12).map(n=>({R:n.R,i:n.i}));
         for(let q=0;q<K;q++){const x=cx+(hsh(ci*31+q,cj*17)-0.5)*CELL,z=cz+(hsh(cj*29+q*7,ci*13+q)-0.5)*CELL,r=hsh(ci+q*5,cj-q*3);if(r>Math.min(1,(pn-0.05)*2.2))continue;
           let bad=false;for(const n of near){const R=n.R;if(R.c>=10)continue;let dmin=1e9;for(let t=Math.max(0,n.i-2);t<Math.min(R.N-1,n.i+3);t++){const ax=R.X[t],az=R.Z[t],ex=R.X[t+1]-ax,ez=R.Z[t+1]-az,l2=ex*ex+ez*ez||1e-9;let u=((x-ax)*ex+(z-az)*ez)/l2;u=u<0?0:u>1?1:u;dmin=Math.min(dmin,Math.hypot(x-ax-u*ex,z-az-u*ez));}if(dmin<R.w/2+2.2){bad=true;break;}}
-          if(bad||NW.lakeAt(x,z)||inB(x,z)||urbD(x,z)<8)continue;if(window.__FIELDS&&__FIELDS.some(F=>{const dx=x-F.x,dz=z-F.z;if(dx*dx+dz*dz>F.r*F.r)return false;const u=dx*F.ca+dz*F.sa,v=-dx*F.sa+dz*F.ca;return Math.abs(u)<F.W/2+1&&Math.abs(v)<F.D/2+1;}))continue;const y=NW.Hground(x,z);if(y>1150)continue;
+          if(bad||NW.lakeAt(x,z)||inB(x,z)||urbD(x,z)<8||inPiaz(x,z,2))continue;if(window.__FIELDS&&__FIELDS.some(F=>{const dx=x-F.x,dz=z-F.z;if(dx*dx+dz*dz>F.r*F.r)return false;const u=dx*F.ca+dz*F.sa,v=-dx*F.sa+dz*F.ca;return Math.abs(u)<F.W/2+1&&Math.abs(v)<F.D/2+1;}))continue;const y=NW.Hground(x,z);if(y>1150)continue;
           const sc=0.8+hsh(q*3+ci,q+cj)*0.6;c.push(x,y-0.04,z,r*6.283,sc,r);}}
       CC.set(k,c);if(CC.size>900){const it=CC.keys().next().value;CC.delete(it);}return c;};
     let lx=1e9,lz=1e9,tm=0,lastMul=-1;
@@ -1697,7 +1800,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       if(flatAt(x,z,h)){pl.x=x;pl.z=z;pl.h=h;return;}}}
   function spawn(name,via){const s=NW.J.starts.find(t=>t[0]===name)||NW.J.starts[0];pl.x=s[1];pl.z=s[2];pl.h=s[3];if(via&&!spawnVia(name,via)){pl.navMsg='Via non trovata: parto dal centro';pl.navMsgT=4;}if(!via)fixStart();NW.yh=NaN;pl.terrH=NW.H(pl.x,pl.z);NW.yh=pl.terrH;update(0,true);}
   function dests(){const L=[];const d=NW.places.map((p,i)=>[p,i]).filter(([p])=>p.t<=1).sort((a,b)=>a[0].n.localeCompare(b[0].n));d.forEach(([p,i])=>L.push(['nwp_'+i,p.n+(p.t===0?'':'')]));return L;}
-  // ---------- traffico e pedoni di Valdonia: fitti in città, medi fuori, radi in montagna ----------
+  // ---------- traffico e pedoni di Valdovia: fitti in città, medi fuori, radi in montagna ----------
   const TRF=(()=>{const NE=E.length,ECELL=200,eh=new Map();
     E.forEach((e,k)=>{const R=NW.roads[e.ri];if(R.c>7&&R.c!==8)return;const im=(e.i0+e.i1)>>1,key=tk(Math.floor(R.X[im]/ECELL),Math.floor(R.Z[im]/ECELL));let l=eh.get(key);if(!l)eh.set(key,l=[]);l.push(k);});
     const onE=new Map(),list=[],pool=[],pedPool=[],pedPools={},peds2=[];let spT=0,pT=0,made=0;

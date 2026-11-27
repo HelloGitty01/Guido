@@ -94,7 +94,7 @@ const HDX=(()=>{if(!window.HDON||!THREE.SkeletonUtils)return null;const X={},V1=
       const t=gTemplate(G.parts);t.meshes.forEach(p=>{p.mat.roughness=Math.max(0.6,p.mat.roughness);});t.rz=(G.k==='barrA'||G.k==='barrB')&&(G.bb.max.z-G.bb.min.z)>(G.bb.max.x-G.bb.min.x);(X.road[G.k]||(X.road[G.k]=[])).push(t);});
     X.roadProp=(k,i)=>{const L=X.road[k];if(!L||!L.length)return null;const t=L[(i==null?Math.random()*L.length:i)%L.length|0],g=gInstance(t);if(!t.rz)return g;const w=new THREE.Group();g.rotation.y=Math.PI/2;w.add(g);return w;};/* barriere sempre allineate alla strada: il modello è lungo sull'asse z */}catch(e){console.warn('cantieri HD',e);}
 
-  // ---------- fast food di Valdonia ("Orna Burger"), con parcheggio e drive-in ----------
+  // ---------- fast food di Valdovia ("Orna Burger"), con parcheggio e drive-in ----------
   if(MODELS.hd_food)try{const sc=MODELS.hd_food.scene;sc.updateMatrixWorld(true);const parts=[];sc.traverse(o=>{if(o.isMesh)parts.push({mat:o.material,b:gBake(o,o.matrixWorld)});});
     const bb=gBox(parts.map(p=>p.b)),c=bb.getCenter(new THREE.Vector3()),s=0.62;gShift(parts.map(p=>p.b),-c.x,-bb.min.y,-c.z,s);const t=gTemplate(parts);
     X.foodSize=[(bb.max.x-bb.min.x)*s,(bb.max.z-bb.min.z)*s];X.food=()=>gInstance(t);}catch(e){console.warn('fast food HD',e);}
