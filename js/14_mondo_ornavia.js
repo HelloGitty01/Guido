@@ -718,9 +718,10 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
         // profilo della lama (distanza dal palo, quota): la classica "W"
         const PR=[[0,0.44],[0.06,0.52],[0.0,0.6],[0.06,0.68],[0,0.76]];
         for(let q=0;q<l.length;q+=2){const R=NW.roads[l[q]],i=l[q+1];if(R.priv||R.t||R.b||R.c>7)continue;const a=R.cum[i],b=R.cum[i+1],L=b-a;if(L<0.5)continue;
-          const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||urbD(xm,zm)>=700||NW.nearJ(R.X[i],R.Z[i],16)||NW.nearJ(R.X[i+1],R.Z[i+1],16))continue;
+          const xm=(R.X[i]+R.X[i+1])/2,zm=(R.Z[i]+R.Z[i+1])/2;if(NW.cityAt(xm,zm)||NW.nearJ(R.X[i],R.Z[i],16)||NW.nearJ(R.X[i+1],R.Z[i+1],16))continue;const nearC=urbD(xm,zm)<700;if(!nearC&&R.c<5)continue;
           const tx=(R.X[i+1]-R.X[i])/L,tz=(R.Z[i+1]-R.Z[i])/L,nx=-tz,nz=tx;
-          [1,-1].forEach(sd=>{const off=R.w/2+1.1,pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,(k?R.Hh[i+1]:R.Hh[i])];});
+          [1,-1].forEach(sd=>{if(!nearC){const hm=(R.Hh[i]+R.Hh[i+1])/2,gx=xm+nx*sd*(R.w/2+5),gz=zm+nz*sd*(R.w/2+5);if(hm-NW.Hground(gx,gz)<2.2)return;}   // in montagna e in collina: solo sul lato a valle
+            const off=R.w/2+1.1,pts=[0,1].map(k=>{const x=(k?R.X[i+1]:R.X[i])+nx*sd*off,z=(k?R.Z[i+1]:R.Z[i])+nz*sd*off;return[x,z,(k?R.Hh[i+1]:R.Hh[i])];});
             if(waterLv(pts[0][0],pts[0][1])!=null)return;
             {const yh0=NW.yh;NW.yh=NaN;let hit=false;for(let f=0;f<=1.001&&!hit;f+=Math.min(1,3/L)){const x=pts[0][0]+(pts[1][0]-pts[0][0])*f,z=pts[0][1]+(pts[1][1]-pts[0][1])*f;if(NW.roadAt(x,z,0.8)||(window.HOMEZ&&HOMEZ(x,z)))hit=true;}NW.yh=yh0;if(hit)return;}
             // lama: strisce lungo il profilo, con la faccia verso la strada
@@ -1986,7 +1987,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
           const pa=D.ln.geometry.attributes.position;if(m.userData.hand){m.userData.hand.getWorldPosition(_hp);}else{_hp.set(q.x,q.y+0.85,q.z);}pa.setXYZ(0,_hp.x,_hp.y,_hp.z);D.m.userData.collar.getWorldPosition(_hp);pa.setXYZ(1,_hp.x,_hp.y,_hp.z);pa.needsUpdate=true;D.ln.geometry.computeBoundingSphere();}}}
     function p0(c){return c.mesh.position;}
     return {spawnAt,EMN,emKit,emT:v=>{emT=v;},step,list,peds:peds2,made:()=>made,spawnNear,crash:tryCrash,dbl:tryDbl,wrecks:WRECKS,cw:CWL,ZB};})();
-  return {indAt:(x,z)=>smogK(x,z)<0.985||(NW.cityAt(x,z)||{}).st==='industria',malls:()=>VX.malls(),civic:()=>VX.civic(),rough,BUSPAX,NEON,nightLv:()=>Math.max(0,nightLv),VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
+  return {cull:()=>cullTiles(),indAt:(x,z)=>smogK(x,z)<0.985||(NW.cityAt(x,z)||{}).st==='industria',malls:()=>VX.malls(),civic:()=>VX.civic(),rough,BUSPAX,NEON,nightLv:()=>Math.max(0,nightLv),VX,update,segQ,addDyn,remDyn,tiles,far,build,detail,drop,buildRoute,manText,drawRoads,spawn,dests,nearestNode,streets,TRF,setNight};
 })();
 
 
