@@ -176,6 +176,44 @@ function ckBacklit(C){const img=document.getElementById('ckImg');if(!img||!img.c
   g.filter='grayscale(1) brightness(1.25) contrast(6)';g.drawImage(img,x0*sx,y0*sy,W*sx,H*sy,0,0,W,H);g.filter='none';
   g.globalCompositeOperation='multiply';g.fillStyle=C.lit||'#ffd9a0';g.fillRect(0,0,W,H);g.restore();
   CKO.blK=img.src;CKO.bl={c,x:x0,y:y0};return CKO.bl;}
+// ================= INTRO: il cruscotto che si accende =================
+// Tutto 2D e animato dal compositore del browser (trasformazioni, opacità, filtri): resta fluido anche mentre il mondo 3D si carica dietro.
+const CKINTRO=(()=>{let root=null,iv=null;
+  function backlit(C,img){const G=(C.g||[]).filter(q=>q[3]!=='L');if(!G.length)return null;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const[x,y,r]of G){x0=Math.min(x0,x-r);y0=Math.min(y0,y-r);x1=Math.max(x1,x+r);y1=Math.max(y1,y+r);}
+    x0=Math.floor(x0);y0=Math.floor(y0);const W=Math.ceil(x1-x0),H=Math.ceil(y1-y0),sx=img.naturalWidth/C.size[0],sy=img.naturalHeight/C.size[1];const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+    g.save();g.beginPath();for(const[x,y,r]of G){g.moveTo(x-x0+r*0.97,y-y0);g.arc(x-x0,y-y0,r*0.97,0,7);}g.clip();g.filter='grayscale(1) brightness(1.25) contrast(6)';g.drawImage(img,x0*sx,y0*sy,W*sx,H*sy,0,0,W,H);g.filter='none';
+    g.globalCompositeOperation='multiply';g.fillStyle=C.lit||'#ffd9a0';g.fillRect(0,0,W,H);g.restore();return{c,x:x0,y:y0,W,H};}
+  function start(sp){try{if(root||!sp)return;const key=CKIMG[selKey]?selKey:Object.keys(CKIMG)[0],C=CKIMG[key];if(!C)return;
+    root=document.createElement('div');root.id='ckIntro';root.style.cssText='position:absolute;inset:0;z-index:0;overflow:hidden';sp.insertBefore(root,sp.firstChild);
+    const shade=document.createElement('div');shade.style.cssText='position:absolute;inset:0;background:#000;opacity:1;transition:opacity 2.4s ease';root.appendChild(shade);root.__shade=shade;
+    const cv=renderer.domElement;cv.style.transition='filter 3s ease';cv.style.filter='blur(14px)';
+    const W=innerWidth,H=innerHeight,[iw,ih]=C.size,s=Math.max(W/iw,H/ih),l=(W-iw*s)/2,t=H-ih*s;
+    const box=document.createElement('div');box.style.cssText=`position:absolute;left:${l}px;top:${t}px;width:${iw*s}px;height:${ih*s}px;filter:brightness(.1);transition:filter 3.2s ease;will-change:filter`;root.appendChild(box);
+    const ck=new Image();ck.src=C.src;{const d=document.createElement('div');d.style.cssText=`position:absolute;inset:0;background:url(${C.src}) 0 0/100% 100% no-repeat`;box.appendChild(d);}   // div e non <img>: lo stile della schermata iniziale ridimensiona le immagini
+    // quadranti: numeri retroilluminati (canvas fermo, solo la sua opacità si anima) e lancette (div ruotati)
+    const lay=document.createElement('div');lay.style.cssText=`position:absolute;left:${l}px;top:${t}px;width:${iw*s}px;height:${ih*s}px;opacity:0;transition:opacity .6s ease`;root.appendChild(lay);
+    const wbox=box.cloneNode(false);root.appendChild(wbox);
+    ck.onload=()=>{const B=backlit(C,ck);if(B){B.c.style.cssText=`position:absolute;left:${B.x*s}px;top:${B.y*s}px;width:${B.W*s}px;height:${B.H*s}px`;lay.insertBefore(B.c,lay.firstChild);}};
+    const anims=[];(C.g||[]).forEach(([x,y,r,ty,mx,col,a0,a1])=>{
+      if(ty==='L'){const n=document.createElement('div');n.style.cssText=`position:absolute;left:${(x-r)*s}px;top:${(y-a0)*s}px;width:${2.4*s*1.6}px;height:${2*a0*s}px;background:${col}`;lay.appendChild(n);
+        anims.push([n,[{transform:'translateX(0)'},{transform:`translateX(${2*r*s}px)`,offset:0.45},{transform:'translateX(0)'}]]);return;}
+      const A0=a0??135,A1=a1??405,lw=Math.max(1.3,r*0.04)*s,L=r*1.14*s,n=document.createElement('div');
+      n.style.cssText=`position:absolute;left:${(x-r*0.22)*s}px;top:${y*s-lw/2}px;width:${L}px;height:${lw}px;background:${col};border-radius:${lw}px;transform-origin:${r*0.22*s}px 50%;transform:rotate(${A0}deg);box-shadow:0 0 ${lw*1.5}px ${col}`;lay.appendChild(n);
+      const rest=ty==='f'?A0+(A1-A0)*0.72:ty==='t'?A0+(A1-A0)*0.4:ty==='s'?A0:A0+(A1-A0)*0.16;
+      anims.push([n,[{transform:`rotate(${A0}deg)`},{transform:`rotate(${A1}deg)`,offset:0.45},{transform:`rotate(${rest}deg)`}],ty==='r'?[rest,A0+(A1-A0)*0.19]:null]);});
+    if(C.wheel){const B=C.wheel.box,w=document.createElement('div');w.style.cssText=`position:absolute;left:${B[0]*s}px;top:${B[1]*s}px;width:${(B[2]-B[0])*s}px;height:${(B[3]-B[1])*s}px;background:url(${C.wheel.src}) 0 0/100% 100% no-repeat`;wbox.appendChild(w);}
+    // logo e payoff restano dove sono, ma arrivano a cruscotto acceso
+    const lg=sp.querySelector('img.logo'),sb=sp.querySelector('.sub');if(lg)lg.style.animationDelay='3.2s';if(sb)sb.style.animationDelay='4.4s';
+    const at=(ms,f)=>setTimeout(()=>{if(root)f();},ms);
+    at(700,()=>{lay.style.opacity='1';});
+    at(1100,()=>anims.forEach(([n,k,idle])=>{const a=n.animate(k,{duration:1900,easing:'cubic-bezier(.45,0,.3,1)',fill:'forwards'});if(idle)a.onfinish=()=>n.animate([{transform:`rotate(${idle[0]}deg)`},{transform:`rotate(${idle[1]}deg)`}],{duration:900,iterations:Infinity,direction:'alternate',easing:'ease-in-out'});}));
+    at(2500,()=>{shade.style.opacity='0';cv.style.filter='blur(0px)';box.style.filter='brightness(.85)';wbox.style.filter='brightness(.85)';});
+  }catch(e){console.warn('intro abitacolo',e);}}
+  // stacco fra un'inquadratura e l'altra: il parabrezza va al nero e torna
+  function dip(){if(!root||!root.__shade)return;const sh=root.__shade;sh.style.transition='opacity .45s ease';sh.style.opacity='1';setTimeout(()=>{if(root){sh.style.transition='opacity .9s ease';sh.style.opacity='0';}},700);}
+  function stop(){if(iv)clearInterval(iv);iv=null;if(root)root.remove();root=null;const cv=renderer.domElement;cv.style.filter='';cv.style.transition='';}
+  return{start,stop,dip,get on(){return !!root;}};})();
+window.__ckIntro=CKINTRO;
 function ckNeedles(){const C=CKO.cfg,kmh=Math.abs(pl.vx)*3.6,rpm=pl.rpm||0,dk=CKO.dark||0,key=Math.round(kmh)+'|'+Math.round(rpm/50)+'|'+Math.round(dk*20);if(key===CKO.nv)return;CKO.nv=key;
   const c=document.getElementById('ckNdl'),g=c.getContext('2d'),k=CKO.nk||1;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);{const b=CKO.nb||[0,0];g.setTransform(k,0,0,k,-b[0]*k,-b[1]*k);}g.lineCap='round';
   if(dk>0.05){const B=ckBacklit(C);if(B){g.globalAlpha=Math.min(1,dk*1.1);g.drawImage(B.c,B.x,B.y);g.globalAlpha=1;}else CKO.nv=null;}   // di notte: numeri e tacche retroilluminati, quadrante scuro
@@ -334,7 +372,12 @@ const CINE={shot:null,t:0,list:null,i:0,intro:null,used:false,env:false,
     return{C,S,i:0,k:0,shot:null,t:0,clk:6.2,envT:0};},
   menu(dt){if(!NW)return;const F=this.film||(this.film=this.mkFilm());if(!F)return;dt=Math.min(dt,0.05);
     // tempo accelerato: un giorno intero in circa 20 secondi
-    if(!started){F.clk=(F.clk+dt*1.25)%24;if(TIME!=='cycle'||!this.env){this.env=true;TIME='cycle';CLOCK=F.clk;applyEnv();}F.envT-=dt;if(F.envT<=0){F.envT=0.08;CLOCK=F.clk;applyEnv(true);}}
+    if(!started){F.clk=(F.clk+dt*(CKINTRO.on?0.05:1.25))%24;if(TIME!=='cycle'||!this.env){this.env=true;TIME='cycle';CLOCK=F.clk;applyEnv();}F.envT-=dt;if(F.envT<=0){F.envT=0.08;CLOCK=F.clk;applyEnv(true);}}
+    if(CKINTRO.on&&F.S.length){if(!F.ck){F.ck=1;F.clk=6.1;F.shot=null;}
+      if(!F.shot||F.t>F.shot.dur){F.shot={ty:'ck',r:F.S[F.i++%F.S.length],dur:9};F.t=0;F.dip=false;}const S=F.shot,r=S.r;F.t+=dt;this.used=true;if(!F.dip&&F.t>S.dur-0.5){F.dip=true;CKINTRO.dip();}
+      const nx=-r.dz,nz=r.dx,o=Math.min(r.w/4,2.2),x=r.x+nx*o+r.dx*F.t*0.15,z=r.z+nz*o+r.dz*F.t*0.15,y=NW.H(x,z)+1.25,lx=x+r.dx*60,lz=z+r.dz*60;camera.position.set(x,y,z);camera.lookAt(lx,NW.H(lx,lz)+1.0,lz);
+      if(Math.abs(camera.fov-62)>0.1){camera.fov=62;camera.updateProjectionMatrix();}sun.position.set(lx+SUNOFF.x,y+SUNOFF.y,lz+SUNOFF.z);sun.target.position.set(lx,y,lz);const fe=document.getElementById('cineFade');if(fe)fe.style.opacity='0';return;}
+    if(F.ck){F.ck=0;F.shot=null;}
     if(!F.shot||F.t>F.shot.dur){const T=['track','crane','side','orbit','push','track','flyover','side','orbit'],ty=T[F.k++%T.length],road=F.S.length?F.S[F.i++%F.S.length]:null;
       F.shot={ty:(ty==='track'||ty==='side')&&!road?'orbit':ty,r:road,a0:Math.random()*6.283,dir:Math.random()<0.5?1:-1,dur:ty==='flyover'?3.6:2.6+Math.random()*0.9};F.t=0;}
     const S=F.shot,C=F.C;F.t+=dt;this.used=true;const u=Math.min(1,F.t/S.dur),e=u*u*(3-2*u),H=(x,z)=>NW.H(x,z),cx=C.wx,cz=C.wz,g0=H(cx,cz);let x,y,z,lx,ly,lz,fov=50;

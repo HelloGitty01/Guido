@@ -417,7 +417,7 @@
   </div>
   <div class="mgrid tabp" data-t="cart"><section class="card span"><h2>Foto e clip</h2><p class="note">Tasto O (o il pulsante Foto) per scattare, J per registrare una clip: finiscono qui. Tocca per ingrandire e salvare.</p><div id="mediaAlbum" class="pcGrid"></div></section></div>
 <div id="lbx"><div class="in"><div class="media"></div><div class="cap"></div><div class="bt"><button id="lbxSave">⬇ Salva</button><button id="lbxDel" class="sm">Elimina</button><button id="lbxClose" class="sm">Chiudi</button></div></div></div>
-  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><div style="text-align:center;font-size:12px;color:#8a9099;margin:-4px 0 6px" class="span">Versione 105</div><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
+  <div class="mgrid tabp" data-t="info"><section class="card span sup"><h2>♥ Supporta Guido !</h2><p>Guido è gratis e senza pubblicità. Se ti diverte, offrici da bere !</p><a class="supBtn" href="https://buy.stripe.com/eVqaEZanK0EKcA38ZcejK01" target="_blank" rel="noopener">🍹 Offrici da bere</a></section><div style="text-align:center;font-size:12px;color:#8a9099;margin:-4px 0 6px" class="span">Versione 106</div><section class="card span credBox"><div class="row" style="padding:12px 16px 0;justify-content:center"><button id="instBtn" class="sm" style="display:none">📲 Installa sul telefono</button></div><div class="credWin" id="credWin"><div class="credRoll" id="credRoll">
 <div class="studio"><img src="img/logo_plate.webp" alt="Guido"><div><div class="by">Un gioco realizzato da</div><div class="st">HOPTHOP STUDIO</div><div class="yr">© 2026 · ideazione, programmazione, mondo di Valdovia</div></div></div>
 <h2 style="margin:0 0 8px">Crediti dei modelli 3D</h2><p style="opacity:.8;margin:0 0 10px">Modelli scaricati da Sketchfab, usati con licenza Creative Commons Attribution 4.0 (CC BY 4.0) salvo dove indicato. Sono stati ridotti e ottimizzati per il browser.</p>
 <ul style="padding-left:18px;margin:0">
@@ -486,8 +486,8 @@ window.HDIMG={};
   const go=()=>{const t=document.getElementById('ldTxt');if(t)t.innerHTML='Preparo le strade…';setTimeout(()=>MAIN().then(()=>{if(box)box.remove();
       const sp=document.getElementById('splash'),bt=document.getElementById('splGo'),mn=document.getElementById('menu');if(t)t.textContent='';bt.style.display='block';bt.focus();
       // il filmato dal vivo prende il posto delle foto: il menu compare quando si entra
-      if(mn)mn.style.display='none';sp.classList.add('live');
-      const close=()=>{sp.style.opacity=0;if(mn)mn.style.display='flex';setTimeout(()=>sp.remove(),600);removeEventListener('keydown',kd);};const kd=e=>{if(e.code==='Enter'||e.code==='Space'){e.preventDefault();close();}};
+      if(mn)mn.style.display='none';sp.classList.add('live');if(window.__ckIntro)__ckIntro.start(sp);
+      const close=()=>{sp.style.opacity=0;if(window.__ckIntro)setTimeout(()=>__ckIntro.stop(),600);if(mn)mn.style.display='flex';setTimeout(()=>sp.remove(),600);removeEventListener('keydown',kd);};const kd=e=>{if(e.code==='Enter'||e.code==='Space'){e.preventDefault();close();}};
       bt.onclick=close;addEventListener('keydown',kd);}),30);};
   if(!THREE.GLTFLoader){go();return;}
   const LD=new THREE.GLTFLoader();if(window.MeshoptDecoder)LD.setMeshoptDecoder(MeshoptDecoder);
