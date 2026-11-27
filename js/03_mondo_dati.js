@@ -14,10 +14,33 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
     (ALPV.starts||[]).forEach(s=>J.starts.push(s));}   // si può partire dai paesini
   const GX1=GX0+(GNX-1)*GS,GZ1=GZ0+(GNZ-1)*GS;
   const inside=(x,z)=>x>GX0+1&&z>GZ0+1&&x<GX1-1&&z<GZ1-1;
-  function Hg(x,z){let fx=(x-GX0)/GS,fz=(z-GZ0)/GS;fx=fx<0?0:fx>GNX-1.001?GNX-1.001:fx;fz=fz<0?0:fz>GNZ-1.001?GNZ-1.001:fz;
+  function Hg(x,z){const g=Hg0(x,z);return LSH?LSH(g,x,z):g;}
+  function Hg0(x,z){let fx=(x-GX0)/GS,fz=(z-GZ0)/GS;fx=fx<0?0:fx>GNX-1.001?GNX-1.001:fx;fz=fz<0?0:fz>GNZ-1.001?GNZ-1.001:fz;
     const i=fx|0,j=fz|0,u=fx-i,v=fz-j,k=j*GNX+i;return (HM[k]*(1-u)+HM[k+1]*u)*(1-v)+(HM[k+GNX]*(1-u)+HM[k+GNX+1]*u)*v;}
   function lakeAt(x,z){const i=Math.round((x-GX0)/GS),j=Math.round((z-GZ0)/GS);if(i<0||j<0||i>=GNX||j>=GNZ)return 0;return LM[j*GNX+i];}
-  const lakes=J.lakes.map(([n,lv,p,holes])=>({n,lv,p,holes}));
+  const lakes=J.lakes.map(([n,lv,p,holes])=>({n:String(n).replace('Valdonia','Valdovia'),lv,p,holes}));
+  // rive dei laghi e del mare: distanza (con segno) dal contorno, calcolata una volta su una griglia e ammorbidita.
+  // Serve a due cose: dare alla riva una forma morbida (il terreno vicino all'acqua segue la distanza vera, non i quadratoni della mappa delle quote)
+  // e colorare l'acqua secondo la profondità (bassa e verde-azzurra a riva, blu scura al largo).
+  let LSH=null;
+  lakes.forEach(L=>{let a=1e9,b=-1e9,c=1e9,d=-1e9;const P=L.p;for(let i=0;i<P.length;i+=2){a=Math.min(a,P[i]);b=Math.max(b,P[i]);c=Math.min(c,P[i+1]);d=Math.max(d,P[i+1]);}
+    const M=60;a-=M;c-=M;b+=M;d+=M;const res=Math.max(5,Math.max(b-a,d-c)/2048),nx=Math.ceil((b-a)/res)+1,nz=Math.ceil((d-c)/res)+1,ins=new Uint8Array(nx*nz);
+    const polys=[P].concat(L.holes||[]);for(let j=0;j<nz;j++){const z=c+j*res,X=[];for(const Q of polys){const n=Q.length/2;for(let i=0,k=n-1;i<n;k=i++){const z1=Q[i*2+1],z2=Q[k*2+1];if((z1>z)!==(z2>z))X.push(Q[i*2]+(z-z1)/(z2-z1)*(Q[k*2]-Q[i*2]));}}
+      X.sort((p,q)=>p-q);for(let t=0;t+1<X.length;t+=2){const i0=Math.max(0,Math.ceil((X[t]-a)/res)),i1=Math.min(nx-1,Math.floor((X[t+1]-a)/res));for(let i=i0;i<=i1;i++)ins[j*nx+i]=1;}}
+    const D=new Float32Array(nx*nz).fill(1e9);for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=j*nx+i,v=ins[k];if((i>0&&ins[k-1]!==v)||(i<nx-1&&ins[k+1]!==v)||(j>0&&ins[k-nx]!==v)||(j<nz-1&&ins[k+nx]!==v))D[k]=0.5;}
+    const r2=res*Math.SQRT2;for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=j*nx+i;let v=D[k];if(i>0)v=Math.min(v,D[k-1]+res);if(j>0){v=Math.min(v,D[k-nx]+res);if(i>0)v=Math.min(v,D[k-nx-1]+r2);if(i<nx-1)v=Math.min(v,D[k-nx+1]+r2);}D[k]=v;}
+    for(let j=nz-1;j>=0;j--)for(let i=nx-1;i>=0;i--){const k=j*nx+i;let v=D[k];if(i<nx-1)v=Math.min(v,D[k+1]+res);if(j<nz-1){v=Math.min(v,D[k+nx]+res);if(i<nx-1)v=Math.min(v,D[k+nx+1]+r2);if(i>0)v=Math.min(v,D[k+nx-1]+r2);}D[k]=v;}
+    for(let k=0;k<D.length;k++)D[k]=ins[k]?-D[k]:D[k];
+    // ammorbidisce gli spigoli del contorno (due passate di media 5x5)
+    for(let it=0;it<2;it++){const T=new Float32Array(D.length);for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){let s2=0,n2=0;for(let q=-2;q<=2;q++){const jj=j+q;if(jj<0||jj>=nz)continue;for(let p=-2;p<=2;p++){const ii=i+p;if(ii<0||ii>=nx)continue;s2+=D[jj*nx+ii];n2++;}}T[j*nx+i]=s2/n2;}D.set(T);}
+    L.sdf={x0:a,z0:c,res,nx,nz,D};});
+  function lakeSD(L,x,z){const S=L.sdf;if(!S)return 1e9;const fx=(x-S.x0)/S.res,fz=(z-S.z0)/S.res;if(fx<0||fz<0||fx>=S.nx-1||fz>=S.nz-1)return 1e9;const i=fx|0,j=fz|0,u=fx-i,v=fz-j,k=j*S.nx+i,D=S.D;
+    return (D[k]*(1-u)+D[k+1]*u)*(1-v)+(D[k+S.nx]*(1-u)+D[k+S.nx+1]*u)*v;}
+  LSH=(g,x,z)=>{for(const L of lakes){const sd=lakeSD(L,x,z);if(sd>40)continue;const lv=L.lv;
+      // riva bassa: il terreno segue una spiaggia dolce; le sponde alte (scogliere, argini, banchine) restano dove sono
+      let w=(1-sstep(8,30,Math.abs(sd)))*(1-sstep(lv+1.5,lv+4.5,g));let h=g*(1-w)+(lv+sd*0.12)*w;
+      if(sd<0&&g<lv+3)h=Math.min(h,lv-0.25+Math.max(sd,-12)*0.04);else if(sd>1.5)h=Math.max(h,lv+0.08);return h;}return g;};
+
   const cities=M.cities;
   // ---------- strade ----------
   const roads=J.roads.map(([c,o,w,ms,n,ref,b,t,p])=>{const N=p.length/3,X=new Float64Array(N),Z=new Float64Array(N),Hh=new Float32Array(N),cum=new Float32Array(N);
@@ -117,7 +140,7 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   function limit(x,z){const q=roadAt(x,z,2);const urb=!!cityAt(x,z)||!!placeAt(x,z);
     if(q){if(q.R.ms)return q.R.ms;const c=q.R.c;return c===0?130:c===1?80:c===2?(q.R.o?110:90):c===3?70:c<=5?(urb?50:90):c===6?(urb?50:70):c===7?50:30;}
     return urb?50:90;}
-  return Object.assign(api,{BRX,nearJ,sidewalk,SWW,SWH,swRoad,inside,Hg,Hground,H,near,roadAt,surf,limit,lakeAt,lakes,roads,cities,places,placeAt,cityAt,J,M,GX0,GZ0,GX1,GZ1,HC,hk,hash});
+  return Object.assign(api,{lakeSD,Hg0,BRX,nearJ,sidewalk,SWW,SWH,swRoad,inside,Hg,Hground,H,near,roadAt,surf,limit,lakeAt,lakes,roads,cities,places,placeAt,cityAt,J,M,GX0,GZ0,GX1,GZ1,HC,hk,hash});
 })();
 
 

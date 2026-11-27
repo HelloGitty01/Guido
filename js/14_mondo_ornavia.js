@@ -14,7 +14,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   window.__SEASON='estate';
   SEA.set=(k)=>{SEA.cur=k;window.__SEASON=k;const P={
       primavera:{g:[0.84,1.1,0.78,0],g2:[0,0,0,0],gr:[0.82,1.12,0.78,1],lf:[0,0,0,0]},
-      estate:{g:[1.1,1.0,0.76,0],g2:[0,0,0,0],gr:[1.15,1.02,0.68,0],lf:[0,0,0,0]},
+      estate:{g:[1.04,1.0,0.84,0],g2:[0,0,0,0],gr:[1.1,1.06,0.84,0],lf:[0,0,0,0]},
       autunno:{g:[1.08,0.9,0.72,0],g2:[0.9,0,0,0],gr:[1.18,0.92,0.62,0],lf:[0.92,0,0,0]},
       inverno:{g:[0.88,0.9,0.86,0],g2:[0,0.3,0,0],gr:[1.1,0.98,0.8,0],lf:[0.35,0.72,0,0]}}[k]||null;if(!P)return;
     SEA.g.value.fromArray(P.g);SEA.g2.value.fromArray(P.g2);SEA.gr.value.fromArray(P.gr);SEA.lf.value.fromArray(P.lf);};
@@ -31,14 +31,15 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
    if(terrM.normalScale)terrM.normalScale.set(0.3,0.3);var GAVG=avg;}
   const farM=terrM.clone();const nearBox={value:new THREE.Vector4(1,1,0,0)};
   farM.onBeforeCompile=sh=>{sh.uniforms.nearBox=nearBox;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform vec4 nearBox;').replace('void main() {','void main() {\nif(vWP.x>nearBox.x&&vWP.x<nearBox.z&&vWP.z>nearBox.y&&vWP.z<nearBox.w)discard;').replace('#include <map_fragment>','diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333)),0.3);').replace('uniform vec4 nearBox;','uniform vec4 nearBox;uniform vec3 gAvg;');sh.uniforms.gAvg={value:GAVG};};
-  farM.customProgramCacheKey=()=>'nwfar4';
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform vec4 nearBox;').replace('void main() {','void main() {\nif(vWP.x>nearBox.x&&vWP.x<nearBox.z&&vWP.z>nearBox.y&&vWP.z<nearBox.w)discard;').replace('#include <map_fragment>','diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333)),0.3);{float m2=dot(mapTexelToLinear(texture2D(map,vUv*0.0041+vec2(0.63,0.17))).rgb/gAvg,vec3(0.3333));diffuseColor.rgb*=mix(vec3(1.04,0.98,0.86),vec3(0.84,0.96,0.88),smoothstep(0.86,1.14,m2));}').replace('uniform vec4 nearBox;','uniform vec4 nearBox;uniform vec3 gAvg;');sh.uniforms.gAvg={value:GAVG};};
+  farM.customProgramCacheKey=()=>'nwfar5';
   // erba a più scale: niente ripetizione visibile, chiazze più chiare e più scure
   const grassFrag=sh=>{sh.uniforms.gAvg={value:GAVG};if(sh.fragmentShader.indexOf('uniform vec3 gAvg')>=0)return;   /* mai due volte sullo stesso shader */sh.fragmentShader='uniform vec3 gAvg;\n'+sh.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
     vec4 texelColor=mapTexelToLinear(texture2D(map,vUv));vec4 t2=mapTexelToLinear(texture2D(map,vUv*0.173+vec2(0.31,0.57)));
     float fdT=1.0-smoothstep(8.0,70.0,length(vViewPosition));float lmT=dot(texelColor.rgb/gAvg,vec3(0.3333))*0.6+dot(t2.rgb/gAvg,vec3(0.3333))*0.4;
     float mcT=dot(mapTexelToLinear(texture2D(map,vUv*0.0137+vec2(0.21,0.43))).rgb/gAvg,vec3(0.3333));
-    diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,mcT,0.3)*mix(1.0,lmT,0.45*fdT);   // colore pulito; il dettaglio dell'erba si vede solo da vicino
+    diffuseColor.rgb*=gAvg*vec3(1.22,1.16,0.86)*mix(1.0,mcT,0.3)*mix(1.0,lmT,0.45*fdT);
+    {float m2=dot(mapTexelToLinear(texture2D(map,vUv*0.0041+vec2(0.63,0.17))).rgb/gAvg,vec3(0.3333));diffuseColor.rgb*=mix(vec3(1.04,0.98,0.86),vec3(0.84,0.96,0.88),smoothstep(0.86,1.14,m2));}   // grandi macchie di colore: prati più caldi e più freschi, visibili anche da lontano   // colore pulito; il dettaglio dell'erba si vede solo da vicino
     #endif`);
     // pacchetto HD: roccia vera sui pendii ripidi e in alta quota
     if(ROCK){sh.uniforms.rockMap={value:ROCK};sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float rk;varying float vRk;varying vec3 vRw;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvRk=rk;vRw=(modelMatrix*vec4(transformed,1.0)).xyz;');
@@ -71,7 +72,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   function roadMat(key,rank){const k=key+rank;if(mcache.has(k))return mcache.get(k);const m=new THREE.MeshStandardMaterial({map:TEX[key],color:key==='pv'?0xc4bfb6:0xffffff,roughness:key==='pv'?0.85:0.92,polygonOffset:true,polygonOffsetFactor:-1-rank*0.5,polygonOffsetUnits:-2-rank*2});addRelief(m,key==='pv'?5:3.5,0.55);mcache.set(k,m);return m;}
   function texKey(R){if(R.c>=9)return 'pv';if(R.c===8)return 'pl';if(R.c===7)return 'r2';
     if(R.o){const l=R.c===0?Math.max(2,Math.round((R.w-3)/3.6)):R.c===1||R.c===3?1:Math.max(1,Math.round((R.w-1.5)/3.5));return 'm'+Math.min(4,l);}return 'r2';}
-  const waterM=new THREE.MeshStandardMaterial({color:0x2e6677,roughness:0.08,metalness:0.15,envMapIntensity:1.2,transparent:true,opacity:0.9});
+  const waterM=new THREE.MeshStandardMaterial({color:0x2e6677,roughness:0.12,metalness:0.05,envMapIntensity:0.55,transparent:true,opacity:0.9});
   // onde: la superficie resta piatta, si muovono le normali (riflessi che corrono); ampiezza per specchio d'acqua: poche nei laghi, tante nel mare
   // ---------- vento: direzione e forza che cambiano lentamente; lieve in città, più forte in campagna e in montagna, forte col temporale ----------
   const WIND=(()=>{const u={value:new THREE.Vector4(1,0,0.4,0)},CA=[];for(let i=0;i<8;i++)CA.push(new THREE.Vector4(0,0,0,0));const uC={value:CA};
@@ -395,10 +396,19 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       dirty.forEach(im=>im.instanceMatrix.needsUpdate=true);shown.clear();now.forEach(it=>shown.add(it));};
     return Object.keys(V).length?{V,add,drop,update,buildFar}:null;}catch(e){console.warn('alberi HD non preparati',e);return null;}})();
   // ---------- laghi: costruiti una volta sola ----------
-  if(!HIDE)NW.lakes.forEach(L=>{try{const ct=[];for(let i=0;i<L.p.length;i+=2)ct.push(new THREE.Vector2(L.p[i],L.p[i+1]));const hs=L.holes.map(h=>{const a=[];for(let i=0;i<h.length;i+=2)a.push(new THREE.Vector2(h[i],h[i+1]));return a;});
-    const tri=THREE.ShapeUtils.triangulateShape(ct,hs),all=ct.concat(...hs),pos=new Float32Array(all.length*3);all.forEach((v,i)=>{pos[i*3]=v.x;pos[i*3+1]=L.lv;pos[i*3+2]=v.y;});
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setIndex(tri.flat());g.computeVertexNormals();if(g.attributes.normal.array[1]<0)g.index.array.reverse();g.computeVertexNormals();
-    const m=new THREE.Mesh(g,waveMat(NW.waveAmp(L)));m.receiveShadow=true;scene.add(m);}catch(e){console.warn('lago',L.n,e);}});
+  // laghi e mare: un piano che copre tutto lo specchio d'acqua; il bordo e il colore li decide la distanza dalla riva (texture calcolata al caricamento)
+  if(!HIDE)NW.lakes.forEach(L=>{try{const S=L.sdf;if(!S){console.warn('lago senza riva',L.n);return;}
+    const N=S.nx*S.nz,b=new Uint8Array(N);for(let k=0;k<N;k++){const v=S.D[k];b[k]=Math.max(0,Math.min(255,Math.round((v+60)/80*255)));}
+    const tx=new THREE.DataTexture(b,S.nx,S.nz,THREE.LuminanceFormat,THREE.UnsignedByteType);tx.magFilter=THREE.LinearFilter;tx.minFilter=THREE.LinearFilter;tx.unpackAlignment=1;tx.needsUpdate=true;
+    const W=(S.nx-1)*S.res,H=(S.nz-1)*S.res,g=new THREE.PlaneGeometry(W,H,1,1);g.rotateX(-Math.PI/2);g.translate(S.x0+W/2,L.lv,S.z0+H/2);
+    const m=waveMat(NW.waveAmp(L)),ob=m.onBeforeCompile,sea=NW.waveAmp(L)>0.5;m.onBeforeCompile=sh=>{ob(sh);sh.uniforms.uSd={value:tx};sh.uniforms.uBox={value:new THREE.Vector4(S.x0,S.z0,W+S.res,H+S.res)};
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform sampler2D uSd;uniform vec4 uBox;').replace('#include <color_fragment>',`#include <color_fragment>
+      {float sd=texture2D(uSd,(vWp.xz-uBox.xy)/uBox.zw+0.5/vec2(${S.nx}.0,${S.nz}.0)).r*80.0-60.0;if(sd>1.2)discard;
+       float dp=smoothstep(-1.0,${sea?'-70.0':'-45.0'},sd);vec3 sh0=${sea?'vec3(0.16,0.46,0.48)':'vec3(0.2,0.42,0.36)'},dp0=${sea?'vec3(0.04,0.17,0.3)':'vec3(0.05,0.17,0.24)'};
+       float var=0.92+0.08*sin(vWp.x*0.011+vWp.z*0.007)*sin(vWp.z*0.013-vWp.x*0.005);diffuseColor.rgb=mix(sh0,dp0,dp)*var;diffuseColor.a=mix(0.5,0.93,dp);
+       float fo=smoothstep(-2.6,-0.2,sd)*(0.55+0.45*sin(uT*1.7+vWp.x*0.35+vWp.z*0.21));diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.92,0.95,0.96),fo*0.55);}`);};
+    m.customProgramCacheKey=()=>'wave_'+L.n;m.color.set(0xffffff);
+    const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;mesh.renderOrder=1;scene.add(mesh);}catch(e){console.warn('lago',L.n,e);}});
   // ---------- monumenti: il Duomo, costruito dalla sua pianta vera ----------
   const LMS={segs:[]};
   (NW.J.lms||[]).forEach(([kind,rg,g0])=>{if(kind!=='duomo'||HIDE)return;try{
@@ -677,7 +687,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     c=c.map((v,q)=>v*(1-urb)+[0.66,0.64,0.6][q]*urb);
     const lk=NW.lakeAt(x,z);if(lk){const lv=NW.lakes[lk-1].lv;if(h<lv)c=[0.55,0.52,0.42];else if(h<lv+1.6){const t=(h-lv)/1.6;c=c.map((v,q)=>v*t+[0.88,0.82,0.64][q]*(1-t));}else if(h<lv+6){const t=(h-lv-1.6)/4.4;c=c.map((v,q)=>v*(0.85+0.15*t)+[0.62,0.78,0.46][q]*0.15*(1-t));}}   // riva: ghiaia chiara, poi erba più verde
     if(h<3.4)c=[0.95,0.86,0.62];
-    return c.map(v=>v*n*smogK(x,z));}
+    return c.map(v=>v*n*smogK(x,z)*0.78);}
   function smogK(x,z){let k=1;for(const S of LMX.smog){const d=Math.hypot(x-S.x,z-S.z);if(d<S.r)k=Math.min(k,0.72+0.28*sstep(0.3,1,d/S.r));}return k;}
   // distanza dagli edifici (celle da 25 m): il selciato c'è solo fra le case, ai margini sfuma in prato o sterrato
   const UC=25;let URB=null,UNX=0,UNZ=0;
@@ -1733,7 +1743,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const GRASS=(()=>{if(HIDE)return null;const CELL=8,RAD=QG.hi?50:QG.lo?30:42,K=58,CAP=Math.ceil(Math.PI*(RAD+CELL)**2/(CELL*CELL))*K;
     const tex=canvasTex(256,(g,n)=>{g.clearRect(0,0,n,n);for(let i=0;i<190;i++){const x=n*(0.08+0.84*Math.random()),h=n*(0.45+Math.random()*0.55),bend=(Math.random()-0.5)*n*0.35,w=1.4+Math.random()*2.4;
         const c=[[96,118,52],[118,134,60],[140,146,74],[84,104,46],[158,152,90],[110,124,58]][i%6];g.strokeStyle=`rgb(${c[0]},${c[1]},${c[2]})`;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x,n);g.quadraticCurveTo(x+bend*0.25,n-h*0.6,x+bend,n-h);g.stroke();}
-      const gr=g.createLinearGradient(0,0,0,n);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(20,30,10,.35)');g.globalCompositeOperation='source-atop';g.fillStyle=gr;g.fillRect(0,0,n,n);});
+      const gr=g.createLinearGradient(0,0,0,n);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(20,30,10,.16)');g.globalCompositeOperation='source-atop';g.fillStyle=gr;g.fillRect(0,0,n,n);});
     tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
     const U={uT:{value:0},uP:{value:new THREE.Vector2()},uR:{value:RAD}};
     const m=new THREE.MeshStandardMaterial({map:tex,alphaTest:0.42,side:THREE.DoubleSide,roughness:1,metalness:0});m.alphaToCoverage=true;
