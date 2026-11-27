@@ -81,7 +81,7 @@ NW=(()=>{const D=window.NWDATA;if(!D)return null;
   // terreno spianato attorno alle strade (trincee e rilevati raccordati)
   function Hground(x,z){let g=Hg(x,z);if(!inside(x,z))return g;const L=near(x,z,60);if(!L.length)return g;
     const W=[];for(const q of L){if(q.R.t||q.R.c>=9)continue;const hw=q.R.w/2+1,dh=g-q.h;let w=0;
-      if(dh>=0)w=1-sstep(hw+3,hw+15+1.6*dh,q.d);else w=(1-sstep(hw,hw+2+2*(-dh),q.d))*(1-sstep(3,7.5,-dh));
+      if(dh>=0)w=1-sstep(hw+3,Math.min(hw+15+1.6*dh,57),q.d);   // entro il raggio di ricerca (60 m): oltre, il terreno saltava di colpoelse w=(1-sstep(hw,hw+2+2*(-dh),q.d))*(1-sstep(3,7.5,-dh));
       if(w>0)W.push([w,q.h-0.1]);}
     if(!W.length)return g;W.sort((a,b)=>a[0]-b[0]);for(const [w,t] of W)g=g*(1-w)+t*w;return g;}
   // superficie su cui poggia l'auto: tra terreno, strade, ponti e gallerie sceglie quella giusta in base alla quota attuale

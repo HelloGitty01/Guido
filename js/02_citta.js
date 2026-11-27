@@ -428,7 +428,7 @@ function lakeE(x,z){return Math.hypot((x-LK.x)/LK.rx,(z-LK.z)/LK.rz);}
 function dirtRelief(x,z){const dx=x-RC.x,dz=z-RC.z,th=Math.atan2(dz,dx),d=Math.abs(Math.hypot(dx,dz)-dirtR(th));if(d>45)return 0;
   return (DRL[0]*Math.sin(DRL[3]*th+0.5)+DRL[1]*Math.sin(15*th+DRL[4])+1.5*Math.sin(29*th))*(1-sstep(6,45,d));}
 const DRL=[rr(5,8),rr(2.5,4.5),0,5+((Math.random()*3)|0),rr(0,6)];
-function TH(x,z){if(NW&&x>6000&&NW.inside(x,z))return NW.H(x,z);return TH0(x,z);}
+function TH(x,z){if(NW&&x>6000&&NW.inside(x,z)){const h=NW.H(x,z);if(typeof NWT!=='undefined'&&NWT&&NWT.meshH&&Math.abs(h-NW.Hground(x,z))<0.01){const m=NWT.meshH(x,z);if(m!=null&&Math.abs(m-h)<120)return m;}return h;}return TH0(x,z);}
 function TH0(x,z){if(x<L+3||window.__flat)return 0;let h=Hbase(x,z);
   if(ringSDF(x,z)<-14)h+=dirtRelief(x,z);
   {const e=lakeE(x,z);if(e<1.35){const k=1-sstep(0.92,1.2,e);h=h*(1-k)+(-3.2)*k;}}const q=mRoad(x,z);if(q&&q.dist<24){const hr=mPath.hy(q.s);h=hr+(h-hr)*sstep(8,22,q.dist);}
