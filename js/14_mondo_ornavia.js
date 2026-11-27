@@ -60,6 +60,21 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     if(R.o){const l=R.c===0?Math.max(2,Math.round((R.w-3)/3.6)):R.c===1||R.c===3?1:Math.max(1,Math.round((R.w-1.5)/3.5));return 'm'+Math.min(4,l);}return 'r2';}
   const waterM=new THREE.MeshStandardMaterial({color:0x2b5a73,roughness:0.08,metalness:0.15,envMapIntensity:1.2,transparent:true,opacity:0.9});
   // onde: la superficie resta piatta, si muovono le normali (riflessi che corrono); ampiezza per specchio d'acqua: poche nei laghi, tante nel mare
+  // ---------- vento: direzione e forza che cambiano lentamente; lieve in città, più forte in campagna e in montagna, forte col temporale ----------
+  const WIND=(()=>{const u={value:new THREE.Vector4(1,0,0.4,0)},CA=[];for(let i=0;i<8;i++)CA.push(new THREE.Vector4(0,0,0,0));const uC={value:CA};
+    let dir=Math.random()*6.283,tdir=dir,base=0.45,tbase=0.5,nt=0,st=0.4,z=1;
+    function update(dt,x,y,zz){nt-=dt;if(nt<=0){nt=50+Math.random()*100;tdir=dir+(Math.random()-0.5)*1.6;tbase=0.25+Math.random()*0.7;}
+      dir+=(tdir-dir)*Math.min(1,dt*0.02);base+=(tbase-base)*Math.min(1,dt*0.03);
+      const C=NW.cityAt(x,zz),alt=NW.Hground(x,zz),zn=(C?0.38:1)*(alt>900?1.5:alt>450?1.2:1)*(WX==='storm'?1.9:WX==='rain'?1.35:1);z+=(zn-z)*Math.min(1,dt*0.3);
+      const gust=0.75+0.25*Math.sin(simT*0.21)+0.15*Math.sin(simT*0.53+1.3);st=base*z*gust;u.value.set(Math.cos(dir),Math.sin(dir),st,0);
+      // spostamento d'aria: l'auto del giocatore e le 7 auto più vicine che si muovono
+      let n=0;const sp=Math.abs(pl.vx||0);CA[n++].set(pl.x,pl.z,sp,2.4);
+      if(typeof CARLOD!=='undefined'&&CARLOD.list&&dt>0){const L=[];for(const e of CARLOD.list){if(e.stat||!e.g.parent)continue;const gp=e.g.position,d=Math.hypot(gp.x-x,gp.z-zz);if(d>70)continue;
+          const v=e.__px!=null?Math.hypot(gp.x-e.__px,gp.z-e.__pz)/dt:0;e.__px=gp.x;e.__pz=gp.z;if(v>2&&v<60)L.push([d,gp.x,gp.z,v,/bus|truck|camion|tir|van/i.test(e.k||'')?3.4:2.3]);}
+        L.sort((a,b)=>a[0]-b[0]);for(const q of L){if(n>=8)break;CA[n++].set(q[1],q[2],q[3],q[4]);}}
+      for(;n<8;n++)CA[n].set(1e9,1e9,0,0);}
+    const flags=[];
+    return {u,uC,flags,update:(dt,x,y,zz)=>{update(dt,x,y,zz);for(let i=flags.length-1;i>=0;i--){const f=flags[i];if(!f.parent){flags.splice(i,1);continue;}let d=-dir-f.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));f.rotation.y+=d*Math.min(1,dt*0.8)+Math.sin(simT*1.7+i)*0.004;}},get s(){return st;},get dir(){return dir;}};})();
   const WAVT={value:0},waveMat=(amp)=>{const m=waterM.clone();m.onBeforeCompile=sh=>{sh.uniforms.uT=WAVT;sh.uniforms.uAmp={value:amp};
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWp;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWp=(modelMatrix*vec4(transformed,1.0)).xyz;');
       sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform float uT;uniform float uAmp;varying vec3 vWp;\nvec2 wv(vec2 p,vec2 d,float f,float sp){float ph=dot(p,d)*f+uT*sp;return d*cos(ph)*f;}').replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
@@ -295,7 +310,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
   const HDT=(()=>{if(!window.HDON)return null;try{const V={};
     // passaggio graduale tra albero vero e albero lontano: retinatura per pixel decisa dalla distanza dell'albero (niente "pop")
     const FADE={uR:{value:210},uB:{value:38}},fadeHook=(far)=>m=>{m.onBeforeCompile=sh=>{sh.uniforms.uFR=FADE.uR;sh.uniforms.uFB=FADE.uB;
-        sh.vertexShader='varying float vFd;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n{vec4 _ic=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vFd=distance(_ic.xz,cameraPosition.xz);}');
+        sh.uniforms.uWind=WIND.u;sh.uniforms.uT=WAVT;sh.vertexShader='varying float vFd;uniform vec4 uWind;uniform float uT;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n{vec4 _ic=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vFd=distance(_ic.xz,cameraPosition.xz);'+(far?'':'float _sy=length(instanceMatrix[1].xyz);float _hn=max(transformed.y,0.)*_sy/12.;float _ph=_ic.x*0.07+_ic.z*0.05;float _g=0.6+0.4*sin(uT*0.8-dot(_ic.xz,uWind.xy)*0.02);float _a=uWind.z*(0.32*_g+0.1*sin(uT*2.1+_ph))*_hn*_hn;vec3 _lw=(transpose(mat3(instanceMatrix))*vec3(uWind.x,0.,uWind.y))/(_sy*_sy);transformed+=_lw*_a+vec3(0.,0.,0.);')+'}');
         sh.fragmentShader='uniform float uFR;uniform float uFB;varying float vFd;\n'+sh.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\n{float ign=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715))));float w=clamp((uFR-vFd)/uFB,0.,1.);'+(far?'if(ign<w)discard;':'if(ign>=w)discard;')+'}');};
       m.customProgramCacheKey=()=>far?'treeFar':'treeNear';return m;};
     // alberi lontani: immagine del modello vero (renderizzata una volta) su un pannello che guarda sempre la telecamera
@@ -309,7 +324,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       const mat=new THREE.MeshStandardMaterial({map:rt.texture,alphaTest:0.4,roughness:0.95,metalness:0,side:THREE.DoubleSide});
       const fh=fadeHook(true);fh(mat);const ob=mat.onBeforeCompile;mat.onBeforeCompile=sh=>{ob(sh);
         sh.vertexShader=sh.vertexShader.replace('#include <defaultnormal_vertex>','#include <defaultnormal_vertex>\n{vec4 _c=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vec2 _d=normalize(cameraPosition.xz-_c.xz+1e-4);transformedNormal=normalize((viewMatrix*vec4(normalize(vec3(_d.x,0.9,_d.y)),0.)).xyz);}')
-          .replace('#include <project_vertex>','vec4 _c2=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vec2 _d2=normalize(cameraPosition.xz-_c2.xz+1e-4);float _sx=length(instanceMatrix[0].xyz),_sy=length(instanceMatrix[1].xyz);vec3 _w=_c2.xyz+vec3(-_d2.y,0.,_d2.x)*transformed.x*_sx+vec3(0.,1.,0.)*transformed.y*_sy;vec4 mvPosition=viewMatrix*vec4(_w,1.);gl_Position=projectionMatrix*mvPosition;');};
+          .replace('#include <project_vertex>','vec4 _c2=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);vec2 _d2=normalize(cameraPosition.xz-_c2.xz+1e-4);float _sx=length(instanceMatrix[0].xyz),_sy=length(instanceMatrix[1].xyz);vec3 _w=_c2.xyz+vec3(-_d2.y,0.,_d2.x)*transformed.x*_sx+vec3(0.,1.,0.)*transformed.y*_sy;{float _h=transformed.y*_sy/12.;_w.xz+=uWind.xy*uWind.z*0.28*_h*_h*(0.65+0.35*sin(uT*0.8-dot(_c2.xz,uWind.xy)*0.02));}vec4 mvPosition=viewMatrix*vec4(_w,1.);gl_Position=projectionMatrix*mvPosition;');};
       mat.customProgramCacheKey=()=>'treeBB';return[{geo:g,mat}];};
     // la versione lontana non ha coordinate di texture: materiale pieno col colore medio della texture (altrimenti le foglie spariscono e restano i tronchi)
     const avgC=new Map();const farMat=(mm,by,nm)=>{let src=null;for(const m of by.keys())if(m.name===nm){src=m;break;}const map=src&&src.map;let col=new THREE.Color(0.25,0.33,0.18);
@@ -1357,8 +1372,8 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     // ---------- la piazza: pavimento in pietra, fontana o monumento, panchine, aiuole con alberi, lampioni, pennoni con le bandiere ----------
     const FLAG=(()=>{const hs=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};const cache={};
       const mat=(key,draw,w,h)=>{if(cache[key])return cache[key];const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;
-        const m=new THREE.MeshStandardMaterial({map:t,side:THREE.DoubleSide,roughness:0.85});m.onBeforeCompile=sh=>{sh.uniforms.uT=WAVT;sh.vertexShader='uniform float uT;\n'+sh.vertexShader.replace('#include <begin_vertex>',`vec3 transformed=vec3(position);float fx=uv.x;
-          transformed.z+=(sin(uT*3.3+fx*5.5+position.y*0.8)*0.16+sin(uT*5.7+fx*9.0)*0.05)*fx;transformed.y-=0.12*fx*fx;`);};m.customProgramCacheKey=()=>'flagw';return cache[key]=m;};
+        const m=new THREE.MeshStandardMaterial({map:t,side:THREE.DoubleSide,roughness:0.85});m.onBeforeCompile=sh=>{sh.uniforms.uT=WAVT;sh.uniforms.uWind=WIND.u;sh.vertexShader='uniform float uT;uniform vec4 uWind;\n'+sh.vertexShader.replace('#include <begin_vertex>',`vec3 transformed=vec3(position);float fx=uv.x;
+          float _wa=0.35+min(1.6,uWind.z);transformed.z+=(sin(uT*(2.2+_wa*1.6)+fx*5.5+position.y*0.8)*0.13+sin(uT*5.7+fx*9.0)*0.045)*fx*_wa;transformed.y-=0.22*fx*fx/(_wa+0.6);`);};m.customProgramCacheKey=()=>'flagw';return cache[key]=m;};
       // la bandiera della Valdovia: V a filo d'oro su verde bottiglia, con una cornice sottile
       const valdovia=()=>mat('vd',(g,w,h)=>{g.fillStyle='#1f5038';g.fillRect(0,0,w,h);g.strokeStyle='#e0bc58';g.lineWidth=h*0.02;g.strokeRect(h*0.06,h*0.06,w-h*0.12,h*0.88);
         g.lineWidth=h*0.045;g.lineJoin='round';g.beginPath();[[0.3,0.15],[0.42,0.15],[0.5,0.55],[0.58,0.15],[0.7,0.15],[0.555,0.85],[0.445,0.85]].forEach(([x,y],i)=>i?g.lineTo(x*w,y*h):g.moveTo(x*w,y*h));g.closePath();g.stroke();},384,256);
@@ -1404,7 +1419,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
       let fx,fz,dx,dz;if(P.mun){const M=P.mun;fx=M.mx+M.fx*2.2;fz=M.mz+M.fz*2.2;dx=M.fz;dz=-M.fx;}else{const[a,b]=at(0,P.away*(S/2-2.5));fx=a;fz=b;dx=ux;dz=uz;}
       const fg=Math.max(g,NW.Hground(fx,fz)),FL=[FLAG.valdovia(),FLAG.comune(P.n,P.emb)];
       FL.forEach((m,k)=>{const sd=k?1.6:-1.6,x=fx+dx*sd,z=fz+dz*sd;pb.add(GC,0xd8dcde,x,fg+4.25,z,0,0.12,8.5,0.12);pb.add(GS,0xc8a040,x,fg+8.55,z,0,0.24,0.24,0.24);pb.add(GC,0x8a8e90,x,fg+0.2,z,0,0.5,0.4,0.5);addSeg(T,x-0.1,z,x+0.1,z);
-        const fgm=new THREE.PlaneGeometry(2.4,1.6,12,4);fgm.translate(1.2,0,0);const f=new THREE.Mesh(fgm,m);f.position.set(x,fg+7.5,z);f.rotation.y=Math.atan2(dz,-dx)+0.6*(k?1:-1)*0+(hsh(k,P.x|0)-0.5)*0.4;f.castShadow=true;f.userData.nomerge=1;scene.add(f);T.dobj.push(f);});
+        const fgm=new THREE.PlaneGeometry(2.4,1.6,12,4);fgm.translate(1.2,0,0);const f=new THREE.Mesh(fgm,m);f.position.set(x,fg+7.5,z);f.rotation.y=-WIND.dir;WIND.flags.push(f);f.castShadow=true;f.userData.nomerge=1;scene.add(f);T.dobj.push(f);});
       if(HDT)HDT.buildFar(T);
       if(P.mun){const M=P.mun,sm=signMat('mun_'+P.n,'MUNICIPIO','#e9e2d0','#3a3226'),sg=new THREE.Mesh(new THREE.PlaneGeometry(3.2,0.6),sm),ga=Math.max(M.g,NW.Hground(M.mx,M.mz));sg.position.set(M.mx+M.fx*0.08,ga+3.6,M.mz+M.fz*0.08);sg.rotation.y=Math.atan2(M.fx,M.fz);sg.userData.nomerge=1;scene.add(sg);T.dobj.push(sg);
         pb.add(GB,0x3a2a1e,M.mx+M.fx*0.05,ga+1.35,M.mz+M.fz*0.05,Math.atan2(M.fx,M.fz),2.0,2.7,0.1);pb.add(GB,0xd9d0bf,M.mx+M.fx*0.6,ga+6.6,M.mz+M.fz*0.6,Math.atan2(M.fx,M.fz),3.6,0.18,1.2);}
@@ -1673,10 +1688,14 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
     const U={uT:{value:0},uP:{value:new THREE.Vector2()},uR:{value:RAD}};
     const m=new THREE.MeshStandardMaterial({map:tex,alphaTest:0.42,side:THREE.DoubleSide,roughness:1,metalness:0});m.alphaToCoverage=true;
-    m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);sh.vertexShader='uniform float uT;uniform vec2 uP;uniform float uR;\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 wp=modelMatrix*instanceMatrix*vec4(transformed,1.0);vec4 bs=modelMatrix*instanceMatrix*vec4(transformed.x,0.0,transformed.z,1.0);float hh=uv.y;
+    m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);sh.uniforms.uWind=WIND.u;sh.uniforms.uCar=WIND.uC;sh.vertexShader='uniform float uT;uniform vec2 uP;uniform float uR;uniform vec4 uWind;uniform vec4 uCar[8];\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 wp=modelMatrix*instanceMatrix*vec4(transformed,1.0);vec4 bs=modelMatrix*instanceMatrix*vec4(transformed.x,0.0,transformed.z,1.0);float hh=uv.y;
         float dc=distance(bs.xz,cameraPosition.xz);float shr=1.0-smoothstep(uR-14.0,uR,dc);wp.y=bs.y+(wp.y-bs.y)*shr;
-        float gs=0.09+0.07*sin(uT*0.37+bs.x*0.013+bs.z*0.011);vec2 wv=vec2(sin(uT*1.6+bs.x*0.31+bs.z*0.17),cos(uT*1.2+bs.z*0.27-bs.x*0.11))*gs*hh*hh;
-        vec2 dp=bs.xz-uP;float dd=length(dp);vec2 pu=dd>0.01?dp/dd*max(0.0,2.0-dd)*0.75*hh:vec2(0.0);wp.xz+=wv+pu;wp.y-=length(pu)*0.45;
+        float gw=0.55+0.45*sin(uT*1.5-dot(bs.xz,uWind.xy)*0.11)*sin(uT*0.37-dot(bs.xz,uWind.xy)*0.023+1.0);
+        vec2 wv=(uWind.xy*uWind.z*(0.22*gw+0.05)+vec2(sin(uT*2.3+bs.x*0.31+bs.z*0.17),cos(uT*1.9+bs.z*0.27-bs.x*0.11))*(0.02+0.05*uWind.z))*hh*hh;
+        vec2 pu=vec2(0.0);for(int k=0;k<8;k++){vec4 c=uCar[k];vec2 dp=bs.xz-c.xy;float dd=length(dp);float rr=c.w+min(c.z,40.0)*0.06;if(dd>0.01&&dd<rr+1.5){float f=max(0.0,rr-dd)/rr;float sv=k==0?max(0.6,min(1.6,c.z/12.0)):min(1.6,c.z/12.0);
+          pu+=dp/dd*f*sv*0.85*hh+vec2(sin(uT*13.0+bs.x*3.1),cos(uT*11.0+bs.z*2.7))*f*min(c.z,30.0)*0.004*hh;}}
+        vec2 dp0=bs.xz-uP;float dd0=length(dp0);pu+=dd0>0.01?dp0/dd0*max(0.0,2.0-dd0)*0.6*hh:vec2(0.0);
+        wp.xz+=wv+pu;wp.y-=(length(pu)*0.45+length(wv)*0.25);
         vec4 mvPosition=viewMatrix*wp;gl_Position=projectionMatrix*mvPosition;`);};
     m.customProgramCacheKey=()=>'tallGrass';
     const geo=(()=>{const parts=[0,Math.PI/3,2*Math.PI/3].map(r=>{const g=new THREE.PlaneGeometry(1.25,0.9);g.translate(0,0.45,0);g.rotateY(r);return g;});const all=new THREE.BufferGeometry();
@@ -1732,7 +1751,7 @@ NWT=(()=>{if(!NW)return null;const HIDE=false;
     if(!HIDE&&(n>0||force)){const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);for(let a=-FR;a<=FR;a++)for(let b=-FR;b<=FR;b++){const i=fi+a,j=fj+b;if(!okTile(i*FS,j*FS,FS))continue;if(!far.has(tk(i,j))){buildFar(i,j);if(!force)break;}}}
     far.forEach((F,k)=>{const fi=Math.floor(cx/FS),fj=Math.floor(cz/FS);if(Math.abs(F.i-fi)>FR+1||Math.abs(F.j-fj)>FR+1){scene.remove(F.m);F.m.geometry.dispose();far.delete(k);}});
     cullTiles();if(GRASS&&started)GRASS.update(dt);
-    if(HDT)HDT.update(dt,force);WAVT.value+=dt;
+    if(HDT)HDT.update(dt,force);WAVT.value+=dt;WIND.update(dt,camera.position.x,camera.position.y,camera.position.z);
     anims.forEach(a=>{const p=a.m.position;if(Math.abs(p.x-cx)+Math.abs(p.z-cz)<160)a.m.userData.mixer.update(dt);});LMX.update(dt);VXW=heavy&&!force?VXW+1:0;if(!heavy||force||VXW>4){VXW=0;VX.update(dt,force);}}
   function segQ(x,z){return bseg.get(tk(Math.floor(x/BC),Math.floor(z/BC)))||[];}
   function addDyn(list){const T={segs:[]};list.forEach(q=>addSeg(T,...q));return T;}
